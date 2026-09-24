@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { products as seed, Product } from "@/lib/data";
 
-const useDb = () => Boolean(process.env.DATABASE_URL);
+const hasDatabase = () => Boolean(process.env.DATABASE_URL);
 
 function mapProduct(p: any): Product {
   return {
@@ -31,7 +31,7 @@ function mapProduct(p: any): Product {
 }
 
 export async function getProducts(): Promise<Product[]> {
-  if (!getDb()) return seed;
+  if (!hasDatabase()) return seed;
 
   try {
     const rows = await db.product.findMany({
