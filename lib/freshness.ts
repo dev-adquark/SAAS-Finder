@@ -51,13 +51,7 @@ export async function ensureRefreshTasks(
   const cutoff = new Date(now.getTime() - safeDays * 24 * 60 * 60 * 1000);
 
   const products = await db.product.findMany({
-    where: {
-      status: "PUBLISHED",
-      OR: [
-        { snapshots: { none: {} } },
-        { snapshots: { some: { capturedAt: { lte: cutoff } } } },
-      ],
-    },
+    where: { status: "PUBLISHED" },
     select: {
       id: true,
       slug: true,
@@ -74,20 +68,27 @@ export async function ensureRefreshTasks(
         select: { id: true },
       },
     },
-    take: safeLimit,
+    orderBy: { updatedAt: "asc" },
   });
+
+  const staleProducts = products
+    .filter((product) => {
+      if (product.refreshes.length > 0) return false;
+      const latestSnapshot = product.snapshots[0]?.capturedAt;
+      return !latestSnapshot || latestSnapshot <= cutoff;
+    })
+    .slice(0, safeLimit);
 
   const created: Array<{ id: string; productId: string; dueAt: Date }> = [];
 
-  for (const product of products) {
-    if (product.refreshes.length > 0) continue;
-
-    const dueAt = product.snapshots[0]?.capturedAt ?? cutoff;
+  for (const product of staleProducts) {
+    const latestSnapshot = product.snapshots[0]?.capturedAt;
+    const dueAt = latestSnapshot ?? cutoff;
     const refresh = await db.contentRefresh.create({
       data: {
         productId: product.id,
         dueAt,
-        reason: product.snapshots[0]
+        reason: latestSnapshot
           ? "Pricing/content snapshot is older than the freshness threshold."
           : "Published product has no pricing/content snapshot.",
       },
