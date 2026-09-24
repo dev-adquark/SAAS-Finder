@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
+export async function GET(req: Request,{params}:{params:Promise<{id:string}>}){if(!requireAdmin(req))return NextResponse.json({error:"Unauthorized"},{status:401});const {id}=await params;return NextResponse.json(await db.alternative.findMany({where:{productId:id},include:{alternative:true},orderBy:{sortOrder:"asc"}}))}
+export async function POST(req: Request,{params}:{params:Promise<{id:string}>}){if(!requireAdmin(req))return NextResponse.json({error:"Unauthorized"},{status:401});const {id}=await params;const b=await req.json();if(!b.alternativeId)return NextResponse.json({error:"alternativeId is required"},{status:400});try{return NextResponse.json(await db.alternative.create({data:{productId:id,alternativeId:b.alternativeId,sortOrder:b.sortOrder??0}}),{status:201})}catch{return NextResponse.json({error:"Alternative already exists or product is invalid"},{status:409})}}
