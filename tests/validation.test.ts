@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { requireAdmin } from "../lib/admin-auth";
-import { isContentStatus, isHttpUrl, isSnapshotType, slugify } from "../lib/validation";
+import { isContentStatus, isHttpUrl, isRating, isSnapshotType, slugify } from "../lib/validation";
 
 test("accepts HTTP and HTTPS URLs only", () => {
   assert.equal(isHttpUrl("https://example.com"), true);
@@ -14,6 +14,13 @@ test("normalizes category slugs deterministically", () => {
   assert.equal(slugify("Project Management"), "project-management");
   assert.equal(slugify("  CRM / Sales  "), "crm-sales");
   assert.equal(slugify(""), "");
+});
+
+test("accepts ratings from 0 through 5 only", () => {
+  assert.equal(isRating(0), true);
+  assert.equal(isRating(5), true);
+  assert.equal(isRating(5.1), false);
+  assert.equal(isRating("4.5"), false);
 });
 
 test("accepts supported content statuses only", () => {
