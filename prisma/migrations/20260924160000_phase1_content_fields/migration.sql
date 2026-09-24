@@ -1,0 +1,3 @@
+ALTER TABLE "Product" ADD COLUMN "tags" JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE "Product" ADD COLUMN "comparison" JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE "SponsorSlot" ADD COLUMN "placement" TEXT NOT NULL DEFAULT 'default';
