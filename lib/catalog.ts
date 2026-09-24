@@ -22,9 +22,7 @@ function mapProduct(p: any): Product {
     pros: Array.isArray(p.pros) ? p.pros : [],
     cons: Array.isArray(p.cons) ? p.cons : [],
     bestFor: Array.isArray(p.bestFor) ? p.bestFor : [],
-    alternatives: (p.alternativesFrom ?? [])
-      .map((x: any) => x.alternative?.slug)
-      .filter(Boolean),
+    alternatives: (p.alternativesFrom ?? []).map((x: any) => x.alternative?.slug).filter(Boolean),
     comparison: p.comparison && typeof p.comparison === "object" ? p.comparison : {},
     faqs: (p.faqs ?? []).map((x: any) => ({ q: x.question, a: x.answer })),
   };
@@ -41,16 +39,13 @@ export async function getProducts(): Promise<Product[]> {
         faqs: { orderBy: { sortOrder: "asc" } },
         snapshots: { orderBy: { capturedAt: "desc" }, take: 1 },
         links: true,
-        alternativesFrom: {
-          include: { alternative: true },
-          orderBy: { sortOrder: "asc" },
-        },
+        alternativesFrom: { include: { alternative: true }, orderBy: { sortOrder: "asc" } },
       },
     });
-
     return rows.map(mapProduct);
-  } catch {
-    return seed;
+  } catch (error) {
+    console.error("[catalog] database read failed", error);
+    return [];
   }
 }
 
@@ -60,18 +55,14 @@ export async function getProduct(slug: string) {
 }
 
 export async function getCategories() {
-  return [...new Set((await getProducts()).map((p) => p.category))].sort();
+  return [...new Set((await getProducts()).map((p) => p.category))].filter(Boolean).sort();
 }
 
 export async function getCategoryProducts(category: string) {
-  return (await getProducts()).filter(
-    (p) => p.category.toLowerCase() === category.toLowerCase(),
-  );
+  return (await getProducts()).filter((p) => p.category.toLowerCase() === category.toLowerCase());
 }
 
 export async function getAlternatives(p: Product) {
   const all = await getProducts();
-  return p.alternatives
-    .map((slug) => all.find((x) => x.slug === slug))
-    .filter((x): x is Product => Boolean(x));
+  return p.alternatives.map((slug) => all.find((x) => x.slug === slug)).filter((x): x is Product => Boolean(x));
 }
