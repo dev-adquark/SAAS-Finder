@@ -39,6 +39,7 @@ model Product {
   alternativesFrom Alternative[] @relation("productAlternatives")
   alternativesTo Alternative[] @relation("alternativeProduct")
   changelog ChangeLog[]
+  refreshes ContentRefresh[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
