@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
-import { isContentStatus, isHttpUrl, slugify } from "@/lib/validation";
+import { isContentStatus, isHttpUrl, isRatingOrNull, slugify } from "@/lib/validation";
 
 export async function GET(req: Request) {
   if (!requireAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     if (body.pricingUrl !== undefined && body.pricingUrl !== null && !isHttpUrl(body.pricingUrl)) {
       return NextResponse.json({ error: "pricingUrl must be a valid http(s) URL" }, { status: 400 });
     }
+    if (body.rating !== undefined && !isRatingOrNull(body.rating)) return NextResponse.json({ error: "rating must be between 0 and 5" }, { status: 400 });
     if (body.status !== undefined && !isContentStatus(body.status)) {
       return NextResponse.json({ error: "invalid status" }, { status: 400 });
     }
