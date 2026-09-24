@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 import { getCategories, getProducts } from "@/lib/catalog";
 import { absolute } from "@/lib/site";
 
-function safeDate(value: string): Date {
+function safeDate(value: string): Date | undefined {
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -16,17 +16,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ] as const;
 
   const entries: MetadataRoute.Sitemap = staticUrls.map(([path, priority]) => ({
-    url: absolute(path), lastModified: new Date(), changeFrequency: "weekly", priority,
+    url: absolute(path), changeFrequency: "weekly", priority,
   }));
 
   const comparisonUrls = new Set<string>();
 
   for (const product of products) {
     const updated = safeDate(product.pricingUpdated);
-    entries.push({url:absolute(`/products/${product.slug}`),lastModified:updated,changeFrequency:"monthly",priority:0.8});
+    entries.push({url:absolute(`/products/${product.slug}`),...(updated ? {lastModified:updated} : {}),changeFrequency:"monthly",priority:0.8});
 
     if (product.alternatives.length > 0) {
-      entries.push({url:absolute(`/alternatives/${product.slug}`),lastModified:updated,changeFrequency:"monthly",priority:0.7});
+      entries.push({url:absolute(`/alternatives/${product.slug}`),...(updated ? {lastModified:updated} : {}),changeFrequency:"monthly",priority:0.7});
     }
 
     for (const alternative of product.alternatives) {
@@ -35,14 +35,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const url = `/compare/${first}-vs-${second}`;
       if (comparisonUrls.has(url)) continue;
       comparisonUrls.add(url);
-      entries.push({url:absolute(url),lastModified:updated,changeFrequency:"monthly",priority:0.7});
+      entries.push({url:absolute(url),...(updated ? {lastModified:updated} : {}),changeFrequency:"monthly",priority:0.7});
     }
   }
 
   for (const category of categories) {
     entries.push({
       url:absolute(`/categories/${encodeURIComponent(category.toLowerCase())}`),
-      lastModified:new Date(), changeFrequency:"weekly", priority:0.75,
+      changeFrequency:"weekly", priority:0.75,
     });
   }
 
