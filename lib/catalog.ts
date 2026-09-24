@@ -31,7 +31,7 @@ function mapProduct(p: any): Product {
 }
 
 export async function getProducts(): Promise<Product[]> {
-  if (!useDb()) return seed;
+  if (!getDb()) return seed;
 
   try {
     const rows = await db.product.findMany({
