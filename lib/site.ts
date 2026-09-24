@@ -1,1 +1,9 @@
-export const siteUrl=process.env.NEXT_PUBLIC_SITE_URL||"https://saas-finder.example.com";export const absolute=(path:string)=>new URL(path,siteUrl).toString();
+const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+
+if (process.env.NODE_ENV === "production" && !rawSiteUrl) {
+  throw new Error("NEXT_PUBLIC_SITE_URL is required in production.");
+}
+
+export const siteUrl = rawSiteUrl || "http://localhost:3000";
+
+export const absolute = (path: string) => new URL(path, siteUrl).toString();
