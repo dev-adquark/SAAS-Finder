@@ -7,7 +7,7 @@ export type SnapshotTypeValue = (typeof SNAPSHOT_TYPES)[number];
 export function isHttpUrl(value: unknown): value is string {
   if (typeof value !== "string" || !value.trim()) return false;
   try {
-    const url = new URL(value);
+    const url = new URL(value.trim());
     return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
@@ -40,4 +40,23 @@ export function isSnapshotType(value: unknown): value is SnapshotTypeValue {
 
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+export function isNonEmptyString(value: unknown, maxLength = 500): value is string {
+  return typeof value === "string" && value.trim().length > 0 && value.trim().length <= maxLength;
+}
+
+export function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isInteger(value) && Number(value) >= 0;
+}
+
+export function parseOptionalDate(value: unknown): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+export function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
 }
