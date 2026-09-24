@@ -48,7 +48,7 @@ export async function getProducts(): Promise<Product[]> {
       },
     });
 
-    return rows.length ? rows.map(mapProduct) : seed;
+    return rows.map(mapProduct);
   } catch {
     return seed;
   }
