@@ -1,16 +1,9 @@
 import { NextResponse } from "next/server";
 import { ensureRefreshTasks, getDueRefreshes } from "@/lib/freshness";
-
-function authorized(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const authorization = req.headers.get("authorization");
-  const headerSecret = req.headers.get("x-cron-secret");
-  return authorization === `Bearer ${secret}` || headerSecret === secret;
-}
+import { requireCronSecret } from "@/lib/cron-auth";
 
 export async function GET(req: Request) {
-  if (!authorized(req)) {
+  if (!requireCronSecret(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -22,10 +15,9 @@ export async function GET(req: Request) {
   }
 
   try {
-    const limit = Number(new URL(req.url).searchParams.get("limit") ?? "25");
-    const refreshAfterDays = Number(
-      new URL(req.url).searchParams.get("refreshAfterDays") ?? "90",
-    );
+    const url = new URL(req.url);
+    const limit = Number(url.searchParams.get("limit") ?? "25");
+    const refreshAfterDays = Number(url.searchParams.get("refreshAfterDays") ?? "90");
     const created = await ensureRefreshTasks(
       new Date(),
       Number.isFinite(refreshAfterDays) ? refreshAfterDays : 90,
