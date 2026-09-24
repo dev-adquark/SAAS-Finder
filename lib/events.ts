@@ -1,0 +1,1 @@
+export async function trackEvent(event:string,data:Record<string,string>={}){if(typeof window==="undefined")return;try{await fetch("/api/analytics",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({event,data,path:location.pathname})})}catch{}}

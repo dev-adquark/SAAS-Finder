@@ -1,0 +1,1 @@
+export function SponsorSlot(){return <aside className="sponsor"><div className="sponsor-label">Sponsored placement</div><strong>Partner comparison slot</strong><p className="muted">Reserved for clearly labeled commercial placements. Sponsorship does not change editorial ratings or methodology.</p></aside>}

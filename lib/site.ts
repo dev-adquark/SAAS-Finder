@@ -1,0 +1,1 @@
+export const siteUrl=process.env.NEXT_PUBLIC_SITE_URL||"https://saas-finder.example.com";export const absolute=(path:string)=>new URL(path,siteUrl).toString();
