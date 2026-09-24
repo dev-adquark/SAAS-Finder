@@ -1,9 +1,20 @@
 import { db } from "@/lib/db";
 import { products as seed, Product } from "@/lib/data";
+import type { Prisma } from "@prisma/client";
 
 const hasDatabase = () => Boolean(process.env.DATABASE_URL);
 
-function mapProduct(p: any): Product {
+type CatalogProduct = Prisma.ProductGetPayload<{
+  include: {
+    category: true;
+    faqs: true;
+    snapshots: true;
+    links: true;
+    alternativesFrom: { include: { alternative: true } };
+  };
+}>;
+
+function mapProduct(p: CatalogProduct): Product {
   return {
     slug: p.slug,
     name: p.name,
@@ -12,19 +23,27 @@ function mapProduct(p: any): Product {
     tagline: p.tagline,
     description: p.description,
     rating: p.rating ?? 0,
-    pricing: p.snapshots?.[0]?.summary ?? "Pricing data pending",
-    pricingUpdated: p.snapshots?.[0]?.capturedAt?.toISOString().slice(0, 10) ?? "Not verified",
+    pricing: p.snapshots[0]?.summary ?? "Pricing data pending",
+    pricingUpdated: p.snapshots[0]?.capturedAt?.toISOString().slice(0, 10) ?? "Not verified",
+    contentUpdated: p.updatedAt.toISOString(),
     officialUrl: p.officialUrl,
     pricingUrl: p.pricingUrl ?? p.officialUrl,
-    affiliateUrl: p.links?.find((x: any) => x.active)?.url,
-    affiliateAvailable: Boolean(p.links?.some((x: any) => x.active)),
-    features: Array.isArray(p.features) ? p.features : [],
-    pros: Array.isArray(p.pros) ? p.pros : [],
-    cons: Array.isArray(p.cons) ? p.cons : [],
-    bestFor: Array.isArray(p.bestFor) ? p.bestFor : [],
-    alternatives: (p.alternativesFrom ?? []).map((x: any) => x.alternative?.slug).filter(Boolean),
-    comparison: p.comparison && typeof p.comparison === "object" ? p.comparison : {},
-    faqs: (p.faqs ?? []).map((x: any) => ({ q: x.question, a: x.answer })),
+    affiliateUrl: p.links.find((x) => x.active)?.url,
+    affiliateAvailable: p.links.some((x) => x.active),
+    features: Array.isArray(p.features) ? p.features.filter((x): x is string => typeof x === "string") : [],
+    pros: Array.isArray(p.pros) ? p.pros.filter((x): x is string => typeof x === "string") : [],
+    cons: Array.isArray(p.cons) ? p.cons.filter((x): x is string => typeof x === "string") : [],
+    bestFor: Array.isArray(p.bestFor) ? p.bestFor.filter((x): x is string => typeof x === "string") : [],
+    alternatives: p.alternativesFrom.map((x) => x.alternative?.slug).filter((x): x is string => Boolean(x)),
+    comparison:
+      p.comparison && typeof p.comparison === "object" && !Array.isArray(p.comparison)
+        ? Object.fromEntries(
+            Object.entries(p.comparison as Record<string, unknown>)
+              .filter(([, value]) => typeof value === "string")
+              .map(([key, value]) => [key, value as string]),
+          )
+        : {},
+    faqs: p.faqs.map((x) => ({ q: x.question, a: x.answer })),
   };
 }
 
