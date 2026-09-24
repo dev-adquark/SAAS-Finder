@@ -1,0 +1,1 @@
+export default function Footer(){return <footer className="border-t border-slate-800 mt-20"><div className="container py-8 text-sm muted">SaaS Finder — independent research and comparison. Some links may be affiliate links.</div></footer>}
