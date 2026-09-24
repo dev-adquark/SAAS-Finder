@@ -1,4 +1,3 @@
-// Phase 1 schema foundation. The application can migrate from seed data to PostgreSQL without changing the public content model.
 generator client { provider = "prisma-client-js" }
 datasource db { provider = "postgresql" url = env("DATABASE_URL") }
 
@@ -33,6 +32,8 @@ model Product {
   features Json
   pros Json
   cons Json
+  tags Json
+  comparison Json
   faqs Faq[]
   snapshots PricingSnapshot[]
   links AffiliateLink[]
@@ -110,6 +111,7 @@ model SponsorSlot {
   id String @id @default(cuid())
   name String
   label String @default("Sponsored")
+  placement String @default("default")
   active Boolean @default(false)
   url String?
   startsAt DateTime?
