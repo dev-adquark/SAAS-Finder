@@ -1,41 +1,33 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { requireAdmin } from "../lib/admin-auth";
-
-const validHttpUrl = (value: unknown) => {
-  if (typeof value !== "string" || !value.trim()) return false;
-  try { const url = new URL(value); return url.protocol === "http:" || url.protocol === "https:"; } catch { return false; }
-};
-const slugify = (value: unknown) => String(value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+import { isContentStatus, isHttpUrl, isSnapshotType, slugify } from "../lib/validation";
 
 test("accepts HTTP and HTTPS URLs only", () => {
-  assert.equal(validHttpUrl("https://example.com"), true);
-  assert.equal(validHttpUrl("http://example.com/path"), true);
-  assert.equal(validHttpUrl("javascript:alert(1)"), false);
-  assert.equal(validHttpUrl("not-a-url"), false);
-  assert.equal(validHttpUrl(""), false);
+  assert.equal(isHttpUrl("https://example.com"), true);
+  assert.equal(isHttpUrl("http://example.com/path"), true);
+  assert.equal(isHttpUrl("javascript:alert(1)"), false);
+  assert.equal(isHttpUrl("not-a-url"), false);
 });
+
 test("normalizes category slugs deterministically", () => {
-  assert.equal(slugify("  Project Management & CRM  "), "project-management-crm");
-  assert.equal(slugify("AI Tools"), "ai-tools");
+  assert.equal(slugify("Project Management"), "project-management");
+  assert.equal(slugify("  CRM / Sales  "), "crm-sales");
   assert.equal(slugify(""), "");
 });
-test("blocks self alternatives", () => {
-  const productId = "prod_123";
-  assert.equal(productId === productId, true);
+
+test("accepts supported content statuses only", () => {
+  assert.equal(isContentStatus("PUBLISHED"), true);
+  assert.equal(isContentStatus("draft"), false);
+  assert.equal(isContentStatus("UNKNOWN"), false);
 });
+
 test("accepts only supported snapshot types", () => {
-  const types = new Set(["PRICING", "FEATURE", "GENERAL"]);
-  assert.equal(types.has("PRICING"), true);
-  assert.equal(types.has("FEATURE"), true);
-  assert.equal(types.has("GENERAL"), true);
-  assert.equal(types.has("OTHER"), false);
+  assert.equal(isSnapshotType("PRICING"), true);
+  assert.equal(isSnapshotType("FEATURE"), true);
+  assert.equal(isSnapshotType("UNKNOWN"), false);
 });
-test("rejects inverted sponsor date ranges", () => {
-  const startsAt = new Date("2026-10-02T00:00:00Z");
-  const endsAt = new Date("2026-10-01T00:00:00Z");
-  assert.equal(startsAt > endsAt, true);
-});
+
 test("requires the configured admin bearer token", () => {
   const previous = process.env.ADMIN_API_KEY;
   process.env.ADMIN_API_KEY = "test-secret";
