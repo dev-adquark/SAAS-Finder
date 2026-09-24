@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { requireAdmin } from "../lib/admin-auth";
-import { isContentStatus, isHttpUrl, isRating, isSnapshotType, slugify } from "../lib/validation";
+import { isBoolean, isContentStatus, isHttpUrl, isNonEmptyString, isNonNegativeInteger, isRating, isSnapshotType, parseOptionalDate, slugify } from "../lib/validation";
 
 test("accepts HTTP and HTTPS URLs only", () => {
   assert.equal(isHttpUrl("https://example.com"), true);
@@ -33,6 +33,21 @@ test("accepts only supported snapshot types", () => {
   assert.equal(isSnapshotType("PRICING"), true);
   assert.equal(isSnapshotType("FEATURE"), true);
   assert.equal(isSnapshotType("UNKNOWN"), false);
+});
+
+test("bounds common admin payload primitives", () => {
+  assert.equal(isNonEmptyString("hello", 5), true);
+  assert.equal(isNonEmptyString(" ", 5), false);
+  assert.equal(isNonEmptyString("toolong", 5), false);
+  assert.equal(isNonNegativeInteger(0), true);
+  assert.equal(isNonNegativeInteger(2), true);
+  assert.equal(isNonNegativeInteger(-1), false);
+  assert.equal(isNonNegativeInteger(1.2), false);
+  assert.equal(isBoolean(true), true);
+  assert.equal(isBoolean("true"), false);
+  assert.equal(parseOptionalDate("2026-09-24T00:00:00Z") instanceof Date, true);
+  assert.equal(parseOptionalDate(null), null);
+  assert.equal(parseOptionalDate("not-a-date"), undefined);
 });
 
 test("requires the configured admin bearer token", () => {
