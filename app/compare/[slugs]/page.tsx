@@ -1,1 +1,22 @@
-import type {Metadata} from "next";import {notFound} from "next/navigation";import {getProduct,getProducts} from "@/lib/catalog";import {VendorCTA} from "@/components/cta";export async function generateStaticParams(){const products=await getProducts();const out:{slugs:string}[]=[];for(const a of products)for(const s of a.alternatives)if(a.slug<s)out.push({slugs:a.slug+"-vs-"+s});return out}export async function generateMetadata({params}:{params:Promise<{slugs:string}>}):Promise<Metadata>{const{slugs}=await params;const[a,b]=slugs.split("-vs-"),x=await getProduct(a),y=await getProduct(b);return x&&y?{title:x.name+" vs "+y.name,description:"Structured comparison of "+x.name+" and "+y.name+"."}:{}}export default async function Compare({params}:{params:Promise<{slugs:string}>}){const{slugs}=await params;const[a,b]=slugs.split("-vs-"),x=await getProduct(a),y=await getProduct(b);if(!x||!y)notFound();const keys=[...new Set([...Object.keys(x.comparison),...Object.keys(y.comparison)])];return <section className="section"><div className="container"><span className="eyebrow">Side-by-side</span><h1>{x.name} vs {y.name}</h1><p className="section-intro">Compare the criteria that match your workflow, budget and requirements.</p><div className="actions"><VendorCTA product={x}/><VendorCTA product={y}/></div><div className="table-wrap section"><table className="compare"><thead><tr><th>Criterion</th><th>{x.name}</th><th>{y.name}</th></tr></thead><tbody>{keys.map(k=><tr key={k}><td>{k}</td><td>{x.comparison[k]||"—"}</td><td>{y.comparison[k]||"—"}</td></tr>)}</tbody></table></div><div className="two"><div className="panel"><h2>{x.name} best for</h2><ul className="list">{x.bestFor.map(v=><li key={v}>{v}</li>)}</ul></div><div className="panel"><h2>{y.name} best for</h2><ul className="list">{y.bestFor.map(v=><li key={v}>{v}</li>)}</ul></div></div><p className="notice">Verify live vendor pricing, limits and contract terms before purchasing.</p></div></section>}
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getProduct, getProducts } from "@/lib/catalog";
+import { VendorCTA } from "@/components/cta";
+import { absolute } from "@/lib/site";
+
+export async function generateStaticParams() {
+  const products = await getProducts(); const out: { slugs: string }[] = [];
+  for (const a of products) for (const s of a.alternatives) if (a.slug < s) out.push({ slugs: `${a.slug}-vs-${s}` });
+  return out;
+}
+export async function generateMetadata({ params }: { params: Promise<{ slugs: string }> }): Promise<Metadata> {
+  const { slugs } = await params; const [a,b] = slugs.split("-vs-"); const x=await getProduct(a), y=await getProduct(b);
+  return x&&y ? { title: `${x.name} vs ${y.name}`, description: `Structured comparison of ${x.name} and ${y.name}.`, alternates: { canonical: absolute(`/compare/${x.slug}-vs-${y.slug}`) } } : {};
+}
+export default async function Compare({ params }: { params: Promise<{ slugs: string }> }) {
+  const { slugs } = await params; let [a,b] = slugs.split("-vs-"); let x=await getProduct(a), y=await getProduct(b);
+  if (!x || !y) notFound();
+  if (x.slug > y.slug) { [x,y]=[y,x]; [a,b]=[b,a]; }
+  const keys=[...new Set([...Object.keys(x.comparison),...Object.keys(y.comparison)])];
+  return <section className="section"><div className="container"><span className="eyebrow">Side-by-side</span><h1>{x.name} vs {y.name}</h1><p className="section-intro">Compare the criteria that match your workflow, budget and requirements.</p><div className="actions"><VendorCTA product={x}/><VendorCTA product={y}/></div><div className="table-wrap section"><table className="compare"><thead><tr><th>Criterion</th><th>{x.name}</th><th>{y.name}</th></tr></thead><tbody>{keys.map(k=><tr key={k}><td>{k}</td><td>{String(x.comparison[k] ?? "—")}</td><td>{String(y.comparison[k] ?? "—")}</td></tr>)}</tbody></table></div><div className="two"><div className="panel"><h2>{x.name} best for</h2><ul className="list">{x.bestFor.map(v=><li key={v}>{v}</li>)}</ul></div><div className="panel"><h2>{y.name} best for</h2><ul className="list">{y.bestFor.map(v=><li key={v}>{v}</li>)}</ul></div></div><p className="notice">Verify live vendor pricing, limits and contract terms before purchasing.</p></div></section>;
+}
