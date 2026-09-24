@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const comparisonUrls = new Set<string>();
 
   for (const product of products) {
-    const updated = safeDate(product.pricingUpdated);
+    const updated = safeDate(product.contentUpdated ?? product.pricingUpdated);
     entries.push({url:absolute(`/products/${product.slug}`),...(updated ? {lastModified:updated} : {}),changeFrequency:"monthly",priority:0.8});
 
     if (product.alternatives.length > 0) {
