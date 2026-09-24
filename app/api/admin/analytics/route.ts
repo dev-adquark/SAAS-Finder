@@ -19,36 +19,38 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const days = Math.min(Math.max(Number(url.searchParams.get("days") ?? "30"), 1), 365);
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const where = { createdAt: { gte: since } };
 
-    const [events, byEvent, byProduct] = await Promise.all([
-      db.analyticsEvent.findMany({
-        where: { createdAt: { gte: since } },
-        select: { event: true, productSlug: true, placement: true, createdAt: true },
-        orderBy: { createdAt: "desc" },
-        take: 10_000,
-      }),
+    const [totalEvents, byEvent, byProduct, recent] = await Promise.all([
+      db.analyticsEvent.count({ where }),
       db.analyticsEvent.groupBy({
         by: ["event"],
-        where: { createdAt: { gte: since }, event: { in: [...allowedEvents] } },
+        where: { ...where, event: { in: [...allowedEvents] } },
         _count: { _all: true },
         orderBy: { _count: { event: "desc" } },
       }),
       db.analyticsEvent.groupBy({
         by: ["productSlug"],
-        where: { createdAt: { gte: since }, productSlug: { not: null } },
+        where: { ...where, productSlug: { not: null } },
         _count: { _all: true },
         orderBy: { _count: { productSlug: "desc" } },
         take: 50,
+      }),
+      db.analyticsEvent.findMany({
+        where,
+        select: { event: true, productSlug: true, placement: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
       }),
     ]);
 
     return NextResponse.json({
       ok: true,
       windowDays: days,
-      totalEvents: events.length,
+      totalEvents,
       byEvent: byEvent.map((row) => ({ event: row.event, count: row._count._all })),
       byProduct: byProduct.map((row) => ({ productSlug: row.productSlug, count: row._count._all })),
-      recent: events,
+      recent,
     });
   } catch (error) {
     console.error("[admin/analytics]", error);
