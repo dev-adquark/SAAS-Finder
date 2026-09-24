@@ -6,6 +6,8 @@ on:
     branches: [main]
 jobs:
   verify:
+    env:
+      NEXT_PUBLIC_SITE_URL: https://ci.saas-finder.invalid
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
