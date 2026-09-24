@@ -67,7 +67,7 @@ async function main() {
     await db.alternative.deleteMany({
       where: { OR: [{ productId: product.id }, { alternativeId: product.id }] },
     });
-    await db.changelog.deleteMany({ where: { productId: product.id } });
+    await db.changeLog.deleteMany({ where: { productId: product.id } });
     await db.contentRefresh.deleteMany({ where: { productId: product.id } });
 
     await db.faq.createMany({
@@ -89,7 +89,7 @@ async function main() {
       },
     });
 
-    await db.changelog.create({
+    await db.changeLog.create({
       data: {
         productId: product.id,
         version: "seed-1",
