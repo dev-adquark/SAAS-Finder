@@ -7,9 +7,22 @@ datasource db {
   url = env("DATABASE_URL")
 }
 
-enum ContentStatus { DRAFT REVIEW PUBLISHED ARCHIVED }
-enum LinkType { OFFICIAL AFFILIATE PRICING }
-enum SnapshotType { PRICING FEATURE GENERAL }
+enum ContentStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+enum LinkType {
+  OFFICIAL
+  AFFILIATE
+  PRICING
+}
+enum SnapshotType {
+  PRICING
+  FEATURE
+  GENERAL
+}
 
 model Category {
   id String @id @default(cuid())
