@@ -22,6 +22,14 @@ export function slugify(value: unknown): string {
     .replace(/^-|-$/g, "");
 }
 
+export function isRating(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 5;
+}
+
+export function isRatingOrNull(value: unknown): boolean {
+  return value === null || value === undefined || isRating(value);
+}
+
 export function isContentStatus(value: unknown): value is ContentStatusValue {
   return typeof value === "string" && CONTENT_STATUSES.includes(value as ContentStatusValue);
 }
