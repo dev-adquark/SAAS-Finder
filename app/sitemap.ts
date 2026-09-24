@@ -1,1 +1,60 @@
-import type {MetadataRoute} from "next";import {products,categories} from "@/lib/data";import {absolute} from "@/lib/site";export default function sitemap():MetadataRoute.Sitemap{const urls=[absolute("/"),absolute("/products"),absolute("/categories"),absolute("/alternatives"),absolute("/comparisons"),absolute("/methodology"),absolute("/disclosure"),absolute("/privacy"),absolute("/contact"),...products.map(p=>absolute("/products/"+p.slug)),...products.map(p=>absolute("/alternatives/"+p.slug)),...categories.map(c=>absolute("/categories/"+encodeURIComponent(c.toLowerCase()))),...products.flatMap(a=>a.alternatives.map(b=>absolute("/compare/"+a.slug+"-vs-"+b)))];return urls.map(url=>({url,lastModified:new Date(),changeFrequency:"weekly",priority:url===absolute("/")?1:.7}))}
+import type { MetadataRoute } from "next";
+import { getCategories, getProducts } from "@/lib/catalog";
+import { absolute } from "@/lib/site";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [products, categories] = await Promise.all([getProducts(), getCategories()]);
+  const staticUrls = [
+    ["/", 1],
+    ["/products", 0.8],
+    ["/categories", 0.8],
+    ["/alternatives", 0.8],
+    ["/comparisons", 0.8],
+    ["/methodology", 0.5],
+    ["/disclosure", 0.5],
+    ["/privacy", 0.3],
+    ["/contact", 0.4],
+  ] as const;
+
+  const entries: MetadataRoute.Sitemap = staticUrls.map(([path, priority]) => ({
+    url: absolute(path),
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority,
+  }));
+
+  for (const product of products) {
+    entries.push({
+      url: absolute(`/products/${product.slug}`),
+      lastModified: new Date(product.pricingUpdated),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    });
+    entries.push({
+      url: absolute(`/alternatives/${product.slug}`),
+      lastModified: new Date(product.pricingUpdated),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    });
+
+    for (const alternative of product.alternatives) {
+      entries.push({
+        url: absolute(`/compare/${product.slug}-vs-${alternative}`),
+        lastModified: new Date(product.pricingUpdated),
+        changeFrequency: "monthly",
+        priority: 0.7,
+      });
+    }
+  }
+
+  for (const category of categories) {
+    entries.push({
+      url: absolute(`/categories/${encodeURIComponent(category.toLowerCase())}`),
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.75,
+    });
+  }
+
+  return entries;
+}
