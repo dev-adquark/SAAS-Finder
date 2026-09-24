@@ -57,7 +57,6 @@ export default async function Product({ params }: { params: Promise<{ slug: stri
     description: p.description,
     applicationCategory: p.category,
     url: absolute("/products/" + p.slug),
-    offers: p.pricingUrl ? { "@type": "Offer", url: p.pricingUrl } : undefined,
   };
 
   return (
