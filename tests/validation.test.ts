@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { requireAdmin } from "../lib/admin-auth";
+import { requireCronSecret } from "../lib/cron-auth";
 import { isBoolean, isContentStatus, isHttpUrl, isNonEmptyString, isNonNegativeInteger, isRating, isSnapshotType, parseOptionalDate, slugify } from "../lib/validation";
 
 test("accepts HTTP and HTTPS URLs only", () => {
@@ -60,5 +61,18 @@ test("requires the configured admin bearer token", () => {
   } finally {
     if (previous === undefined) delete process.env.ADMIN_API_KEY;
     else process.env.ADMIN_API_KEY = previous;
+  }
+});
+
+test("requires the configured cron secret", () => {
+  const previous = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = "cron-secret";
+  try {
+    assert.equal(requireCronSecret(new Request("https://example.test", { headers: { authorization: "Bearer cron-secret" } })), true);
+    assert.equal(requireCronSecret(new Request("https://example.test", { headers: { "x-cron-secret": "cron-secret" } })), true);
+    assert.equal(requireCronSecret(new Request("https://example.test", { headers: { authorization: "Bearer wrong" } })), false);
+  } finally {
+    if (previous === undefined) delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET = previous;
   }
 });
