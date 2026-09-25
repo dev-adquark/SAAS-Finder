@@ -1,19 +1,10 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { requireAdmin } from "@/lib/admin-auth";
+import { adminRoute, readJson } from "@/lib/admin/api";
+import { read } from "@/lib/admin/inputs";
+import { reopenRefresh, resolveRefreshNoChange } from "@/lib/admin/services";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; refreshId: string }> }) {
-  if (!requireAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id, refreshId } = await params;
-  try {
-    const body = await req.json();
-    const refresh = await db.contentRefresh.findFirst({ where: { id: refreshId, productId: id } });
-    if (!refresh) return NextResponse.json({ error: "Refresh task not found" }, { status: 404 });
-    if (body.completed === false) {
-      return NextResponse.json(await db.contentRefresh.update({ where: { id: refreshId }, data: { completedAt: null } }));
-    }
-    return NextResponse.json(await db.contentRefresh.update({ where: { id: refreshId }, data: { completedAt: new Date() } }));
-  } catch {
-    return NextResponse.json({ error: "Invalid refresh update" }, { status: 400 });
-  }
-}
+type P = { id: string; refreshId: string };
+// { "completed": true, "note": "..." } → verified unchanged; { "completed": false } → reopen.
+export const PATCH = adminRoute<P>(async (req, { id, refreshId }) => {
+  const b = read(await readJson(req)).bool("completed").str("note", { max: 500, nullable: true }).done<{ completed?: boolean; note?: string | null }>();
+  return b.completed === false ? reopenRefresh(refreshId, id) : resolveRefreshNoChange(refreshId, b.note ?? "", id);
+});

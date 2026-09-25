@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+.vercel
+.DS_Store
+npm-debug.log*
+
+# Environment files: never commit real secrets. Only the template is tracked.
+.env
+.env.*
+!.env.example

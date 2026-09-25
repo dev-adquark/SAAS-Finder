@@ -1,1 +1,32 @@
-import type { Metadata } from "next";import {absolute} from "@/lib/site";export const metadata:Metadata={title:"Affiliate and sponsorship disclosure",description:"SaaSFinder's disclosure for affiliate commissions, sponsored placements and vendor pricing changes.",alternates:{canonical:absolute("/disclosure")},openGraph:{title:"Affiliate and sponsorship disclosure",description:"How SaaSFinder labels affiliate and sponsored commercial relationships.",url:absolute("/disclosure")}};export default function Disclosure(){return <section className="section"><div className="container"><span className="eyebrow">Transparency</span><h1>Affiliate & sponsorship disclosure</h1><div className="panel"><p className="muted">SaaSFinder may earn a commission when a reader uses an eligible affiliate link. Commercial links are intended to be clearly identifiable.</p><p className="muted">Some pages may contain paid sponsor placements. Sponsored placements are labeled and separate from editorial scores and methodology.</p><p className="muted">Vendor pricing and features can change. Confirm the current offer, plan limits, taxes and cancellation terms on the vendor website.</p></div></div></section>}
+import Link from "next/link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { buildMetadata } from "@/lib/seo/metadata";
+import { routes } from "@/lib/seo/routes";
+
+export const metadata = buildMetadata({
+  title: "Affiliate and sponsorship disclosure",
+  description: "How SaaSFinder earns money through affiliate links and labelled sponsored placements, and why neither affects editorial selection or rankings.",
+  path: routes.disclosure(),
+});
+
+export default function Disclosure() {
+  return (
+    <section className="section">
+      <div className="container prose">
+        <Breadcrumbs items={[{ name: "Disclosure", path: routes.disclosure() }]} />
+        <span className="eyebrow">Transparency</span>
+        <h1>Affiliate &amp; sponsorship disclosure</h1>
+        <div className="panel">
+          <h2>Affiliate links</h2>
+          <p>SaaSFinder may earn a commission when you buy through some outbound links. These links are labelled &ldquo;Affiliate link&rdquo; next to the button, use <code>rel=&quot;sponsored nofollow&quot;</code>, and pass through our <code>/go/</code> redirect so we can count clicks. You never pay more because of an affiliate link. Links labelled &ldquo;Official vendor site&rdquo; are not affiliate links.</p>
+          <h2>Sponsored placements</h2>
+          <p>Some pages may show a paid placement. Every placement is labelled &ldquo;Sponsored&rdquo;, appears in a clearly separated box, and is tracked separately from editorial links.</p>
+          <h2>Editorial independence</h2>
+          <p>Commissions and sponsorships never determine which products we include, how we score them, the order of lists, or which alternatives and comparisons we publish. How we make those decisions is described in our <Link href={routes.methodology()}>methodology</Link>.</p>
+          <h2>Pricing</h2>
+          <p>Vendor pricing and features change. Pricing is shown only after editorial verification and always carries a &ldquo;Last checked&rdquo; date. Confirm current plans, taxes, limits and cancellation terms on the vendor&apos;s site before you buy.</p>
+        </div>
+      </div>
+    </section>
+  );
+}

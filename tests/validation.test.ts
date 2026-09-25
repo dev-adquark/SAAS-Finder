@@ -53,9 +53,9 @@ test("bounds common admin payload primitives", () => {
 
 test("requires the configured admin bearer token", () => {
   const previous = process.env.ADMIN_API_KEY;
-  process.env.ADMIN_API_KEY = "test-secret";
+  process.env.ADMIN_API_KEY = "test-secret-0123456789";
   try {
-    assert.equal(requireAdmin(new Request("https://example.test", { headers: { authorization: "Bearer test-secret" } })), true);
+    assert.equal(requireAdmin(new Request("https://example.test", { headers: { authorization: "Bearer test-secret-0123456789" } })), true);
     assert.equal(requireAdmin(new Request("https://example.test", { headers: { authorization: "Bearer wrong" } })), false);
     assert.equal(requireAdmin(new Request("https://example.test")), false);
   } finally {

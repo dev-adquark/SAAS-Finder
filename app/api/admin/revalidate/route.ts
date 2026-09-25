@@ -1,26 +1,25 @@
-import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/admin-auth";
+import { adminRoute, readJson } from "@/lib/admin/api";
+import { InputError } from "@/lib/admin/inputs";
+import { normalizePath } from "@/lib/seo/routes";
 
 const MAX_PATHS = 50;
-const MAX_PATH_LENGTH = 500;
 
-export async function POST(req: Request) {
-  if (!requireAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  try {
-    const body = await req.json().catch(() => ({}));
-    const requested = Array.isArray(body?.paths) ? body.paths : ["/"];
-    const paths = requested
-      .filter((path: unknown): path is string => typeof path === "string" && path.startsWith("/") && path.length <= MAX_PATH_LENGTH)
-      .map((path) => path.split("?")[0].split("#")[0])
-      .filter((path) => path === "/" || !path.includes("//"))
-      .slice(0, MAX_PATHS);
-    if (!paths.length) return NextResponse.json({ error: "No valid paths supplied" }, { status: 400 });
-    for (const path of paths) revalidatePath(path);
-    revalidatePath("/sitemap.xml");
-    revalidatePath("/robots.txt");
-    return NextResponse.json({ ok: true, paths });
-  } catch {
-    return NextResponse.json({ error: "Revalidation failed" }, { status: 500 });
+// Body: { "paths": ["/wix", "/category/crm"] } or { "all": true }.
+export const POST = adminRoute(async (req) => {
+  const body = (await readJson(req)) as { paths?: unknown; all?: unknown };
+  if (body.all === true) {
+    revalidatePath("/", "layout");
+    return { ok: true, paths: ["/ (layout)"] };
   }
-}
+  const requested: unknown[] = Array.isArray(body.paths) ? body.paths : [];
+  const paths = [...new Set(
+    requested
+      .filter((p): p is string => typeof p === "string" && p.startsWith("/") && !p.startsWith("//") && p.length <= 300 && !/[\s\\]/.test(p))
+      .map((p) => normalizePath(p)),
+  )].slice(0, MAX_PATHS);
+  if (!paths.length) throw new InputError(["No valid paths supplied"]);
+  for (const p of paths) revalidatePath(p);
+  revalidatePath("/sitemap.xml");
+  return { ok: true, paths };
+});

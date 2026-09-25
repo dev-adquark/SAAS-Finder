@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
+import { DEFAULT_REFRESH_AFTER_DAYS, lastCheckedAt, needsRefresh, refreshTargetDays } from "@/lib/freshness-rules";
 
-export const DEFAULT_REFRESH_AFTER_DAYS = 90;
+export { DEFAULT_REFRESH_AFTER_DAYS };
 export const DEFAULT_REFRESH_BATCH_SIZE = 25;
 
 export type RefreshQueueItem = {
@@ -26,27 +27,35 @@ export async function getDueRefreshes(now = new Date(), limit = DEFAULT_REFRESH_
   return rows.map((row) => ({ id: row.id, productId: row.productId, productSlug: row.product.slug, productName: row.product.name, dueAt: row.dueAt, reason: row.reason }));
 }
 
+/**
+ * Queues a refresh task for every published product whose pricing has never been verified or whose
+ * last check is older than its target (per-product override, default 90 days). Queue-only: it never
+ * scrapes vendors or changes editorial pricing.
+ * `refreshAfterDays` overrides the default target for products without a manual override.
+ */
 export async function ensureRefreshTasks(now = new Date(), refreshAfterDays = DEFAULT_REFRESH_AFTER_DAYS, limit = DEFAULT_REFRESH_BATCH_SIZE) {
-  const safeDays = Math.max(Math.floor(Number.isFinite(refreshAfterDays) ? refreshAfterDays : DEFAULT_REFRESH_AFTER_DAYS), 1);
+  const defaultDays = refreshTargetDays(Math.floor(Number.isFinite(refreshAfterDays) ? refreshAfterDays : DEFAULT_REFRESH_AFTER_DAYS));
   const batchSize = safeLimit(limit);
-  const cutoff = new Date(now.getTime() - safeDays * 24 * 60 * 60 * 1000);
   const products = await db.product.findMany({
-    where: { status: "PUBLISHED" },
+    where: { status: "PUBLISHED", refreshes: { none: { completedAt: null } } },
     select: {
       id: true,
-      snapshots: { orderBy: { capturedAt: "desc" }, take: 1, select: { capturedAt: true } },
-      refreshes: { where: { completedAt: null }, orderBy: { dueAt: "asc" }, take: 1, select: { id: true } },
+      pricingCheckedAt: true,
+      refreshIntervalDays: true,
+      snapshots: { where: { status: "VERIFIED" }, orderBy: { capturedAt: "desc" }, take: 1, select: { capturedAt: true } },
     },
     orderBy: { updatedAt: "asc" },
     take: 500,
   });
-  const stale = products.filter((p) => p.refreshes.length === 0 && (!p.snapshots[0]?.capturedAt || p.snapshots[0].capturedAt <= cutoff)).slice(0, batchSize);
+  const stale = products
+    .map((p) => ({ p, checked: lastCheckedAt(p.pricingCheckedAt, p.snapshots[0]?.capturedAt), days: p.refreshIntervalDays ? refreshTargetDays(p.refreshIntervalDays) : defaultDays }))
+    .filter(({ checked, days }) => needsRefresh(checked, days, now))
+    .slice(0, batchSize);
   const created: Array<{ id: string; productId: string; dueAt: Date }> = [];
-  for (const product of stale) {
-    const latest = product.snapshots[0]?.capturedAt;
-    const dueAt = latest ?? cutoff;
+  for (const { p, checked, days } of stale) {
+    const dueAt = checked ? new Date(checked.getTime() + days * 24 * 60 * 60 * 1000) : now;
     const refresh = await db.contentRefresh.create({
-      data: { productId: product.id, dueAt, reason: latest ? "Pricing/content snapshot is older than the freshness threshold." : "Published product has no pricing/content snapshot." },
+      data: { productId: p.id, dueAt, reason: checked ? `Pricing was last checked more than ${days} days ago.` : "Published product has no verified pricing check." },
       select: { id: true, productId: true, dueAt: true },
     });
     created.push(refresh);

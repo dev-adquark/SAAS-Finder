@@ -1,1 +1,18 @@
-import Link from "next/link";import {ArrowUpRight} from "lucide-react";import type {Product} from "@/lib/data";export function ProductCard({product}:{product:Product}){return <article className="card"><span className="tag">{product.category}</span><h3 className="product-title">{product.name}</h3><p className="product-desc">{product.tagline}</p><div className="card-row"><span className="rating">★ {product.rating.toFixed(1)} <span className="muted">/5 editorial</span></span><Link className="btn secondary" href={"/products/"+product.slug}>Review <ArrowUpRight size={15}/></Link></div></article>}
+import Link from "next/link";
+import type { Product } from "@/lib/content/types";
+import { routes } from "@/lib/seo/routes";
+import { ScoreBadge } from "@/components/score";
+
+export function ProductCard({ product, categoryName }: { product: Product; categoryName?: string }) {
+  return (
+    <article className="card">
+      <span className="tag">{categoryName ?? product.subcategory}</span>
+      <h3 className="product-title"><Link href={routes.product(product.slug)}>{product.name}</Link></h3>
+      <p className="product-desc">{product.tagline}</p>
+      <div className="card-row">
+        <ScoreBadge product={product} />
+        <Link className="btn secondary" href={routes.product(product.slug)}>Read review →</Link>
+      </div>
+    </article>
+  );
+}

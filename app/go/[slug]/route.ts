@@ -1,21 +1,32 @@
-import { NextResponse } from "next/server";
-import { getProduct } from "@/lib/catalog";
+import { after, NextResponse } from "next/server";
+import { findProduct, loadCatalog } from "@/lib/catalog";
+import { campaignFromSearchParams } from "@/lib/analytics";
+import { resolveOutbound } from "@/lib/outbound";
+import { recordEvent } from "@/lib/record-event";
 import { absolute } from "@/lib/site";
+import { isValidSlug, routes } from "@/lib/seo/routes";
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ slug: string }> },
-) {
+const NO_STORE = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" };
+
+export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = await getProduct(slug);
-  if (!product) return NextResponse.redirect(absolute("/products"), { status: 302 });
+  const product = isValidSlug(slug) ? findProduct(await loadCatalog(), slug) : undefined;
+  const target = product ? resolveOutbound(product) : null;
+  if (!product || !target) return NextResponse.redirect(absolute(routes.products()), { status: 302, headers: NO_STORE });
 
-  const target = product.affiliateAvailable && product.affiliateUrl
-    ? product.affiliateUrl
-    : product.officialUrl;
-  const url = new URL(target);
-  url.searchParams.set("utm_source", "saasfinder");
-  url.searchParams.set("utm_medium", product.affiliateAvailable ? "affiliate" : "referral");
-  url.searchParams.set("utm_campaign", "product_review");
-  return NextResponse.redirect(url.toString(), { status: 302 });
+  const campaign = campaignFromSearchParams(new URL(req.url).searchParams, product.slug);
+  after(() =>
+    recordEvent({
+      event: "outbound_click",
+      path: routes.go(product.slug),
+      productSlug: product.slug,
+      placement: campaign.placement,
+      pageType: campaign.pageType,
+      pageSlug: campaign.pageSlug,
+      ctaType: campaign.ctaType,
+      sponsorId: null,
+      metadata: { destination: target.kind },
+    }),
+  );
+  return NextResponse.redirect(target.url, { status: 302, headers: NO_STORE });
 }

@@ -1,70 +1,44 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { getProducts } from "@/lib/catalog";
-import { absolute } from "@/lib/site";
+import { findProduct, loadCatalog } from "@/lib/catalog";
+import { JsonLd } from "@/components/json-ld";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { buildMetadata } from "@/lib/seo/metadata";
+import { itemListJsonLd } from "@/lib/seo/jsonld";
+import { routes } from "@/lib/seo/routes";
 
-export const metadata: Metadata = {
+export const revalidate = 3600;
+
+export const metadata = buildMetadata({
   title: "SaaS comparisons",
-  description: "Compare SaaS products side by side using structured feature, use-case and pricing criteria.",
-  alternates: { canonical: absolute("/comparisons") },
-  openGraph: {
-    title: "SaaS comparisons",
-    description: "Compare SaaS products side by side using structured criteria.",
-    url: absolute("/comparisons"),
-    type: "website",
-  },
-};
+  description: "Side-by-side SaaS comparisons with category-specific criteria, key differences and guidance on which tool fits which team.",
+  path: routes.comparisons(),
+});
 
 export default async function Comparisons() {
-  const products = await getProducts();
-  const bySlug = new Map(products.map((p) => [p.slug, p]));
-  const pairs = products
-    .flatMap((a) => a.alternatives.map((s) => ({ a, b: bySlug.get(s) })))
-    .filter((x): x is { a: (typeof products)[number]; b: (typeof products)[number] } => Boolean(x.b))
-    .filter(({ a, b }) => a.slug < b.slug);
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: "SaaS comparisons",
-    url: absolute("/comparisons"),
-    mainEntity: {
-      "@type": "ItemList",
-      numberOfItems: pairs.length,
-      itemListElement: pairs.map(({ a, b }, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: `${a.name} vs ${b.name}`,
-        url: absolute(`/compare/${a.slug}-vs-${b.slug}`),
-      })),
-    },
-  };
-
+  const c = await loadCatalog();
+  const names = new Map(c.categories.map((x) => [x.slug, x.name]));
+  const title = (a: string, b: string) => `${findProduct(c, a)?.name} vs ${findProduct(c, b)?.name}`;
   return (
-    <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <section className="section">
-        <div className="container">
-          <span className="eyebrow">Comparison library</span>
-          <h1>SaaS vs SaaS comparisons</h1>
-          <p className="section-intro">
-            Side-by-side pages using category-specific comparison fields, use cases and vendor links.
-          </p>
-          {pairs.length ? (
-            <div className="grid">
-              {pairs.map(({ a, b }) => (
-                <Link className="card" key={`${a.slug}-vs-${b.slug}`} href={`/compare/${a.slug}-vs-${b.slug}`}>
-                  <span className="tag">{a.category}</span>
-                  <h2>{a.name} vs {b.name}</h2>
-                  <p className="muted">Features, use cases, trade-offs and vendor links.</p>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="notice">No published comparison pairs are available yet.</div>
-          )}
-        </div>
-      </section>
-    </>
+    <section className="section">
+      <JsonLd data={itemListJsonLd("SaaS comparisons", routes.comparisons(), c.pairs.map((p) => ({ name: title(p.productA, p.productB), path: routes.compare(p.productA, p.productB) })))} />
+      <div className="container">
+        <Breadcrumbs items={[{ name: "Comparisons", path: routes.comparisons() }]} />
+        <span className="eyebrow">Comparison library</span>
+        <h1>SaaS vs SaaS comparisons</h1>
+        {c.pairs.length ? (
+          <div className="grid">
+            {c.pairs.map((p) => (
+              <Link className="card" key={p.slug} href={routes.compare(p.productA, p.productB)}>
+                <span className="tag">{names.get(p.categorySlug)}</span>
+                <h2 className="product-title">{title(p.productA, p.productB)}</h2>
+                <p className="muted">{p.summary}</p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="notice">No published comparisons yet.</div>
+        )}
+      </div>
+    </section>
   );
 }
