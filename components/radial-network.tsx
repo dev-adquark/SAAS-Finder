@@ -29,6 +29,23 @@ export function RadialNetwork({ c, product }: { c: Catalog; product: Product }) 
       <ellipse className="orbit" cx={cx} cy={cy} rx={R2} ry={R2 * 0.78} />
       {alts.map((a, i) => { const p = at(i, alts.length, R1); return <path key={`s${a.slug}`} className="spoke" d={`M${cx} ${cy} L${p.x} ${p.y}`} />; })}
       {outer.map((o, i) => { const p = at(i, outer.length, R2, outerOffset); return <path key={`o${o.href}`} className="spoke" style={{ opacity: 0.45 }} d={`M${cx} ${cy} L${p.x} ${p.y}`} />; })}
+      <defs>
+        <linearGradient id="rn-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="var(--ink)" /><stop offset="1" stopColor="var(--cat)" />
+        </linearGradient>
+      </defs>
+      <ellipse className="halo" cx={cx} cy={cy} rx="84" ry="32" />
+      <ellipse className="halo h2" cx={cx} cy={cy} rx="84" ry="32" />
+      {alts.map((a, i) => {
+        const p = at(i, alts.length, R1);
+        const out = i % 2 === 0;
+        return (
+          <circle key={`g${a.slug}`} className={`signal${out ? "" : " alt"}`} r="3.5" aria-hidden="true">
+            <animateMotion dur={`${3.2 + (i % 3) * 0.7}s`} begin={`${i * 0.45}s`} repeatCount="indefinite" path={out ? `M${cx} ${cy} L${p.x} ${p.y}` : `M${p.x} ${p.y} L${cx} ${cy}`} />
+            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur={`${3.2 + (i % 3) * 0.7}s`} begin={`${i * 0.45}s`} repeatCount="indefinite" />
+          </circle>
+        );
+      })}
       <a href={routes.product(product.slug)} className="rn-node rn-center">
         <rect x={cx - 78} y={cy - 26} width="156" height="52" rx="26" />
         <text x={cx} y={cy + 7} textAnchor="middle">{product.name}</text>

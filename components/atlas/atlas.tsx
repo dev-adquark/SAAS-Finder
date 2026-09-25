@@ -40,10 +40,21 @@ export function Atlas({ c }: { c: Catalog }) {
           </div>
         ))}
         <svg className="atlas-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="atlas-spectrum" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
+              <stop offset="0" stopColor="#2f5bff" /><stop offset="0.35" stopColor="#0c8f8a" /><stop offset="0.65" stopColor="#e8583a" /><stop offset="1" stopColor="#6d45e6" />
+            </linearGradient>
+          </defs>
           {lines.map((l, i) => {
             const mx = (l.a.x + l.b.x) / 2;
             const my = Math.min(l.a.y, l.b.y) - 6 - (i % 3) * 2;
-            return <path key={l.slug} d={`M${l.a.x} ${l.a.y} Q ${mx} ${my} ${l.b.x} ${l.b.y}`} style={{ ["--i" as string]: i } as CSSProperties} />;
+            const d = `M${l.a.x} ${l.a.y} Q ${mx} ${my} ${l.b.x} ${l.b.y}`;
+            return (
+              <g key={l.slug}>
+                <path d={d} style={{ ["--i" as string]: i } as CSSProperties} />
+                <path className="pulse" d={d} pathLength={200} style={{ ["--i" as string]: i } as CSSProperties} />
+              </g>
+            );
           })}
         </svg>
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="Tools on the atlas">

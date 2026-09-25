@@ -67,6 +67,7 @@ export default async function Home() {
 
       {/* Hero — editorial split */}
       <section className="hero">
+        <div className="hero-blobs" aria-hidden="true"><span /><span /><span /><span /><span /></div>
         <div className="container hero-grid">
           <div>
             <span className="eyebrow enter">Independent SaaS research</span>
@@ -105,6 +106,15 @@ export default async function Home() {
           </ul>
         </div>
       </section>
+
+      {/* Colour marquee — decorative index of the atlas (duplicated once for a seamless loop) */}
+      <div className="marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[0, 1].flatMap((k) => ranked.map((p) => (
+            <span key={`${k}-${p.slug}`} style={catStyle(p.categorySlug)}>{p.name}<small>{catName.get(p.categorySlug)}</small></span>
+          )))}
+        </div>
+      </div>
 
       {/* Product discovery — asymmetric */}
       <section className="section">
