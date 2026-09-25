@@ -33,12 +33,12 @@ export function AltNetwork({ c, product, compact = false }: { c: Catalog; produc
       {alts.map((a, i) => <path key={`e2${a.slug}`} className="net-edge" d={`M${col[1] + 95} ${y(i, alts.length)} C ${col[1] + 170} ${y(i, alts.length)}, ${col[2] - 150} ${mid}, ${col[2] - 80} ${mid}`} />)}
       {guides.map((g, i) => <path key={`e3${g.slug}`} className="net-edge alt" d={`M${col[2] + 80} ${mid} C ${col[2] + 130} ${mid}, ${col[3] - 150} ${y(i, guides.length)}, ${col[3] - 100} ${y(i, guides.length)}`} />)}
       <a href={routes.product(product.slug)} className="net-node net-primary">
-        <rect x={col[0] - 80} y={mid - 30} width="160" height="60" rx="18" fill={`url(#g-${product.slug})`} />
+        <rect x={col[0] - 80} y={mid - 30} width="160" height="60" rx="18" style={{ fill: `url(#g-${product.slug})`, stroke: "transparent" }} />
         <text x={col[0]} y={mid + 6} textAnchor="middle">{product.name}</text>
       </a>
       {alts.map((a, i) => node(col[1], y(i, alts.length), 190, `${monogram(a.name)} · ${a.name}`, routes.product(a.slug), "alt", a.slug))}
       {category && node(col[2], mid, 160, category.name, routes.category(category.slug), "cat", "cat")}
-      {guides.map((g, i) => node(col[3], y(i, guides.length), 200, g.title.replace(/^Best /, ""), routes.best(g.slug), "guide", g.slug))}
+      {guides.map((g, i) => node(col[3], y(i, guides.length), 200, `Best for ${g.audience.toLowerCase()}`, routes.best(g.slug), "guide", g.slug))}
       <g className="net-legend" aria-hidden="true">
         <text x={col[0]} y="18" textAnchor="middle">Product</text>
         <text x={col[1]} y="18" textAnchor="middle">Alternatives</text>
