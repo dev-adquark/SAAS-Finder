@@ -95,7 +95,9 @@ async function checkPage(path: string): Promise<PageReport> {
   }
   if (/data-pricing="verified"/.test(body) === false && body.includes('id="pricing"') && !body.includes("Pricing varies — check the official pricing page.")) fail(`${path}: pricing section without verified data or fallback`);
   if (body.includes('id="pricing"') && !body.includes("Last checked")) fail(`${path}: pricing without Last checked`);
-  if (/lorem ipsum|TODO|FIXME|placeholder/i.test(body.replace(/placeholder="[^"]*"/g, ""))) fail(`${path}: placeholder text`);
+  // Visible text only: ignore scripts (RSC payload) and placeholder attributes.
+  const visible = body.replace(/<script[\s\S]*?<\/script>/g, "").replace(/placeholder="[^"]*"/g, "");
+  if (/lorem ipsum|TODO|FIXME|placeholder/i.test(visible)) fail(`${path}: placeholder text`);
   return report;
 }
 

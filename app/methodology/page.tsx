@@ -20,8 +20,16 @@ export default function Methodology() {
       <div className="container prose">
         <Breadcrumbs items={[{ name: "Methodology", path }]} />
         <span className="eyebrow">Editorial policy</span>
-        <h1>Methodology</h1>
-        <div className="panel">
+        <h1 style={{ marginTop: 12 }}>Methodology</h1>
+        <p className="lead">How every review, comparison and buying guide on SaaSFinder is researched, verified and kept current.</p>
+        <div className="zone-light section-gap" style={{ borderRadius: 24, padding: 24 }}>
+          <div className="steps">
+            <div className="step"><span className="num">1</span><h3>Research</h3><p>Structured profile from public vendor information: features, audiences, limitations.</p></div>
+            <div className="step"><span className="num">2</span><h3>Compare</h3><p>Category-specific criteria, curated alternatives and best-for picks with stated reasons.</p></div>
+            <div className="step"><span className="num">3</span><h3>Verify</h3><p>Editor-verified, dated pricing snapshots; a {DEFAULT_REFRESH_AFTER_DAYS}-day refresh cycle and a public change log.</p></div>
+          </div>
+        </div>
+        <div className="panel section-gap">
           <h2>Selection criteria</h2>
           <p>We cover products that are widely used by our audience — small businesses, creators, marketers and IT buyers — and that a buyer can evaluate from public information: an official website, a public pricing page and documented features. Alternatives, comparisons and best-for picks are chosen for fit with a specific audience or job, not for commercial value.</p>
           <h2>Editorial process</h2>

@@ -10,13 +10,14 @@ const NAV = [
   ["/admin", "Dashboard"],
   ["/admin/products", "Products"],
   ["/admin/categories", "Categories"],
-  ["/admin/use-cases", "Best-for"],
   ["/admin/alternatives", "Alternatives"],
   ["/admin/comparisons", "Comparisons"],
+  ["/admin/use-cases", "Best For"],
   ["/admin/pricing", "Pricing"],
-  ["/admin/affiliates", "Affiliates"],
+  ["/admin/affiliates", "Affiliate Links"],
   ["/admin/sponsors", "Sponsors"],
-  ["/admin/refreshes", "Refreshes"],
+  ["/admin/faqs", "FAQs"],
+  ["/admin/refreshes", "Refresh Queue"],
   ["/admin/analytics", "Analytics"],
 ] as const;
 

@@ -23,3 +23,10 @@ export function pricingSummary(product: Pick<Product, "pricing">): string {
   const plans = product.pricing.filter((p) => p.plan).slice(0, 2).map((p) => `${p.plan}: ${formatPrice(p)}`);
   return plans.length ? plans.join("; ") : formatPrice(product.pricing[0]);
 }
+
+export type PricingState = { tone: "ok" | "pending"; label: string };
+
+/** Honest pricing status for badges: verified snapshots vs. the editorial queue. */
+export function pricingState(product: Pick<Product, "pricing" | "pricingLastChecked">): PricingState {
+  return product.pricing.length ? { tone: "ok", label: "Pricing verified" } : { tone: "pending", label: "Pricing not yet verified" };
+}
