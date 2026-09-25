@@ -44,7 +44,12 @@ if (!url) {
       assert.equal(c.products.length, 16);
       assert.equal(c.useCases.length, 8);
       assert.equal(c.pairs.length, 16);
-      assert.ok(c.products.every((x) => x.pricing.length === 0), "no unverified pricing is public");
+      // Public pricing comes only from VERIFIED snapshots that carry evidence and an official source.
+      const unverifiedPublic = await db.pricingSnapshot.count({ where: { status: "VERIFIED", OR: [{ evidence: null }, { sourceUrl: null }] } });
+      assert.equal(unverifiedPublic, 0, "every verified price carries evidence and a source");
+      const verifiedBySlug = new Map(c.products.map((x) => [x.slug, x.pricing.length]));
+      assert.ok((verifiedBySlug.get("asana") ?? 0) > 0, "researched pricing is public");
+      assert.equal(verifiedBySlug.get("hubspot"), 0, "JS-rendered pricing stays unverified");
     });
 
     let categoryId = "";
@@ -126,7 +131,7 @@ if (!url) {
       assert.equal(snaps.find((s) => s.id === second.id)?.status, "VERIFIED");
       const product = await db.product.findUniqueOrThrow({ where: { id: wix.id }, include: { changelog: true, refreshes: { where: { completedAt: null } } } });
       assert.ok(product.pricingCheckedAt);
-      assert.ok(product.changelog.some((c) => c.summary.includes("$12.00 per month")));
+      assert.ok(product.changelog.some((c) => c.summary.includes("$12 per month")));
       assert.equal(product.refreshes.length, 0);
       const again = await snapshotApi.PATCH(req("/x", { method: "PATCH", headers: auth, body: JSON.stringify({ action: "verify" }) }), p({ id: String(second.id) }));
       assert.equal(again.status, 400, "cannot re-verify");
@@ -147,13 +152,14 @@ if (!url) {
       assert.ok(Number(body.createdCount) > 1, "default batch (no ?limit) queues more than one product");
       const wix = await db.product.findUniqueOrThrow({ where: { slug: "wix" }, include: { refreshes: { where: { completedAt: null } } } });
       assert.equal(wix.refreshes.length, 0, "recently verified product is not queued");
-      const trello = await db.product.findUniqueOrThrow({ where: { slug: "trello" }, include: { refreshes: { where: { completedAt: null } } } });
+      // HubSpot's pricing renders client-side, so it has no verified check and must be queued.
+      const trello = await db.product.findUniqueOrThrow({ where: { slug: "hubspot" }, include: { refreshes: { where: { completedAt: null } } } });
       assert.equal(trello.refreshes.length, 1);
       const second = await json(await cron.GET(req("/api/cron/content-refresh?limit=100", { headers: { authorization: "Bearer integration-cron-secret" } })));
       assert.equal(second.createdCount, 0, "idempotent");
       const done = await svc.resolveRefreshNoChange(trello.refreshes[0].id, "Checked official page");
       assert.ok(done.completedAt);
-      assert.ok((await db.product.findUniqueOrThrow({ where: { slug: "trello" } })).pricingCheckedAt);
+      assert.ok((await db.product.findUniqueOrThrow({ where: { slug: "hubspot" } })).pricingCheckedAt);
     });
 
     await t.test("sponsors: only active, in-date, complete slots are served", async () => {
