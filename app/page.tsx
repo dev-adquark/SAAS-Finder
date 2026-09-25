@@ -192,8 +192,8 @@ export default async function Home() {
             <div className="panel reveal">
               <span className="eyebrow">Alternatives map</span>
               <h2>From one tool to its best alternatives</h2>
-              <p className="muted small">Curated alternatives to {graphProduct.name}, and the category they belong to. Every node is a page.</p>
-              <div className="table-wrap" style={{ background: "transparent", border: 0 }}><div style={{ minWidth: 620 }}><AltNetwork c={c} product={graphProduct} compact /></div></div>
+              <p className="muted small">Curated alternatives to {graphProduct.name} and the category they share. Every node is a page; the full map with best-for guides is on the alternatives page.</p>
+              <div className="table-wrap" style={{ background: "transparent", border: 0 }}><div style={{ minWidth: 480 }}><AltNetwork c={c} product={graphProduct} compact /></div></div>
               <Link className="btn secondary" href={routes.alternatives(graphProduct.slug)}>Explore {graphProduct.name} alternatives <IconRight size={16} /></Link>
             </div>
           )}

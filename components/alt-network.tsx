@@ -1,7 +1,7 @@
 import type { Catalog, Product } from "@/lib/content/types";
 import { alternativesFor, findCategory, guidesForProduct } from "@/lib/catalog";
 import { routes } from "@/lib/seo/routes";
-import { monogram } from "@/components/identity";
+import { catStyle, monogram } from "@/components/identity";
 
 /**
  * Alternatives network: product → curated alternatives → category → best-for guides.
@@ -10,13 +10,13 @@ import { monogram } from "@/components/identity";
 export function AltNetwork({ c, product, compact = false }: { c: Catalog; product: Product; compact?: boolean }) {
   const alts = alternativesFor(c, product).slice(0, 4).map((a) => a.product);
   const category = findCategory(c, product.categorySlug);
-  const guides = guidesForProduct(c, product.slug).slice(0, compact ? 2 : 3);
-  const W = 960;
+  const guides = compact ? [] : guidesForProduct(c, product.slug).slice(0, 3);
+  const W = compact ? 720 : 960;
   const rowH = 70;
   const rows = Math.max(alts.length, guides.length, 3);
   const H = rows * rowH + 40;
   const mid = H / 2;
-  const col = compact ? [90, 360, 620, 860] : [100, 370, 630, 860];
+  const col = compact ? [95, 355, 610, 860] : [100, 370, 630, 860];
   const y = (i: number, n: number) => mid + (i - (n - 1) / 2) * rowH;
   const node = (x: number, yy: number, w: number, label: string, href: string, kind: string, key: string) => (
     <a key={key} href={href} className={`net-node net-${kind}`}>
@@ -25,9 +25,9 @@ export function AltNetwork({ c, product, compact = false }: { c: Catalog; produc
     </a>
   );
   return (
-    <svg className="altnet" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${product.name}: ${alts.length} curated alternatives, ${category?.name} category and ${guides.length} best-for guides`}>
+    <svg className="altnet" style={catStyle(product.categorySlug)} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${product.name}: ${alts.length} curated alternatives, ${category?.name} category and ${guides.length} best-for guides`}>
       <defs>
-        <linearGradient id={`g-${product.slug}`} x1="0" x2="1"><stop offset="0" stopColor="var(--cat)" /><stop offset="1" stopColor="var(--cat-2)" /></linearGradient>
+        <linearGradient id={`g-${product.slug}`} x1="0" x2="1"><stop offset="0" style={{ stopColor: "var(--cat)" }} /><stop offset="1" style={{ stopColor: "var(--cat-2)" }} /></linearGradient>
       </defs>
       {alts.map((a, i) => <path key={`e1${a.slug}`} className="net-edge" d={`M${col[0] + 70} ${mid} C ${col[0] + 150} ${mid}, ${col[1] - 150} ${y(i, alts.length)}, ${col[1] - 95} ${y(i, alts.length)}`} />)}
       {alts.map((a, i) => <path key={`e2${a.slug}`} className="net-edge" d={`M${col[1] + 95} ${y(i, alts.length)} C ${col[1] + 170} ${y(i, alts.length)}, ${col[2] - 150} ${mid}, ${col[2] - 80} ${mid}`} />)}
@@ -43,7 +43,7 @@ export function AltNetwork({ c, product, compact = false }: { c: Catalog; produc
         <text x={col[0]} y="18" textAnchor="middle">Product</text>
         <text x={col[1]} y="18" textAnchor="middle">Alternatives</text>
         <text x={col[2]} y="18" textAnchor="middle">Category</text>
-        <text x={col[3]} y="18" textAnchor="middle">Best-for guides</text>
+        {!compact && <text x={col[3]} y="18" textAnchor="middle">Best-for guides</text>}
       </g>
     </svg>
   );
