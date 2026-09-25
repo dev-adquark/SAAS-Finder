@@ -107,7 +107,7 @@ export default async function BestForPage({ params }: Params) {
                       {picks.map(({ product: p }) => { const v = p.comparison[f.key] ?? "—"; const ind = indicatorFor(v); return <td key={p.slug}><span className="cell">{ind && <span className={`ind ${ind}`}>{INDICATOR_LABEL[ind]}</span>}{v}</span></td>; })}
                     </tr>
                   ))}
-                  <tr><th scope="row">Pricing</th>{picks.map(({ product: p }) => <td key={p.slug}><span className={`status ${pricingState(p).tone}`}>{p.pricing.length ? pricingSummary(p) : "Verify"}</span></td>)}</tr>
+                  <tr><th scope="row">Pricing</th>{picks.map(({ product: p }) => <td key={p.slug}><span className={`status ${pricingState(p).tone}`}>{p.pricing.length ? pricingSummary(p).replace(/ \(.*$/, "") : "Verify"}</span></td>)}</tr>
                   <tr><th scope="row">Editorial score</th>{picks.map(({ product: p }) => <td key={p.slug}><ScoreBadge product={p} /></td>)}</tr>
                 </tbody>
               </table>

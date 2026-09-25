@@ -49,18 +49,14 @@ export function CategoryIcon({ slug, ...p }: P & { slug: string }) {
 }
 
 export function BrandMark({ className = "brand-mark" }: { className?: string }) {
+  // Atlas mark: a graticule globe with one meridian highlighted.
   return (
     <svg className={className} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="bm" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7c6cff" />
-          <stop offset="1" stopColor="#22d3ee" />
-        </linearGradient>
-      </defs>
-      <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#bm)" />
-      <circle cx="14" cy="14" r="6.2" fill="none" stroke="#07091a" strokeWidth="2.6" />
-      <path d="m18.6 18.6 5.4 5.4" stroke="#07091a" strokeWidth="2.8" strokeLinecap="round" />
-      <circle cx="14" cy="14" r="2" fill="#07091a" />
+      <circle cx="16" cy="16" r="14.5" fill="#16161a" />
+      <ellipse cx="16" cy="16" rx="6.5" ry="14.5" fill="none" stroke="#f6f2ea" strokeWidth="1.2" />
+      <path d="M1.5 16h29M4 9h24M4 23h24" stroke="#f6f2ea" strokeWidth="1" opacity=".55" />
+      <path d="M16 1.5v29" stroke="#2f5bff" strokeWidth="2" />
+      <circle cx="22.5" cy="10.5" r="2.4" fill="#e8583a" />
     </svg>
   );
 }

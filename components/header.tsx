@@ -4,6 +4,7 @@ import { BrandMark } from "@/components/icons";
 import { CommandPalette, SearchTrigger } from "@/components/command-palette";
 import { MobileMenu } from "@/components/mobile-menu";
 import { NavLinks } from "@/components/nav-links";
+import { HeaderShell } from "@/components/header-shell";
 
 const NAV = [
   { href: routes.products(), label: "Products" },
@@ -15,19 +16,19 @@ const NAV = [
 
 export function Header() {
   return (
-    <header className="site-header">
+    <HeaderShell>
       <div className="container nav">
         <Link className="brand" href={routes.home()} aria-label="SaaSFinder home">
           <BrandMark />
-          <span>SaaS<b>Finder</b></span>
+          <span>SaaS <b>Finder</b></span>
         </Link>
         <NavLinks items={NAV} />
         <div className="nav-right">
-          <SearchTrigger />
+          <SearchTrigger label="Search the atlas" />
           <MobileMenu items={[...NAV, { href: routes.methodology(), label: "Methodology" }, { href: routes.disclosure(), label: "Disclosure" }]} />
         </div>
       </div>
       <CommandPalette />
-    </header>
+    </HeaderShell>
   );
 }

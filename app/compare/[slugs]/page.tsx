@@ -136,7 +136,7 @@ export default async function ComparePage({ params }: Params) {
         <section className="section-gap reveal" id="comparison-table">
           <h2>Side-by-side comparison</h2>
           <div className="table-wrap">
-            <table className="compare">
+            <table className="compare stackable">
               <thead>
                 <tr>
                   <th scope="col">Criterion</th>
@@ -147,16 +147,16 @@ export default async function ComparePage({ params }: Params) {
                 {schema.map((f) => (
                   <tr key={f.key}>
                     <th scope="row">{f.label}</th>
-                    <td><Cell value={value(a, f.key, f.computed)} ind={ind(a, f.key, f.computed)} /></td>
-                    <td><Cell value={value(b, f.key, f.computed)} ind={ind(b, f.key, f.computed)} /></td>
+                    <td data-label={a.name}><Cell value={value(a, f.key, f.computed)} ind={ind(a, f.key, f.computed)} /></td>
+                    <td data-label={b.name}><Cell value={value(b, f.key, f.computed)} ind={ind(b, f.key, f.computed)} /></td>
                   </tr>
                 ))}
                 {(["freePlan", "freeTrial", "platforms", "integrations", "support"] as const).map((k) => (
-                  <tr key={k} className="sourced"><th scope="row">{FACT_LABELS[k]}</th><td><FactCell p={a} k={k} /></td><td><FactCell p={b} k={k} /></td></tr>
+                  <tr key={k} className="sourced"><th scope="row">{FACT_LABELS[k]}</th><td data-label={a.name}><FactCell p={a} k={k} /></td><td data-label={b.name}><FactCell p={b} k={k} /></td></tr>
                 ))}
-                <tr><th scope="row">Best for</th><td>{a.review.bestFor.join(", ")}</td><td>{b.review.bestFor.join(", ")}</td></tr>
-                <tr><th scope="row">Main limitation</th><td>{a.review.limitations[0] ?? "—"}</td><td>{b.review.limitations[0] ?? "—"}</td></tr>
-                <tr><th scope="row">Editorial score</th><td><ScoreBadge product={a} /></td><td><ScoreBadge product={b} /></td></tr>
+                <tr><th scope="row">Best for</th><td data-label={a.name}>{a.review.bestFor.join(", ")}</td><td data-label={b.name}>{b.review.bestFor.join(", ")}</td></tr>
+                <tr><th scope="row">Main limitation</th><td data-label={a.name}>{a.review.limitations[0] ?? "—"}</td><td data-label={b.name}>{b.review.limitations[0] ?? "—"}</td></tr>
+                <tr><th scope="row">Editorial score</th><td data-label={a.name}><ScoreBadge product={a} /></td><td data-label={b.name}><ScoreBadge product={b} /></td></tr>
               </tbody>
             </table>
           </div>

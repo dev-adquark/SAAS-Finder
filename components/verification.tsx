@@ -82,8 +82,8 @@ export function SourcesPanel({ product }: { product: Product }) {
         <ul className="source-list">
           {sources.map((s) => (
             <li key={s.url}>
-              <span className="src-kind">{SOURCE_LABEL[s.kind]}</span>
-              <ExtLink href={s.url}>{s.name}</ExtLink>
+              <span className="src-kind">Verified source<br /><span className="muted">{SOURCE_LABEL[s.kind]}</span></span>
+              <span><ExtLink href={s.url}>{s.name}</ExtLink><br /><span className="tiny muted">Official vendor source · {new URL(s.url).host.replace(/^www\./, "")}</span></span>
               <span className="tiny muted"><IconCheck size={12} /> Checked {formatDate(s.checkedAt) ?? "—"}</span>
             </li>
           ))}
@@ -155,43 +155,37 @@ export function FactsTable({ product, keys, title }: { product: Product; keys: s
   );
 }
 
-/** Plan comparison: one row per plan, monthly vs annual billing columns, exactly as captured. */
+const BILLING: Record<string, string> = { MONTHLY: "Monthly", ANNUAL: "Annual", FREE: "Free", CUSTOM: "Custom", ONE_TIME: "One-time", USAGE: "Usage-based" };
+
+/**
+ * Editorial pricing table: one row per verified price point, grouped by plan, exactly as captured
+ * (vendor unit wording, promotional / per-seat flags, source and check date).
+ */
 export function PlanTable({ product }: { product: Product }) {
-  const plans = [...new Set(product.pricing.map((p) => p.plan ?? "—"))];
-  if (!plans.length) return null;
-  const cell = (plan: string, period: string) => product.pricing.find((p) => (p.plan ?? "—") === plan && p.billingPeriod === period);
-  const hasMonthly = product.pricing.some((p) => p.billingPeriod === "MONTHLY");
-  const hasAnnual = product.pricing.some((p) => p.billingPeriod === "ANNUAL");
-  const show = (pt: ReturnType<typeof cell>) =>
-    pt ? (
-      <span className="cell">
-        <strong>{formatPrice(pt)}</strong>
-        {pt.unit && <span className="tiny muted">{pt.unit}</span>}
-        {pt.promotional && <span className="ind varies">Promotional</span>}
-        {pt.perSeat && <span className="ind verify">Per seat</span>}
-      </span>
-    ) : <span className="muted">—</span>;
+  if (!product.pricing.length) return null;
+  const order = [...new Set(product.pricing.map((p) => p.plan ?? "—"))];
+  const rows = order.flatMap((plan) => product.pricing.filter((p) => (p.plan ?? "—") === plan));
   return (
     <div className="table-wrap section-gap">
-      <table className="compare">
+      <table className="compare stackable price-table">
+        <caption className="sr-only">{product.name} verified pricing</caption>
         <thead>
-          <tr>
-            <th scope="col">Plan</th>
-            {hasMonthly && <th scope="col">Billed monthly</th>}
-            {hasAnnual && <th scope="col">Billed annually</th>}
-            <th scope="col">Other</th>
-          </tr>
+          <tr><th scope="col">Plan</th><th scope="col">Price</th><th scope="col">Billing</th><th scope="col">Unit</th><th scope="col">Notes</th><th scope="col">Verification</th></tr>
         </thead>
         <tbody>
-          {plans.map((plan) => {
-            const free = cell(plan, "FREE");
-            const custom = cell(plan, "CUSTOM");
+          {rows.map((pt, i) => {
+            const first = i === 0 || (rows[i - 1].plan ?? "—") !== (pt.plan ?? "—");
             return (
-              <tr key={plan}>
-                <th scope="row">{plan}</th>
-                {hasMonthly && <td>{show(cell(plan, "MONTHLY"))}</td>}
-                {hasAnnual && <td>{show(cell(plan, "ANNUAL"))}</td>}
-                <td>{free ? <span className="ind included">Free</span> : custom ? <span className="ind verify">Custom — contact vendor</span> : <span className="muted">—</span>}</td>
+              <tr key={`${pt.plan}-${pt.billingPeriod}-${i}`} className={first ? "plan-first" : "plan-cont"}>
+                <th scope="row">{first ? pt.plan ?? "—" : <span className="sr-only">{pt.plan}</span>}</th>
+                <td data-label="Price"><strong className="pt-price">{formatPrice(pt)}</strong>{pt.promotional && <span className="ind varies" style={{ marginLeft: 8 }}>Promotional</span>}</td>
+                <td data-label="Billing">{BILLING[pt.billingPeriod ?? ""] ?? "—"}</td>
+                <td data-label="Unit" className="small">{pt.unit ?? "—"}{pt.perSeat && <span className="ind verify" style={{ marginLeft: 6 }}>Per seat</span>}</td>
+                <td data-label="Notes" className="small muted">{pt.note || "—"}</td>
+                <td data-label="Verification" className="small">
+                  <span className="status ok">✓ {formatDate(pt.capturedAt)}</span>
+                  {pt.sourceUrl && <><br /><a className="tiny text-link" href={pt.sourceUrl} target="_blank" rel="nofollow noopener noreferrer">Official source ↗</a></>}
+                </td>
               </tr>
             );
           })}

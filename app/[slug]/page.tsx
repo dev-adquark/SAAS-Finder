@@ -21,7 +21,7 @@ import { PricingSnapshot } from "@/components/pricing-snapshot";
 import { ScoreBadge } from "@/components/score";
 import { SponsorSlot } from "@/components/sponsor-slot";
 import { ShareButton } from "@/components/share-button";
-import { Prism } from "@/components/prism";
+import { IdVisual } from "@/components/id-visual";
 import { Monogram, catStyle } from "@/components/identity";
 import { CategoryIcon, IconAlert, IconCheck, IconShield, IconSpark, IconUsers, IconX, IconLayers } from "@/components/icons";
 import { FactsTable, FreshnessStrip, PlanTable, ResourceCenter, SourcesPanel, TrustBadges, fact, verifiedSources } from "@/components/verification";
@@ -85,7 +85,6 @@ export default async function ProductReview({ params }: Params) {
         <div className="container">
           <Breadcrumbs items={[...(category ? [{ name: category.name, path: routes.category(category.slug) }] : []), { name: `${p.name} review`, path: routes.product(p.slug) }]} />
           <div className="id-hero">
-            <Prism size={150} className="hero-prism" />
             <div className="enter">
               <div className="chip-row" style={{ marginTop: 16 }}>
                 {category && <Link className="chip" href={routes.category(category.slug)}><CategoryIcon slug={category.slug} size={13} /> {category.name}</Link>}
@@ -93,8 +92,7 @@ export default async function ProductReview({ params }: Params) {
                 <span className={`status ${status.tone}`}>{status.label}</span>
               </div>
               <div className="id-title">
-                <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="xl" />
-                <h1>{p.name} review</h1>
+                <h1>{p.name} <span className="serif muted">review</span></h1>
               </div>
               <p className="lead">{p.tagline}</p>
               <TrustBadges product={p} />
@@ -104,7 +102,9 @@ export default async function ProductReview({ params }: Params) {
                 <ShareButton url={absolute(routes.product(p.slug))} />
               </div>
             </div>
-            <aside className="hero-card glass enter-2" aria-label={`${p.name} at a glance`}>
+            <div className="enter-2" style={{ display: "grid", gap: 18, justifyItems: "center" }}>
+            <IdVisual name={p.name} slug={p.slug} />
+            <aside className="hero-card glass" aria-label={`${p.name} at a glance`} style={{ width: "100%" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <strong>At a glance</strong>
                 <ScoreBadge product={p} />
@@ -122,14 +122,15 @@ export default async function ProductReview({ params }: Params) {
               </dl>
               <a className="text-link small" href={p.officialUrl} target="_blank" rel="nofollow noopener">Official website ↗</a>
             </aside>
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="container detail-layout">
+      <div className="container detail-layout flow-layout">
         <div>
           {/* 2. Editorial summary */}
-          <section className="panel glow-border" id="summary">
+          <section className="flow-intro" id="summary">
             <span className="eyebrow">Editorial summary</span>
             <h2 className="sr-only">Editorial summary</h2>
             <p style={{ fontSize: "1.08rem", marginTop: 12 }}>{p.review.editorialSummary}</p>
@@ -140,7 +141,7 @@ export default async function ProductReview({ params }: Params) {
                 <footer className="tiny muted">— {p.vendor ?? p.name}, <a className="text-link" href={fact(p, "officialDescription")!.sourceUrl ?? p.officialUrl} target="_blank" rel="nofollow noopener noreferrer">official site</a></footer>
               </blockquote>
             )}
-            {p.review.verdict && <p className="notice" style={{ marginBottom: 0 }}><strong>Verdict:</strong> {p.review.verdict}</p>}
+            {p.review.verdict && <blockquote className="pull" style={{ marginBottom: 0 }}>{p.review.verdict}</blockquote>}
           </section>
 
           {/* 3. Review metadata — quick facts */}

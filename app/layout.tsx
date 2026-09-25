@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -7,8 +7,9 @@ import { PageViewTracker } from "@/components/page-view";
 import { RevealObserver } from "@/components/reveal-observer";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-space", display: "swap", weight: ["500", "700"] });
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap", style: ["normal", "italic"], axes: ["opsz"] });
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -18,11 +19,11 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#05070f" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f6f2ea" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${space.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${geist.variable} ${geistMono.variable}`}>
       <body>
         <a className="skip" href="#main">Skip to content</a>
         <Header />
