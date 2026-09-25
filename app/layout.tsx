@@ -7,7 +7,8 @@ import { PageViewTracker } from "@/components/page-view";
 import { RevealObserver } from "@/components/reveal-observer";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 
-const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap", style: ["normal", "italic"], axes: ["opsz"] });
+// Display face uses font-display: optional so a late webfont never reflows large headlines (CLS).
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "optional", preload: true, style: ["normal", "italic"], axes: ["opsz"] });
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
