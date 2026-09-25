@@ -73,7 +73,7 @@ async function main() {
         await tx.pricingSnapshot.create({ data: { productId: product.id, summary: s.pricingNote, sourceUrl: s.pricingUrl, sourceType: "MANUAL_CHECK", status: "PENDING" } });
       }
       await tx.changeLog.create({ data: { productId: product.id, version: existing ? "seed-refresh" : "seed-1", summary: existing ? "Editorial profile refreshed from the seed content set." : "Initial structured editorial profile published." } });
-    });
+    }, { timeout: 60_000, maxWait: 20_000 }); // generous: seeding may run over a high-latency connection
     touched.add(s.slug);
     if (existing) updated++;
     else created++;
