@@ -8,7 +8,7 @@ import { storedComparisonKeys } from "@/lib/content/comparison-schema";
 import { ensureRefreshTasks } from "@/lib/freshness";
 import {
   formToObject, InputError, parseAlternative, parseCategory, parseChangelog, parseFaq, parseLink, parsePair, parseProduct, parseRefresh,
-  parseSnapshot, parseSponsor, parseUseCase, parseUseCaseProduct, read,
+  parseSnapshot, parseSponsor, parseUseCase, parseUseCaseProduct, read, parseSource, parseFact, parseRelationship,
 } from "@/lib/admin/inputs";
 import * as svc from "@/lib/admin/services";
 
@@ -271,3 +271,49 @@ export async function revalidateAllAction() {
   await perform("/admin", "All public pages revalidated", async () => svc.revalidateSite());
 }
 
+
+// ---------- Sources & facts ----------
+
+export async function addSourceAction(fd: FormData) {
+  const id = need(fd, "id");
+  await perform(`/admin/products/${id}`, "Source added", () => svc.addSource(id, parseSource(formToObject(fd), true)));
+}
+
+export async function updateSourceAction(fd: FormData) {
+  const id = need(fd, "id");
+  await perform(`/admin/products/${id}`, "Source saved", () => svc.updateSource(need(fd, "sourceId"), parseSource(formToObject(fd), false)));
+}
+
+export async function verifySourceAction(fd: FormData) {
+  const id = need(fd, "id");
+  await perform(`/admin/products/${id}`, "Source verified", () => svc.verifySource(need(fd, "sourceId")));
+}
+
+export async function deleteSourceAction(fd: FormData) {
+  const id = need(fd, "id");
+  await perform(`/admin/products/${id}`, "Source deleted", async () => (confirmed(fd), svc.deleteSource(need(fd, "sourceId"))));
+}
+
+export async function upsertFactAction(fd: FormData) {
+  const id = need(fd, "id");
+  await perform(`/admin/products/${id}`, "Fact saved", () => svc.upsertFact(id, parseFact(formToObject(fd))));
+}
+
+export async function deleteFactAction(fd: FormData) {
+  const id = need(fd, "id");
+  await perform(`/admin/products/${id}`, "Fact deleted", async () => (confirmed(fd), svc.deleteFact(need(fd, "factId"))));
+}
+
+// ---------- Brand relationships ----------
+
+export async function createRelationshipAction(fd: FormData) {
+  await perform("/admin/relationships", "Relationship recorded", () => svc.createRelationship(parseRelationship(formToObject(fd), true)));
+}
+
+export async function updateRelationshipAction(fd: FormData) {
+  await perform("/admin/relationships", "Relationship saved", () => svc.updateRelationship(need(fd, "relId"), parseRelationship(formToObject(fd), false)));
+}
+
+export async function deleteRelationshipAction(fd: FormData) {
+  await perform("/admin/relationships", "Relationship deleted", async () => (confirmed(fd), svc.deleteRelationship(need(fd, "relId"))));
+}

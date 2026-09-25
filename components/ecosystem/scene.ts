@@ -62,9 +62,11 @@ export function mountEcosystem(host: HTMLElement, nodes: EcoNode[]): () => void 
     halo.scale.setScalar(1.6);
     group.add(halo, dot);
     const satMat = track(new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85 }));
-    const satGeo = track(new THREE.SphereGeometry(0.07, 12, 12));
-    const sats = n.products.map(() => {
-      const s = new THREE.Mesh(satGeo, satMat);
+    const satGeo = track(new THREE.SphereGeometry(0.09, 14, 14));
+    const sats = n.products.map((prod) => {
+      const s = new THREE.Mesh(satGeo, satMat.clone());
+      s.userData = { href: prod.href, name: prod.name, categorySlug: n.slug };
+      track(s.material as THREE.Material);
       group.add(s);
       return s;
     });
@@ -117,6 +119,27 @@ export function mountEcosystem(host: HTMLElement, nodes: EcoNode[]): () => void 
   };
   window.addEventListener("pointermove", onPointer, { passive: true });
 
+  // Product satellites: hover shows the product name, click opens its review.
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2(2, 2);
+  const allSats = ns.flatMap((n) => n.sats);
+  let hovered: THREE.Mesh | null = null;
+  const tip = document.createElement("div");
+  tip.className = "eco-tip";
+  tip.hidden = true;
+  host.appendChild(tip);
+  const onCanvasMove = (e: PointerEvent) => {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  };
+  const onCanvasLeave = () => ndc.set(2, 2);
+  const onCanvasClick = () => {
+    if (hovered?.userData.href) window.location.assign(hovered.userData.href as string);
+  };
+  canvas.addEventListener("pointermove", onCanvasMove);
+  canvas.addEventListener("pointerleave", onCanvasLeave);
+  canvas.addEventListener("click", onCanvasClick);
+
   let visible = true;
   const io = new IntersectionObserver(([entry]) => (visible = entry.isIntersecting), { threshold: 0 });
   io.observe(host);
@@ -160,6 +183,26 @@ export function mountEcosystem(host: HTMLElement, nodes: EcoNode[]): () => void 
       if (n.hover) anyHover = true;
     }
     root.rotation.y = pointer.x * 0.12;
+
+    raycaster.setFromCamera(ndc, camera);
+    const hit = (raycaster.intersectObjects(allSats, false)[0]?.object as THREE.Mesh | undefined) ?? null;
+    if (hit !== hovered) {
+      if (hovered) hovered.scale.setScalar(1);
+      hovered = hit;
+      host.classList.toggle("hovering", Boolean(hit));
+      tip.hidden = !hit;
+      if (hit) tip.textContent = `${hit.userData.name} — open review`;
+    }
+    if (hovered) {
+      hovered.scale.setScalar(2.2);
+      const hp = hovered.getWorldPosition(tmp).project(camera);
+      tip.style.left = `${((hp.x + 1) / 2) * w}px`;
+      tip.style.top = `${((1 - hp.y) / 2) * h}px`;
+    }
+    for (const n of ns) {
+      const lit = n.hover || n.sats.includes(hovered as THREE.Mesh);
+      (n.line.material as THREE.LineBasicMaterial).opacity = 0.22 + (lit ? 0.6 : 0);
+    }
     renderer.render(scene, camera);
 
     // Project node positions onto their HTML labels.
@@ -184,6 +227,10 @@ export function mountEcosystem(host: HTMLElement, nodes: EcoNode[]): () => void 
     ro.disconnect();
     io.disconnect();
     window.removeEventListener("pointermove", onPointer);
+    canvas.removeEventListener("pointermove", onCanvasMove);
+    canvas.removeEventListener("pointerleave", onCanvasLeave);
+    canvas.removeEventListener("click", onCanvasClick);
+    tip.remove();
     host.classList.remove("is-3d");
     for (const el of els) {
       el.style.removeProperty("--x");

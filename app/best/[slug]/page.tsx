@@ -71,7 +71,7 @@ export default async function BestForPage({ params }: Params) {
               <aside className="hero-card glass glow-border enter-2" aria-label="Top pick">
                 <span className="status info" style={{ alignSelf: "flex-start" }}><IconStar size={12} /> Top pick for {u.audience}</span>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <Monogram name={top.product.name} categorySlug={top.product.categorySlug} size="lg" />
+                  <Monogram name={top.product.name} slug={top.product.slug} categorySlug={top.product.categorySlug} size="lg" />
                   <div><strong style={{ fontSize: "1.3rem" }}>{top.product.name}</strong><div className="tiny muted">{top.product.subcategory}</div></div>
                 </div>
                 <p className="small" style={{ margin: 0 }}>{top.ref.rationale}</p>
@@ -98,7 +98,7 @@ export default async function BestForPage({ params }: Params) {
             <div className="table-wrap">
               <table className="compare">
                 <thead>
-                  <tr><th scope="col">Criterion</th>{picks.map(({ product: p }) => <th scope="col" key={p.slug}><a href={`#pick-${p.slug}`} style={{ display: "inline-flex", gap: 8, alignItems: "center" }}><Monogram name={p.name} categorySlug={p.categorySlug} size="sm" />{p.name}</a></th>)}</tr>
+                  <tr><th scope="col">Criterion</th>{picks.map(({ product: p }) => <th scope="col" key={p.slug}><a href={`#pick-${p.slug}`} style={{ display: "inline-flex", gap: 8, alignItems: "center" }}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</a></th>)}</tr>
                 </thead>
                 <tbody>
                   {schema.map((f) => (
@@ -121,7 +121,7 @@ export default async function BestForPage({ params }: Params) {
               <div>
                 <div className="pcard-head" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
                   <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <Monogram name={p.name} categorySlug={p.categorySlug} />
+                    <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
                     <div><h2 style={{ margin: 0 }}><Link href={routes.product(p.slug)}>{p.name}</Link></h2><span className="tiny muted">{p.tagline}</span></div>
                   </div>
                   <ScoreBadge product={p} />

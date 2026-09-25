@@ -87,6 +87,7 @@ export const routes = {
   privacy: () => "/privacy",
   contact: () => "/contact",
   category: (slug: string) => `/category/${slug}`,
+  categoryFaq: (slug: string) => `/category/${slug}/faq`,
   product: (slug: string) => `/${slug}`,
   alternatives: (productSlug: string) => `/alternatives/${productSlug}`,
   compare: (slugA: string, slugB: string) => `/compare/${comparePairSlug(slugA, slugB)}`,

@@ -18,7 +18,7 @@ export function ProductCard({ product, categoryName, cta }: Props) {
   return (
     <article className="card hoverable pcard accent-top" style={catStyle(product.categorySlug)}>
       <div className="pcard-head">
-        <Monogram name={product.name} categorySlug={product.categorySlug} />
+        <Monogram name={product.name} slug={product.slug} categorySlug={product.categorySlug} />
         <div>
           <h3><Link className="stretch" href={routes.product(product.slug)}>{product.name}</Link></h3>
           <div className="sub">{categoryName ?? product.subcategory}</div>

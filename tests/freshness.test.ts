@@ -37,8 +37,9 @@ test("pricing display never invents prices", () => {
   assert.equal(pricingSummary({ pricing: [] }), "Varies — see official pricing");
   assert.equal(lastCheckedText({ pricingLastChecked: null }), "Last checked: not yet verified by our editors");
   assert.equal(lastCheckedText({ pricingLastChecked: "2026-09-01T00:00:00.000Z" }), "Last checked: September 1, 2026");
-  const pt = { plan: "Pro", price: 29, currency: "USD", billingPeriod: "MONTHLY" as const, note: "", sourceUrl: "https://x", sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: now.toISOString() };
-  assert.equal(formatPrice(pt), "$29.00 per month");
+  const pt = { plan: "Pro", price: 29, currency: "USD", billingPeriod: "MONTHLY" as const, note: "", sourceUrl: "https://x", sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: now.toISOString(), unit: null, perSeat: false, promotional: false, regionDependent: false };
+  assert.equal(formatPrice(pt), "$29 per month");
+  assert.equal(formatPrice({ ...pt, price: 10.99, unit: "per user per month, billed annually", billingPeriod: "ANNUAL" }), "$10.99", "unit wording drives the period, never inferred");
   assert.equal(formatPrice({ ...pt, price: null }), "See vendor");
   assert.equal(formatPrice({ ...pt, billingPeriod: "FREE" }), "Free");
   assert.equal(formatDate("not a date"), null);

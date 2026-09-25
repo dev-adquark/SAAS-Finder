@@ -31,7 +31,7 @@ export default async function AlternativesIndex() {
           {list.map(({ p, alts }) => (
             <Link className="card pcard accent-top" key={p.slug} href={routes.alternatives(p.slug)} style={catStyle(p.categorySlug)}>
               <div className="pcard-head">
-                <Monogram name={p.name} categorySlug={p.categorySlug} />
+                <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
                 <div><h2 style={{ fontSize: "1.1rem", margin: 0 }}>{p.name} alternatives</h2><div className="sub">{names.get(p.categorySlug)}</div></div>
               </div>
               <p className="tiny muted">{p.alternativesIntro}</p>

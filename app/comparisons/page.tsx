@@ -39,9 +39,9 @@ export default async function Comparisons() {
                   const b = findProduct(c, p.productB)!;
                   return (
                     <Link className="card vscard" key={p.slug} href={routes.compare(a.slug, b.slug)}>
-                      <span className="side"><Monogram name={a.name} categorySlug={a.categorySlug} />{a.name}</span>
+                      <span className="side"><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} />{a.name}</span>
                       <span className="vs" aria-hidden="true">VS</span>
-                      <span className="side"><Monogram name={b.name} categorySlug={b.categorySlug} />{b.name}</span>
+                      <span className="side"><Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} />{b.name}</span>
                       <span className="sr-only"> versus </span>
                       <span className="sum">{p.summary}</span>
                     </Link>

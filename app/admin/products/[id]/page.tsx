@@ -8,6 +8,7 @@ import { freshness, lastCheckedAt, refreshTargetDays, formatDate } from "@/lib/f
 import { routes } from "@/lib/seo/routes";
 import { BILLING_PERIODS, CONTENT_STATUSES, PRICE_SOURCE_TYPES, REVIEW_STATUSES } from "@/lib/admin/inputs";
 import * as A from "@/app/admin/actions";
+import { SourceManager } from "@/components/admin/source-manager";
 import { AdminPage, Area, Check, DangerForm, Field, Flash, Hidden, Pill, Select, dateInput, kv, lines, statusTone } from "@/components/admin/ui";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> };
@@ -22,7 +23,7 @@ export default async function ProductEditor({ params, searchParams }: Props) {
     include: {
       category: true, review: true, tags: { include: { tag: true } }, faqs: { orderBy: { sortOrder: "asc" } }, snapshots: { orderBy: { capturedAt: "desc" } }, links: { orderBy: { createdAt: "desc" } },
       alternativesFrom: { include: { alternative: { select: { id: true, name: true, slug: true } } }, orderBy: { sortOrder: "asc" } }, changelog: { orderBy: { changedAt: "desc" }, take: 20 },
-      refreshes: { orderBy: { dueAt: "desc" }, take: 20 }, useCases: { include: { useCase: { select: { id: true, title: true } } } },
+      refreshes: { orderBy: { dueAt: "desc" }, take: 20 }, sources: { orderBy: { kind: "asc" } }, facts: { orderBy: { key: "asc" } }, useCases: { include: { useCase: { select: { id: true, title: true } } } },
     },
   });
   if (!p) notFound();
@@ -84,6 +85,8 @@ export default async function ProductEditor({ params, searchParams }: Props) {
         <Area label="Limitations (one per line)" name="limitations" defaultValue={lines(r?.limitations)} rows={3} />
         <button className="btn primary" type="submit">Save product</button>
       </form>
+
+      <SourceManager productId={p.id} sources={p.sources} facts={p.facts} />
 
       <section className="panel section-gap">
         <h2>FAQs ({p.faqs.length})</h2>
@@ -180,7 +183,7 @@ export default async function ProductEditor({ params, searchParams }: Props) {
         <table className="admin-table"><tbody>
           {p.links.map((l) => (
             <tr key={l.id}>
-              <td>{l.label}<br /><span className="small muted">{l.provider ?? "—"} · {l.url}</span></td>
+              <td>{l.label}<br /><span className="small muted">{l.provider ?? "—"} · {l.url}</span>{(l.partnerStatus || l.trackingId) && <><br /><span className="tiny muted">{l.partnerStatus ?? ""}{l.trackingId ? ` · ID ${l.trackingId}` : ""}{l.approvedAt ? ` · approved ${formatDate(l.approvedAt)}` : ""}</span></>}</td>
               <td><Pill tone={l.active ? "good" : "warn"}>{l.active ? "active" : "inactive"}</Pill></td>
               <td>
                 <form action={A.toggleLinkAction} className="inline-form"><Hidden name="linkId" value={l.id} /><Hidden name="active" value={String(!l.active)} /><Hidden name="back" value={back} /><button className="btn secondary" type="submit">{l.active ? "Deactivate" : "Activate (verified)"}</button></form>
@@ -194,6 +197,10 @@ export default async function ProductEditor({ params, searchParams }: Props) {
           <Field label="Label" name="label" required maxLength={120} />
           <Field label="Network / provider" name="provider" maxLength={120} />
           <Field label="Affiliate URL (https)" name="url" type="url" required full />
+          <Field label="Partner status (as stated by the network)" name="partnerStatus" maxLength={60} />
+          <Field label="Tracking ID" name="trackingId" maxLength={120} />
+          <Field label="Approved on" name="approvedAt" type="date" />
+          <Field label="Verification source URL (network approval page)" name="sourceUrl" type="url" />
           <Check label="Partner relationship verified — activate" name="active" />
           <button className="btn secondary" type="submit">Add link</button>
         </form>

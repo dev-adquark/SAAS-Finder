@@ -19,8 +19,12 @@ import { LinkGroups } from "@/components/link-groups";
 import { ScoreBadge } from "@/components/score";
 import { SponsorSlot } from "@/components/sponsor-slot";
 import { ShareButton } from "@/components/share-button";
+import { Rings } from "@/components/prism";
 import { Monogram, catStyle } from "@/components/identity";
-import { IconAlert, IconCheck, IconX } from "@/components/icons";
+import { IconAlert, IconArrow, IconCheck, IconX } from "@/components/icons";
+import { FACT_LABELS, fact } from "@/components/verification";
+import { formatDate } from "@/lib/freshness-rules";
+import { formatPrice } from "@/lib/pricing";
 
 export const revalidate = 3600;
 
@@ -56,6 +60,26 @@ function Cell({ value, ind }: { value: string; ind: Indicator | null }) {
   return <span className="cell">{ind && <span className={`ind ${ind}`}>{INDICATOR_LABEL[ind]}</span>}{value}</span>;
 }
 
+/** A sourced fact cell: the verified value with a direct source link, or "Not verified". */
+function FactCell({ p, k }: { p: Product; k: string }) {
+  const f = fact(p, k);
+  if (!f) return <span className="muted">Not verified</span>;
+  return (
+    <span className="cell">
+      <span>{f.value}</span>
+      {f.sourceUrl && <a className="tiny text-link" href={f.sourceUrl} target="_blank" rel="nofollow noopener noreferrer">Source · {formatDate(f.checkedAt)} <IconArrow size={10} /></a>}
+    </span>
+  );
+}
+
+/** Lowest listed price for a billing period, exactly as captured (same-currency only). */
+function priceFor(p: Product, period: "MONTHLY" | "ANNUAL") {
+  const rows = p.pricing.filter((x) => x.billingPeriod === period && typeof x.price === "number" && x.price > 0);
+  if (!rows.length) return null;
+  const cheapest = rows.reduce((a, b) => (b.price! < a.price! ? b : a));
+  return { text: `From ${formatPrice(cheapest)}`, plan: cheapest.plan, unit: cheapest.unit, promo: cheapest.promotional };
+}
+
 export default async function ComparePage({ params }: Params) {
   const r = await resolve((await params).slugs);
   if (!r) notFound();
@@ -84,10 +108,10 @@ export default async function ComparePage({ params }: Params) {
           <div className="duel">
             {[{ p: a, why: pair.chooseA, side: "a" }, { p: b, why: pair.chooseB, side: "b" }].map(({ p, why, side }, i) => (
               <div key={p.slug} style={{ display: "contents" }}>
-                {i === 1 && <div className="duel-mid" aria-hidden="true"><span className="vs">VS</span></div>}
+                {i === 1 && <div className="duel-mid" aria-hidden="true"><Rings /><span className="vs">VS</span></div>}
                 <div className={`duel-side ${side}`} style={catStyle(p.categorySlug)}>
                   <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <Monogram name={p.name} categorySlug={p.categorySlug} size="lg" />
+                    <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="lg" />
                     <div><h2>{p.name}</h2><span className="tiny muted">{p.subcategory}</span></div>
                   </div>
                   <div className="chip-row"><ScoreBadge product={p} /><span className={`status ${pricingState(p).tone}`}>{pricingState(p).label}</span></div>
@@ -116,7 +140,7 @@ export default async function ComparePage({ params }: Params) {
               <thead>
                 <tr>
                   <th scope="col">Criterion</th>
-                  {[a, b].map((p) => <th scope="col" key={p.slug}><span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}><Monogram name={p.name} categorySlug={p.categorySlug} size="sm" />{p.name}</span></th>)}
+                  {[a, b].map((p) => <th scope="col" key={p.slug}><span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</span></th>)}
                 </tr>
               </thead>
               <tbody>
@@ -126,6 +150,9 @@ export default async function ComparePage({ params }: Params) {
                     <td><Cell value={value(a, f.key, f.computed)} ind={ind(a, f.key, f.computed)} /></td>
                     <td><Cell value={value(b, f.key, f.computed)} ind={ind(b, f.key, f.computed)} /></td>
                   </tr>
+                ))}
+                {(["freePlan", "freeTrial", "platforms", "integrations", "support"] as const).map((k) => (
+                  <tr key={k} className="sourced"><th scope="row">{FACT_LABELS[k]}</th><td><FactCell p={a} k={k} /></td><td><FactCell p={b} k={k} /></td></tr>
                 ))}
                 <tr><th scope="row">Best for</th><td>{a.review.bestFor.join(", ")}</td><td>{b.review.bestFor.join(", ")}</td></tr>
                 <tr><th scope="row">Main limitation</th><td>{a.review.limitations[0] ?? "—"}</td><td>{b.review.limitations[0] ?? "—"}</td></tr>
@@ -138,10 +165,32 @@ export default async function ComparePage({ params }: Params) {
           </p>
         </section>
 
+        <section className="section-gap reveal" id="pricing-matrix">
+          <h2>Pricing matrix</h2>
+          <div className="price-matrix">
+            {[a, b].map((p) => {
+              const m = priceFor(p, "MONTHLY");
+              const y = priceFor(p, "ANNUAL");
+              const st = pricingState(p);
+              return (
+                <div className="pm-col" key={p.slug} style={catStyle(p.categorySlug)}>
+                  <div className="pm-head"><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" /><strong>{p.name}</strong><span className={`status ${st.tone}`}>{st.label}</span></div>
+                  <div className="pm-row"><span className="tiny muted">Billed monthly</span><strong>{m ? m.text : "—"}</strong>{m && <span className="tiny muted">{m.plan}{m.unit ? ` · ${m.unit}` : ""}</span>}</div>
+                  <div className="pm-row"><span className="tiny muted">Billed annually</span><strong>{y ? y.text : "—"}</strong>{y && <span className="tiny muted">{y.plan}{y.unit ? ` · ${y.unit}` : ""}</span>}</div>
+                  <div className="pm-row"><span className="tiny muted">Free plan</span><FactCell p={p} k="freePlan" /></div>
+                  {!p.pricing.length && <p className="small">Pricing varies — check the official pricing page.</p>}
+                  {p.pricingUrl && <a className="text-link small" href={p.pricingUrl} target="_blank" rel="nofollow noopener noreferrer">Official {p.name} pricing ↗</a>}
+                </div>
+              );
+            })}
+          </div>
+          <p className="tiny muted" style={{ marginTop: 8 }}>&ldquo;From&rdquo; is the lowest paid price listed for that billing period, as captured from the official page on the check date. Currencies are never converted; plans and limits differ, so compare the full plan tables on each review.</p>
+        </section>
+
         <div className="two section-gap reveal-stagger">
           {[a, b].map((p) => (
             <div className="panel" key={p.slug} style={catStyle(p.categorySlug)}>
-              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}><Monogram name={p.name} categorySlug={p.categorySlug} /><h2 style={{ margin: 0 }}>{p.name} at a glance</h2></div>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} /><h2 style={{ margin: 0 }}>{p.name} at a glance</h2></div>
               <div className="proscons">
                 <div className="pc pros"><h3><IconCheck size={16} /> Pros</h3><ul>{p.review.pros.slice(0, 3).map((x) => <li key={x}><IconCheck size={14} />{x}</li>)}</ul></div>
                 <div className="pc cons"><h3><IconX size={16} /> Cons</h3><ul>{p.review.cons.slice(0, 3).map((x) => <li key={x}><IconX size={14} />{x}</li>)}</ul></div>

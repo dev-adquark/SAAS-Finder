@@ -5,6 +5,8 @@ import { seedUseCases } from "../lib/content/seed/use-cases";
 import { seedPairs } from "../lib/content/seed/pairs";
 import { seedProductProblems } from "../lib/content/seed-catalog";
 import { canonicalPair, comparePairSlug, slugify } from "../lib/seo/routes";
+import { research } from "../lib/content/seed/research";
+import { RESEARCH_VERIFIER, regionNoteFor } from "../lib/content/research-map";
 
 // Seeds editorial content. Safe for production:
 // - default mode only CREATES records that do not exist yet; existing rows are never modified;
@@ -123,6 +125,59 @@ async function main() {
     else await db.competitorPair.create({ data: { ...data, slug } });
   }
 
+  // Verified research: sources, facts and evidence-matched pricing. Idempotent; never overwrites
+  // an existing fact (editors may have refined it) and only adds pricing that isn't recorded yet.
+  let addedPlans = 0;
+  for (const [slug, r] of Object.entries(research)) {
+    const productId = ids.get(slug);
+    if (!productId) continue;
+    const checkedAt = new Date(`${r.checkedAt}T00:00:00.000Z`);
+    const sourceIds = new Map<string, string>();
+    for (const s of r.sources) {
+      const row = await db.productSource.upsert({
+        where: { productId_url: { productId, url: s.url } },
+        update: { status: "VERIFIED", checkedAt, kind: s.kind as never, name: s.name },
+        create: { productId, url: s.url, kind: s.kind as never, name: s.name, status: "VERIFIED", checkedAt },
+      });
+      sourceIds.set(s.url, row.id);
+    }
+    for (const f of r.facts) {
+      const exists = await db.productFact.findUnique({ where: { productId_key: { productId, key: f.key } } });
+      if (!exists) await db.productFact.create({ data: { productId, key: f.key, value: f.value, evidence: f.evidence, sourceId: sourceIds.get(f.sourceUrl) ?? null, status: "VERIFIED", checkedAt } });
+    }
+    const region = Boolean(regionNoteFor(r));
+    let productPlans = 0;
+    for (const pl of r.pricing.plans) {
+      const period = pl.billingPeriod as "MONTHLY" | "ANNUAL" | "FREE" | "CUSTOM";
+      const same = await db.pricingSnapshot.findFirst({ where: { productId, plan: pl.plan, billingPeriod: period, capturedAt: checkedAt, price: pl.price } });
+      if (same) continue;
+      await db.pricingSnapshot.updateMany({ where: { productId, status: "VERIFIED", plan: pl.plan, billingPeriod: period }, data: { status: "SUPERSEDED" } });
+      await db.pricingSnapshot.create({
+        data: {
+          productId, plan: pl.plan, price: pl.price, currency: pl.currency, billingPeriod: period, unit: pl.unit, perSeat: pl.perSeat, promotional: pl.promotional,
+          regionDependent: region, evidence: pl.evidence, summary: pl.notes ?? "Captured from the official pricing page.", sourceUrl: r.pricing.sourceUrl,
+          sourceType: "OFFICIAL_PRICING_PAGE", status: "VERIFIED", capturedAt: checkedAt, verifiedAt: checkedAt, verifiedBy: RESEARCH_VERIFIER,
+        },
+      });
+      addedPlans++;
+      productPlans++;
+    }
+    if (r.pricing.plans.length) {
+      // Seed-era qualitative notes are superseded by verified pricing.
+      await db.pricingSnapshot.updateMany({ where: { productId, status: "PENDING", price: null, sourceType: "MANUAL_CHECK" }, data: { status: "SUPERSEDED" } });
+      await db.contentRefresh.updateMany({ where: { productId, completedAt: null }, data: { completedAt: new Date(), resolution: "Pricing verified from the official pricing page." } });
+    }
+    await db.product.update({
+      where: { id: productId },
+      data: {
+        ...(r.pricing.plans.length ? { pricingCheckedAt: checkedAt, pricingRegionNote: regionNoteFor(r) } : {}),
+        ...(r.sources.length ? { sourceCheckedAt: checkedAt } : {}),
+      },
+    });
+    if (productPlans) await db.changeLog.create({ data: { productId, version: `research-${r.checkedAt}`, summary: `Verified ${r.pricing.plans.length} pricing entries, ${r.facts.length} facts and ${r.sources.length} official sources.` } });
+  }
+
+  console.log(`[seed] research: +${addedPlans} verified pricing entries`);
   console.log(`[seed] mode=${refresh ? "refresh" : "create-only"} products created=${created} refreshed=${updated}; categories=${seedCategories.length}, use cases=${seedUseCases.length}, pairs=${seedPairs.length}.`);
 }
 

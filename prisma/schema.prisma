@@ -50,6 +50,43 @@ enum BillingPeriod {
   CUSTOM
 }
 
+enum SourceKind {
+  PRICING
+  PRODUCT
+  DOCUMENTATION
+  HELP_CENTER
+  SECURITY
+  CHANGELOG
+  NEWSROOM
+  ABOUT
+  CONTACT
+  INTEGRATIONS
+  STATUS
+  INDEPENDENT
+}
+
+// Verification state of a source or sourced fact. Only VERIFIED items are presented as verified.
+enum SourceStatus {
+  VERIFIED
+  NEEDS_VERIFICATION
+  EXPIRED
+  BROKEN
+}
+
+enum RelationshipType {
+  AFFILIATE
+  SPONSORSHIP
+  PARTNERSHIP
+  COLLABORATION
+}
+
+enum AgreementStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
 enum ReviewStatus {
   NOT_STARTED
   IN_PROGRESS
@@ -75,16 +112,16 @@ model Category {
 }
 
 model Product {
-  id                  String            @id @default(cuid())
-  slug                String            @unique
+  id                  String              @id @default(cuid())
+  slug                String              @unique
   name                String
   vendor              String?
   tagline             String
   description         String
   subcategory         String?
-  status              ContentStatus     @default(DRAFT)
+  status              ContentStatus       @default(DRAFT)
   categoryId          String
-  category            Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category            Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   officialUrl         String
   pricingUrl          String?
   features            Json
@@ -97,22 +134,29 @@ model Product {
   // Set when an editor confirms pricing against the vendor, even when nothing changed.
   pricingCheckedAt    DateTime?
   // Editorial content timestamp (distinct from row updatedAt and pricing capture dates).
-  contentUpdatedAt    DateTime          @default(now())
+  contentUpdatedAt    DateTime            @default(now())
+  featuresCheckedAt   DateTime?
+  sourceCheckedAt     DateTime?
+  // Evidenced note such as "prices vary by location"; null when not published by the vendor.
+  pricingRegionNote   String?
   publishedAt         DateTime?
   review              ReviewMetadata?
   tags                ProductTag[]
   faqs                Faq[]
   snapshots           PricingSnapshot[]
   links               AffiliateLink[]
-  alternativesFrom    Alternative[]     @relation("productAlternatives")
-  alternativesTo      Alternative[]     @relation("alternativeProduct")
-  pairsAsA            CompetitorPair[]  @relation("pairProductA")
-  pairsAsB            CompetitorPair[]  @relation("pairProductB")
+  alternativesFrom    Alternative[]       @relation("productAlternatives")
+  alternativesTo      Alternative[]       @relation("alternativeProduct")
+  pairsAsA            CompetitorPair[]    @relation("pairProductA")
+  pairsAsB            CompetitorPair[]    @relation("pairProductB")
   useCases            UseCaseProduct[]
+  sources             ProductSource[]
+  facts               ProductFact[]
+  relationships       BrandRelationship[]
   changelog           ChangeLog[]
   refreshes           ContentRefresh[]
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   @@index([categoryId, status])
   @@index([status])
@@ -221,15 +265,15 @@ model UseCase {
 }
 
 model UseCaseProduct {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   useCaseId String
   productId String
-  useCase   UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  position  Int      @default(0)
+  useCase   UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  position  Int     @default(0)
   rationale String
   caveat    String?
-  active    Boolean  @default(true)
+  active    Boolean @default(true)
 
   @@unique([useCaseId, productId])
   @@index([productId])
@@ -254,38 +298,51 @@ model Faq {
 }
 
 model PricingSnapshot {
-  id            String          @id @default(cuid())
-  productId     String
-  snapshotType  SnapshotType    @default(PRICING)
-  plan          String?
-  price         Decimal?        @db.Decimal(12, 2)
-  currency      String?         @db.VarChar(3)
-  billingPeriod BillingPeriod?
-  capturedAt    DateTime        @default(now())
-  sourceUrl     String?
-  sourceType    PriceSourceType @default(MANUAL_CHECK)
-  status        SnapshotStatus  @default(PENDING)
-  verifiedAt    DateTime?
-  verifiedBy    String?
+  id              String          @id @default(cuid())
+  productId       String
+  snapshotType    SnapshotType    @default(PRICING)
+  plan            String?
+  price           Decimal?        @db.Decimal(12, 2)
+  currency        String?         @db.VarChar(3)
+  billingPeriod   BillingPeriod?
+  capturedAt      DateTime        @default(now())
+  sourceUrl       String?
+  sourceType      PriceSourceType @default(MANUAL_CHECK)
+  status          SnapshotStatus  @default(PENDING)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  // e.g. "per seat per month, billed annually" — exactly as the vendor states it.
+  unit            String?
+  perSeat         Boolean         @default(false)
+  promotional     Boolean         @default(false)
+  regionDependent Boolean         @default(false)
+  // Verbatim text from the source page supporting this price.
+  evidence        String?
   // Note or change summary.
-  summary       String
-  product       Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  summary         String
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, capturedAt])
   @@index([status, productId])
 }
 
 model AffiliateLink {
-  id         String    @id @default(cuid())
-  productId  String
-  provider   String?
-  label      String
-  url        String
-  active     Boolean   @default(false)
-  verifiedAt DateTime?
-  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  productId     String
+  // Affiliate network / programme name.
+  provider      String?
+  label         String
+  url           String
+  active        Boolean   @default(false)
+  verifiedAt    DateTime?
+  partnerStatus String?
+  trackingId    String?
+  approvedAt    DateTime?
+  // Where the partnership was verified (e.g. the network's approval page).
+  sourceUrl     String?
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([productId, active])
 }
@@ -349,4 +406,63 @@ model AnalyticsEvent {
   @@index([event, createdAt])
   @@index([productSlug, createdAt])
   @@index([createdAt])
+}
+
+model ProductSource {
+  id        String        @id @default(cuid())
+  productId String
+  product   Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  kind      SourceKind
+  url       String
+  name      String
+  section   String?
+  checkedAt DateTime?
+  status    SourceStatus  @default(NEEDS_VERIFICATION)
+  notes     String?
+  facts     ProductFact[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([productId, url])
+  @@index([productId, kind])
+}
+
+// One sourced fact per (product, key), e.g. freePlan, platforms, security.
+model ProductFact {
+  id        String         @id @default(cuid())
+  productId String
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  evidence  String?
+  sourceId  String?
+  source    ProductSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  checkedAt DateTime?
+  status    SourceStatus   @default(NEEDS_VERIFICATION)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([productId, key])
+  @@index([sourceId])
+}
+
+// Documented commercial relationships only. Nothing here is implied by a product being reviewed.
+model BrandRelationship {
+  id               String           @id @default(cuid())
+  productId        String?
+  product          Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  brand            String
+  website          String?
+  relationshipType RelationshipType
+  agreementStatus  AgreementStatus  @default(DRAFT)
+  startDate        DateTime?
+  endDate          DateTime?
+  sourceUrl        String?
+  verifiedBy       String?
+  verifiedAt       DateTime?
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([agreementStatus, endDate])
 }

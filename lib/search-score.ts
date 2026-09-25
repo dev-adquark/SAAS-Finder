@@ -1,6 +1,7 @@
 // Client-safe search types and ranking (no server imports).
-export type SearchKind = "product" | "category" | "compare" | "alternatives" | "best";
-export type SearchItem = { k: SearchKind; l: string; h: string; m: string; c: string; x: string };
+export type SearchKind = "product" | "category" | "compare" | "alternatives" | "best" | "faq";
+/** k kind, l label, h href, m meta line, c category slug, x extra keywords, v verification badge. */
+export type SearchItem = { k: SearchKind; l: string; h: string; m: string; c: string; x: string; v?: string };
 
 /** Lightweight ranking: prefix > word-prefix > substring > subsequence (label), then keywords. */
 export function scoreItem(item: SearchItem, query: string): number {

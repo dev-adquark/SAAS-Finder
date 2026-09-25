@@ -34,6 +34,9 @@ const productInclude = {
   links: { where: { active: true }, orderBy: { updatedAt: "desc" } },
   alternativesFrom: { where: { active: true }, include: { alternative: { select: { slug: true } }, useCase: { select: { slug: true } } }, orderBy: { sortOrder: "asc" } },
   changelog: { orderBy: { changedAt: "desc" }, take: 10 },
+  sources: { orderBy: [{ kind: "asc" }, { name: "asc" }] },
+  facts: { include: { source: { select: { url: true } } }, orderBy: { key: "asc" } },
+  relationships: { where: { agreementStatus: "ACTIVE", verifiedAt: { not: null } } },
 } satisfies Prisma.ProductInclude;
 
 type DbProduct = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
@@ -48,7 +51,16 @@ function mapPricing(rows: DbProduct["snapshots"]): PricePoint[] {
     sourceUrl: s.sourceUrl,
     sourceType: s.sourceType,
     capturedAt: s.capturedAt.toISOString(),
+    unit: s.unit,
+    perSeat: s.perSeat,
+    promotional: s.promotional,
+    regionDependent: s.regionDependent,
   }));
+}
+
+/** A relationship is public only while documented, active and within its dates. */
+export function isActiveRelationship(r: { agreementStatus: string; verifiedAt: Date | null; startDate: Date | null; endDate: Date | null }, now = new Date()) {
+  return r.agreementStatus === "ACTIVE" && Boolean(r.verifiedAt) && (!r.startDate || r.startDate <= now) && (!r.endDate || r.endDate >= now);
 }
 
 export function mapDbProduct(p: DbProduct): Product {
@@ -86,6 +98,12 @@ export function mapDbProduct(p: DbProduct): Product {
     faqs: p.faqs.map((f) => ({ question: f.question, answer: f.answer })),
     pricing: mapPricing(p.snapshots),
     pricingLastChecked: checked?.toISOString() ?? null,
+    pricingRegionNote: p.pricingRegionNote,
+    sources: p.sources.map((x) => ({ kind: x.kind, url: x.url, name: x.name, section: x.section, checkedAt: x.checkedAt?.toISOString() ?? null, status: x.status })),
+    facts: p.facts.map((f) => ({ key: f.key, value: f.value, evidence: f.evidence, sourceUrl: f.source?.url ?? null, checkedAt: f.checkedAt?.toISOString() ?? null, status: f.status })),
+    relationships: p.relationships.filter((r) => isActiveRelationship(r)).map((r) => ({ type: r.relationshipType, brand: r.brand, sourceUrl: r.sourceUrl })),
+    featuresCheckedAt: p.featuresCheckedAt?.toISOString() ?? null,
+    sourceCheckedAt: p.sourceCheckedAt?.toISOString() ?? null,
     changelog: p.changelog.map((c) => ({ version: c.version, summary: c.summary, changedAt: c.changedAt.toISOString() })),
     refreshIntervalDays: p.refreshIntervalDays,
     contentUpdatedAt: p.contentUpdatedAt.toISOString(),

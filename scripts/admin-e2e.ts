@@ -33,7 +33,7 @@ async function formPost(pagePath: string, formIndex: number, fields: Record<stri
   // Right password
   r = await formPost("/admin/login", 0, { password: KEY });
   if (!cookie) fail.push("login did not set session cookie; status " + r.status);
-  for (const p of ["/admin", "/admin/products", "/admin/products/new", "/admin/categories", "/admin/use-cases", "/admin/alternatives", "/admin/comparisons", "/admin/pricing", "/admin/affiliates", "/admin/sponsors", "/admin/refreshes", "/admin/analytics", "/admin/faqs"]) {
+  for (const p of ["/admin", "/admin/products", "/admin/products/new", "/admin/categories", "/admin/use-cases", "/admin/alternatives", "/admin/comparisons", "/admin/pricing", "/admin/affiliates", "/admin/sponsors", "/admin/refreshes", "/admin/analytics", "/admin/faqs", "/admin/quality", "/admin/relationships"]) {
     const res = await fetch(BASE + p, { headers: { cookie }, redirect: "manual" });
     const body = await res.text();
     if (res.status !== 200 || /Application error|Internal Server Error/.test(body)) fail.push(`${p}: ${res.status}`);
@@ -74,5 +74,5 @@ async function formPost(pagePath: string, formIndex: number, fields: Record<stri
   if (loc3.includes("ok=")) fail.push("server action accepted without session");
   cookie = saved;
   if (fail.length) { console.error("FAIL\n- " + fail.join("\n- ")); process.exit(1); }
-  console.log("admin UI e2e passed (login, 13 sections, save, publish gate, unauthenticated action rejected)");
+  console.log("admin UI e2e passed (login, 15 sections, save, publish gate, unauthenticated action rejected)");
 })();

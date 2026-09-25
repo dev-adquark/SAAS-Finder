@@ -313,9 +313,21 @@ export function parseSnapshot(b: unknown): SnapshotInput {
   return s;
 }
 
-export type LinkInput = Partial<{ label: string; url: string; provider: string | null; active: boolean }>;
-export const parseLink = (b: unknown, create: boolean) =>
-  read(b).str("label", { max: 120, required: create }).url("url", { required: create, httpsOnly: true }).str("provider", { max: 120, nullable: true }).bool("active").done<LinkInput>();
+export type LinkInput = Partial<{ label: string; url: string; provider: string | null; active: boolean; partnerStatus: string | null; trackingId: string | null; approvedAt: Date | null; sourceUrl: string | null }>;
+export function parseLink(b: unknown, create: boolean): LinkInput {
+  const l = read(b)
+    .str("label", { max: 120, required: create })
+    .url("url", { required: create, httpsOnly: true })
+    .str("provider", { max: 120, nullable: true })
+    .bool("active")
+    .str("partnerStatus", { max: 60, nullable: true })
+    .str("trackingId", { max: 120, nullable: true })
+    .date("approvedAt", { nullable: true })
+    .url("sourceUrl", { nullable: true, httpsOnly: true })
+    .done<LinkInput>();
+  if (l.trackingId && !/^[A-Za-z0-9._:-]{1,120}$/.test(l.trackingId)) throw new InputError(["trackingId may only contain letters, digits, . _ : -"]);
+  return l;
+}
 
 export type AlternativeInput = Partial<{ alternativeId: string; rationale: string; keyDifference: string | null; sortOrder: number; active: boolean; useCaseId: string | null }>;
 export const parseAlternative = (b: unknown, create: boolean) =>
@@ -395,3 +407,56 @@ export const parseChangelog = (b: unknown) => read(b).str("version", { max: 60, 
 
 export type RefreshInput = { reason: string; dueAt: Date };
 export const parseRefresh = (b: unknown) => read(b).str("reason", { max: 500, required: true }).date("dueAt", { required: true }).done<RefreshInput>();
+
+export const SOURCE_KINDS = ["PRICING", "PRODUCT", "DOCUMENTATION", "HELP_CENTER", "SECURITY", "CHANGELOG", "NEWSROOM", "ABOUT", "CONTACT", "INTEGRATIONS", "STATUS", "INDEPENDENT"] as const;
+export const SOURCE_STATUSES = ["VERIFIED", "NEEDS_VERIFICATION", "EXPIRED", "BROKEN"] as const;
+export const FACT_KEYS = ["company", "founded", "headquarters", "officialDescription", "audience", "useCases", "integrations", "platforms", "mobileApps", "browser", "security", "support", "freePlan", "freeTrial", "billingOptions", "usageLimits"] as const;
+export const RELATIONSHIP_TYPES = ["AFFILIATE", "SPONSORSHIP", "PARTNERSHIP", "COLLABORATION"] as const;
+export const AGREEMENT_STATUSES = ["DRAFT", "ACTIVE", "PAUSED", "ENDED"] as const;
+
+export type SourceInput = Partial<{ kind: (typeof SOURCE_KINDS)[number]; url: string; name: string; section: string | null; checkedAt: Date | null; status: (typeof SOURCE_STATUSES)[number]; notes: string | null }>;
+export const parseSource = (b: unknown, create: boolean) =>
+  read(b)
+    .oneOf("kind", SOURCE_KINDS, { required: create })
+    .url("url", { required: create, httpsOnly: true })
+    .str("name", { max: 120, required: create })
+    .str("section", { max: 120, nullable: true })
+    .date("checkedAt", { nullable: true })
+    .oneOf("status", SOURCE_STATUSES)
+    .str("notes", { max: 1000, nullable: true })
+    .done<SourceInput>();
+
+export type FactInput = { key: (typeof FACT_KEYS)[number]; value: string; evidence?: string | null; sourceId?: string | null; status?: (typeof SOURCE_STATUSES)[number]; checkedAt?: Date | null };
+export function parseFact(b: unknown): FactInput {
+  const f = read(b)
+    .oneOf("key", FACT_KEYS, { required: true })
+    .str("value", { max: 300, required: true })
+    .str("evidence", { max: 500, nullable: true })
+    .id("sourceId", { nullable: true })
+    .oneOf("status", SOURCE_STATUSES)
+    .date("checkedAt", { nullable: true })
+    .done<FactInput>();
+  // A fact can only be VERIFIED with a source and a verbatim evidence quote.
+  if (f.status === "VERIFIED" && (!f.sourceId || !f.evidence)) throw new InputError(["A verified fact needs a source and an evidence quote from that source"]);
+  return f;
+}
+
+export type RelationshipInput = Partial<{ productId: string | null; brand: string; website: string | null; relationshipType: (typeof RELATIONSHIP_TYPES)[number]; agreementStatus: (typeof AGREEMENT_STATUSES)[number]; startDate: Date | null; endDate: Date | null; sourceUrl: string | null; verifiedBy: string | null; notes: string | null }>;
+export function parseRelationship(b: unknown, create: boolean): RelationshipInput {
+  const r = read(b)
+    .id("productId", { nullable: true })
+    .str("brand", { max: 120, required: create })
+    .url("website", { nullable: true, httpsOnly: true })
+    .oneOf("relationshipType", RELATIONSHIP_TYPES, { required: create })
+    .oneOf("agreementStatus", AGREEMENT_STATUSES)
+    .date("startDate", { nullable: true })
+    .date("endDate", { nullable: true })
+    .url("sourceUrl", { nullable: true, httpsOnly: true })
+    .str("verifiedBy", { max: 120, nullable: true })
+    .str("notes", { max: 2000, nullable: true })
+    .done<RelationshipInput>();
+  if (r.startDate && r.endDate && r.startDate > r.endDate) throw new InputError(["startDate must be before endDate"]);
+  // Never allow an undocumented relationship to go live.
+  if (r.agreementStatus === "ACTIVE" && (!r.sourceUrl || !r.verifiedBy)) throw new InputError(["An ACTIVE relationship needs a verification source URL and who verified it"]);
+  return r;
+}

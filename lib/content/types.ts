@@ -18,7 +18,22 @@ export type PricePoint = {
   sourceUrl: string | null;
   sourceType: PriceSourceType;
   capturedAt: string;
+  unit: string | null;
+  perSeat: boolean;
+  promotional: boolean;
+  regionDependent: boolean;
 };
+
+export type SourceKind = "PRICING" | "PRODUCT" | "DOCUMENTATION" | "HELP_CENTER" | "SECURITY" | "CHANGELOG" | "NEWSROOM" | "ABOUT" | "CONTACT" | "INTEGRATIONS" | "STATUS" | "INDEPENDENT";
+export type SourceStatus = "VERIFIED" | "NEEDS_VERIFICATION" | "EXPIRED" | "BROKEN";
+
+export type SourceRef = { kind: SourceKind; url: string; name: string; section: string | null; checkedAt: string | null; status: SourceStatus };
+
+/** A sourced product fact. Only `VERIFIED` facts are presented as verified. */
+export type FactRef = { key: string; value: string; evidence: string | null; sourceUrl: string | null; checkedAt: string | null; status: SourceStatus };
+
+/** A documented, currently-active commercial relationship. */
+export type RelationshipRef = { type: "AFFILIATE" | "SPONSORSHIP" | "PARTNERSHIP" | "COLLABORATION"; brand: string; sourceUrl: string | null };
 
 export type ReviewMeta = {
   rating: number | null;
@@ -77,6 +92,12 @@ export type Product = {
   faqs: Faq[];
   pricing: PricePoint[];
   pricingLastChecked: string | null;
+  pricingRegionNote: string | null;
+  sources: SourceRef[];
+  facts: FactRef[];
+  relationships: RelationshipRef[];
+  featuresCheckedAt: string | null;
+  sourceCheckedAt: string | null;
   changelog: { version: string; summary: string; changedAt: string }[];
   refreshIntervalDays: number | null;
   contentUpdatedAt: string;

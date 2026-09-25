@@ -93,5 +93,6 @@ export function categoryLinks(c: Catalog, categorySlug: string): LinkGroup[] {
     { title: "Best-for guides", links: guidesInCategory(c, categorySlug).map(bestLink) },
     { title: "Alternatives", links: products.filter((p) => hasAlternativesPage(c, p)).map((p) => ({ href: routes.alternatives(p.slug), label: `${p.name} alternatives`, kind: "alternatives" as const })) },
     { title: "Comparisons", links: pairsInCategory(c, categorySlug).map((pair) => pairLink(c, pair)) },
+    { title: "FAQ", links: (findCategory(c, categorySlug)?.faqs.length ?? 0) >= 3 ? [{ href: routes.categoryFaq(categorySlug), label: `${findCategory(c, categorySlug)!.name} FAQ`, kind: "category" as const }] : [] },
   ].map((g) => ({ ...g, links: dedupe(g.links) })).filter((g) => g.links.length > 0);
 }

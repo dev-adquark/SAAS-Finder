@@ -17,6 +17,7 @@ import { ScoreBadge } from "@/components/score";
 import { SponsorSlot } from "@/components/sponsor-slot";
 import { Monogram, catStyle } from "@/components/identity";
 import { IconAlert, IconCheck, IconScale } from "@/components/icons";
+import { AltNetwork } from "@/components/alt-network";
 
 export const revalidate = 3600;
 
@@ -77,7 +78,7 @@ export default async function AlternativesPage({ params }: Params) {
             </div>
             <aside className="hero-card glass enter-2" aria-labelledby="reviewed-title">
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <Monogram name={p.name} categorySlug={p.categorySlug} />
+                <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
                 <div><strong id="reviewed-title">{p.name}</strong><div className="tiny muted">{p.subcategory}</div></div>
               </div>
               <p className="small" style={{ margin: 0 }}>{p.review.editorialSummary}</p>
@@ -99,6 +100,12 @@ export default async function AlternativesPage({ params }: Params) {
             </div>
           </section>
 
+          <section className="panel section-gap reveal" id="network">
+            <h2>{p.name} alternatives ecosystem</h2>
+            <p className="muted small">Curated alternatives, the category they share and the buying guides {p.name} appears in. Every node links to its page.</p>
+            <div className="table-wrap" style={{ background: "transparent", border: 0 }}><div style={{ minWidth: 680 }}><AltNetwork c={c} product={p} /></div></div>
+          </section>
+
           <section className="panel section-gap reveal" id="similarity">
             <h2><IconScale /> How close is each alternative?</h2>
             <p className="muted small">Placed by our editorial taxonomy (subcategory and category), not by a computed similarity score.</p>
@@ -112,7 +119,7 @@ export default async function AlternativesPage({ params }: Params) {
                     <div className="spectrum-zone" key={label}>
                       <h3>{label}</h3>
                       {inZone.length ? (
-                        <div className="chip-row">{inZone.map(({ product: a }) => <a key={a.slug} href={`#alt-${a.slug}`} style={catStyle(a.categorySlug)}><Monogram name={a.name} categorySlug={a.categorySlug} size="sm" />{a.name}</a>)}</div>
+                        <div className="chip-row">{inZone.map(({ product: a }) => <a key={a.slug} href={`#alt-${a.slug}`} style={catStyle(a.categorySlug)}><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" />{a.name}</a>)}</div>
                       ) : <p className="tiny muted">None in this set</p>}
                     </div>
                   );
@@ -129,7 +136,7 @@ export default async function AlternativesPage({ params }: Params) {
               <article className="panel section-gap alt-item hoverable card reveal" key={a.slug} id={`alt-${a.slug}`} style={catStyle(a.categorySlug)}>
                 <div className="pcard-head" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <Monogram name={a.name} categorySlug={a.categorySlug} size="lg" />
+                    <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="lg" />
                     <div>
                       <span className="tag">#{i + 1} · {a.subcategory}</span>
                       <h2 style={{ margin: "6px 0 0" }}><Link href={routes.product(a.slug)}>{a.name}</Link></h2>

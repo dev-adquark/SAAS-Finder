@@ -15,7 +15,10 @@ const c = sanitizeCatalog(seedCatalog());
 /** Every public page path the catalog can render. */
 function knownPaths(): Set<string> {
   const s = new Set<string>(["/", "/products", "/categories", "/comparisons", "/alternatives", "/best", "/methodology", "/disclosure", "/privacy", "/contact"]);
-  c.categories.forEach((x) => s.add(routes.category(x.slug)));
+  c.categories.forEach((x) => {
+    s.add(routes.category(x.slug));
+    if (x.faqs.length >= 3) s.add(routes.categoryFaq(x.slug));
+  });
   c.products.forEach((p) => {
     s.add(routes.product(p.slug));
     if (alternativesFor(c, p).length) s.add(routes.alternatives(p.slug));
@@ -87,7 +90,7 @@ test("structured data is truthful", () => {
   assert.equal("review" in ld, false);
   assert.equal("aggregateRating" in ld, false);
   assert.equal("offers" in ld, false, "no Offer without verified price");
-  const reviewed = { ...wix, review: { ...wix.review, reviewStatus: "REVIEWED" as const, lastReviewedAt: "2026-09-01T00:00:00.000Z" }, pricing: [{ plan: "Core", price: 29, currency: "USD", billingPeriod: "MONTHLY" as const, note: "", sourceUrl: "https://www.wix.com/upgrade/website", sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: "2026-09-01T00:00:00.000Z" }, { plan: "Custom", price: null, currency: null, billingPeriod: "CUSTOM" as const, note: "", sourceUrl: null, sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: "2026-09-01T00:00:00.000Z" }] };
+  const reviewed = { ...wix, review: { ...wix.review, reviewStatus: "REVIEWED" as const, lastReviewedAt: "2026-09-01T00:00:00.000Z" }, pricing: [{ plan: "Core", price: 29, currency: "USD", billingPeriod: "MONTHLY" as const, note: "", sourceUrl: "https://www.wix.com/upgrade/website", sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: "2026-09-01T00:00:00.000Z", unit: null, perSeat: false, promotional: false, regionDependent: false }, { plan: "Custom", price: null, currency: null, billingPeriod: "CUSTOM" as const, note: "", sourceUrl: null, sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: "2026-09-01T00:00:00.000Z", unit: null, perSeat: false, promotional: false, regionDependent: false }] };
   const ld2 = productJsonLd(reviewed, "Website Builders") as { review?: { reviewRating: { ratingValue: number } }; offers?: unknown[] };
   assert.equal(ld2.review?.reviewRating.ratingValue, wix.review.rating);
   assert.equal(ld2.offers?.length, 1, "incomplete offers are dropped");

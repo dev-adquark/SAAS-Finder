@@ -3,6 +3,9 @@ import type { Catalog, Product } from "@/lib/content/types";
 import { absolute } from "@/lib/site";
 import { routes } from "@/lib/seo/routes";
 
+/** Category FAQ pages are only published (and indexed) with enough visible questions. */
+export const MIN_CATEGORY_FAQS = 3;
+
 type Helpers = {
   alternativesFor: (c: Catalog, p: Product) => { product: Product }[];
   findProduct: (c: Catalog, slug: string) => Product | undefined;
@@ -37,6 +40,7 @@ export function buildSitemapEntries(c: Catalog, h: Helpers, includeContact: bool
 
   for (const cat of c.categories) {
     add(routes.category(cat.slug), latest(cat.updatedAt, ...h.productsInCategory(c, cat.slug).map((p) => p.contentUpdatedAt)), 0.8);
+    if (cat.faqs.length >= MIN_CATEGORY_FAQS) add(routes.categoryFaq(cat.slug), latest(cat.updatedAt), 0.5, "monthly");
   }
   for (const p of c.products) {
     add(routes.product(p.slug), productModified(p), 0.9);

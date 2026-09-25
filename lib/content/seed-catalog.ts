@@ -6,6 +6,8 @@ import { seedProducts } from "@/lib/content/seed/products";
 import { seedUseCases } from "@/lib/content/seed/use-cases";
 import { seedPairs } from "@/lib/content/seed/pairs";
 import type { SeedProduct } from "@/lib/content/seed/types";
+import { research } from "@/lib/content/seed/research";
+import { regionNoteFor, researchFacts, researchPricing, researchSources } from "@/lib/content/research-map";
 
 // Editorial date of the seed content set; used as the content timestamp when no database is present.
 export const SEED_CONTENT_DATE = "2026-09-25T00:00:00.000Z";
@@ -29,6 +31,8 @@ export function seedProductProblems(p: SeedProduct): string[] {
 }
 
 function toProduct(p: SeedProduct): Product {
+  const r = research[p.slug];
+  const checked = r ? new Date(`${r.checkedAt}T00:00:00.000Z`).toISOString() : null;
   return {
     slug: p.slug,
     name: p.name,
@@ -49,9 +53,15 @@ function toProduct(p: SeedProduct): Product {
     review: { ...p.review, reviewStatus: "NOT_STARTED", lastReviewedAt: null },
     tags: p.tags,
     faqs: p.faqs,
-    // Seed pricing notes are unverified, so no price points are exposed.
-    pricing: [],
-    pricingLastChecked: null,
+    // Only evidence-matched research pricing is exposed; seed pricing notes stay unverified.
+    pricing: r ? researchPricing(r) : [],
+    pricingLastChecked: r?.pricing.plans.length ? checked : null,
+    pricingRegionNote: r ? regionNoteFor(r) : null,
+    sources: r ? researchSources(r) : [],
+    facts: r ? researchFacts(r) : [],
+    relationships: [],
+    featuresCheckedAt: null,
+    sourceCheckedAt: r?.sources.length ? checked : null,
     changelog: [],
     refreshIntervalDays: null,
     contentUpdatedAt: SEED_CONTENT_DATE,

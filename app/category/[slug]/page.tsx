@@ -6,6 +6,7 @@ import { categoryLinks } from "@/lib/linking";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { itemListJsonLd } from "@/lib/seo/jsonld";
 import { routes, slugify } from "@/lib/seo/routes";
+import { MIN_CATEGORY_FAQS } from "@/lib/seo/sitemap";
 import { formatDate } from "@/lib/freshness-rules";
 import { pricingState } from "@/lib/pricing";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -18,6 +19,7 @@ import { FilterBar } from "@/components/filter-bar";
 import { Monogram, catStyle } from "@/components/identity";
 import { CategoryIcon } from "@/components/icons";
 import { AffiliateDisclosure } from "@/components/disclosure";
+import { Prism } from "@/components/prism";
 import type { CSSProperties } from "react";
 
 export const revalidate = 3600;
@@ -81,10 +83,11 @@ export default async function CategoryHub({ params }: Params) {
               <div className="ring">
                 {products.map((p, i) => (
                   <span className="orb" key={p.slug} style={{ ["--a" as string]: `${(360 / products.length) * i}deg` } as CSSProperties}>
-                    <Monogram name={p.name} categorySlug={p.categorySlug} />
+                    <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
                   </span>
                 ))}
               </div>
+              <Prism size={200} className="cat-prism" />
               <div className="center"><CategoryIcon slug={cat.slug} size={48} /></div>
             </div>
           </div>
@@ -154,9 +157,9 @@ export default async function CategoryHub({ params }: Params) {
                 const b = findProduct(c, pair.productB)!;
                 return (
                   <Link key={pair.slug} href={routes.compare(a.slug, b.slug)} className="card vscard">
-                    <span className="side"><Monogram name={a.name} categorySlug={a.categorySlug} size="sm" />{a.name}</span>
+                    <span className="side"><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" />{a.name}</span>
                     <span className="vs" aria-hidden="true">VS</span>
-                    <span className="side"><Monogram name={b.name} categorySlug={b.categorySlug} size="sm" />{b.name}</span>
+                    <span className="side"><Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} size="sm" />{b.name}</span>
                     <span className="sr-only"> versus </span>
                   </Link>
                 );
@@ -167,7 +170,15 @@ export default async function CategoryHub({ params }: Params) {
 
         <LinkGroups groups={categoryLinks(c, cat.slug).filter((g) => g.title === "Alternatives")} title={`${cat.name} alternatives`} />
         <SponsorSlot pageType="category" pageSlug={cat.slug} placement="inline" />
-        <FaqSection faqs={cat.faqs} title={`${cat.name} FAQs`} />
+        {cat.faqs.length >= MIN_CATEGORY_FAQS ? (
+          // Answers (and FAQPage schema) live on the dedicated FAQ page to avoid duplicate content.
+          <section className="panel section-gap reveal" id="faq">
+            <div className="section-head" style={{ marginBottom: 8 }}><h2 style={{ margin: 0 }}>{cat.name} FAQs</h2><Link className="btn secondary" href={routes.categoryFaq(cat.slug)}>Read all answers →</Link></div>
+            <ul className="list">{cat.faqs.map((f) => <li key={f.question}><Link href={`${routes.categoryFaq(cat.slug)}#faq`}>{f.question}</Link></li>)}</ul>
+          </section>
+        ) : (
+          <FaqSection faqs={cat.faqs} title={`${cat.name} FAQs`} />
+        )}
         <AffiliateDisclosure />
       </div>
     </div>

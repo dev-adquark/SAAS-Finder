@@ -5,8 +5,9 @@ import { publishProblems } from "@/lib/content/publish-validation";
 import { MIN_USE_CASE_PRODUCTS } from "@/lib/content/sanitize";
 import { strArray, strRecord } from "@/lib/catalog";
 import { canonicalPair, comparePairSlug, slugify } from "@/lib/seo/routes";
-import { formatPrice } from "@/lib/pricing";
+import { priceWithUnit } from "@/lib/pricing";
 import { EVENT_NAMES, LEGACY_EVENT_NAMES } from "@/lib/analytics";
+import type { FactInput, RelationshipInput, SourceInput } from "@/lib/admin/inputs";
 import {
   InputError,
   type AlternativeInput,
@@ -257,12 +258,13 @@ export async function verifySnapshot(id: string, by?: string) {
       if (s.price !== null && (!s.currency || !s.sourceUrl)) throw new InputError(["A priced snapshot needs a currency and source URL before verification"]);
       const now = new Date();
       await tx.pricingSnapshot.updateMany({
-        where: { productId: s.productId, status: "VERIFIED", snapshotType: s.snapshotType, plan: s.plan === null ? null : { equals: s.plan, mode: "insensitive" } },
+        // Same plan *and* billing period: an annual price never supersedes the monthly one.
+        where: { productId: s.productId, status: "VERIFIED", snapshotType: s.snapshotType, billingPeriod: s.billingPeriod, plan: s.plan === null ? null : { equals: s.plan, mode: "insensitive" } },
         data: { status: "SUPERSEDED" },
       });
       const verified = await tx.pricingSnapshot.update({ where: { id }, data: { status: "VERIFIED", verifiedAt: now, verifiedBy: by ?? null } });
       await tx.product.update({ where: { id: s.productId }, data: { pricingCheckedAt: now } });
-      const priceText = formatPrice({ plan: s.plan, price: s.price === null ? null : Number(s.price), currency: s.currency, billingPeriod: s.billingPeriod, note: s.summary, sourceUrl: s.sourceUrl, sourceType: s.sourceType, capturedAt: s.capturedAt.toISOString() });
+      const priceText = priceWithUnit({ price: s.price === null ? null : Number(s.price), currency: s.currency, billingPeriod: s.billingPeriod, unit: s.unit });
       await tx.changeLog.create({ data: { productId: s.productId, version: `pricing-${now.toISOString().slice(0, 10)}`, summary: `Pricing verified${s.plan ? ` for ${s.plan}` : ""}: ${priceText}. ${s.summary}`.slice(0, 2000) } });
       await tx.contentRefresh.updateMany({ where: { productId: s.productId, completedAt: null }, data: { completedAt: now, resolution: "New pricing snapshot verified." } });
       return verified;
@@ -519,4 +521,123 @@ export function analyticsWindow(fromRaw: string | null, toRaw: string | null, no
   if (from > to) from = fallback;
   if (to.getTime() - from.getTime() > 366 * 86_400_000) from = new Date(to.getTime() - 366 * 86_400_000);
   return { from, to };
+}
+
+// ---------------- Sources & sourced facts ----------------
+
+
+async function touchSources(tx: Tx | typeof db, productId: string) {
+  await tx.product.update({ where: { id: productId }, data: { sourceCheckedAt: new Date() } });
+}
+
+export const addSource = (productId: string, s: SourceInput) =>
+  run(async () => {
+    if (!(await db.product.count({ where: { id: productId } }))) throw new NotFoundError("Product not found");
+    const row = await db.productSource.create({ data: { productId, kind: s.kind!, url: s.url!, name: s.name!, section: s.section ?? null, status: s.status ?? "NEEDS_VERIFICATION", checkedAt: s.status === "VERIFIED" ? s.checkedAt ?? new Date() : s.checkedAt ?? null, notes: s.notes ?? null } });
+    if (row.status === "VERIFIED") await touchSources(db, productId);
+    return row;
+  });
+
+export const updateSource = (id: string, s: SourceInput) =>
+  run(async () => {
+    const row = await db.productSource.update({ where: { id }, data: { ...s, ...(s.status === "VERIFIED" && s.checkedAt === undefined ? { checkedAt: new Date() } : {}) } });
+    if (row.status === "VERIFIED") await touchSources(db, row.productId);
+    // Facts from a source that is no longer verified lose their verified status.
+    if (row.status !== "VERIFIED") await db.productFact.updateMany({ where: { sourceId: id, status: "VERIFIED" }, data: { status: "NEEDS_VERIFICATION" } });
+    return row;
+  });
+
+export const verifySource = (id: string) => updateSource(id, { status: "VERIFIED", checkedAt: new Date() });
+
+export const deleteSource = (id: string) =>
+  run(async () => {
+    await db.productFact.updateMany({ where: { sourceId: id }, data: { status: "NEEDS_VERIFICATION" } });
+    await db.productSource.delete({ where: { id } });
+    return { ok: true };
+  });
+
+export const upsertFact = (productId: string, f: FactInput) =>
+  run(async () => {
+    if (f.sourceId) {
+      const src = await db.productSource.findFirst({ where: { id: f.sourceId, productId } });
+      if (!src) throw new InputError(["source must belong to this product"]);
+      if (f.status === "VERIFIED" && src.status !== "VERIFIED") throw new InputError(["verify the source before marking the fact verified"]);
+    }
+    const data = { value: f.value, evidence: f.evidence ?? null, sourceId: f.sourceId ?? null, status: f.status ?? "NEEDS_VERIFICATION", checkedAt: f.status === "VERIFIED" ? f.checkedAt ?? new Date() : f.checkedAt ?? null };
+    return db.productFact.upsert({ where: { productId_key: { productId, key: f.key } }, update: data, create: { productId, key: f.key, ...data } });
+  });
+
+export const deleteFact = (id: string) => run(() => db.productFact.delete({ where: { id } }));
+
+// ---------------- Brand relationships (documented only) ----------------
+
+export const createRelationship = (r: RelationshipInput) =>
+  run(() =>
+    db.brandRelationship.create({
+      data: { productId: r.productId ?? null, brand: r.brand!, website: r.website ?? null, relationshipType: r.relationshipType!, agreementStatus: r.agreementStatus ?? "DRAFT", startDate: r.startDate ?? null, endDate: r.endDate ?? null, sourceUrl: r.sourceUrl ?? null, verifiedBy: r.verifiedBy ?? null, verifiedAt: r.agreementStatus === "ACTIVE" ? new Date() : null, notes: r.notes ?? null },
+    }),
+  );
+
+export const updateRelationship = (id: string, r: RelationshipInput) =>
+  run(async () => {
+    const cur = await db.brandRelationship.findUnique({ where: { id } });
+    if (!cur) throw new NotFoundError("Relationship not found");
+    const next = { ...cur, ...r };
+    if (next.agreementStatus === "ACTIVE" && (!next.sourceUrl || !next.verifiedBy)) throw new InputError(["An ACTIVE relationship needs a verification source URL and who verified it"]);
+    return db.brandRelationship.update({ where: { id }, data: { ...r, ...(r.agreementStatus === "ACTIVE" && cur.agreementStatus !== "ACTIVE" ? { verifiedAt: new Date() } : {}), ...(r.agreementStatus && r.agreementStatus !== "ACTIVE" ? { verifiedAt: null } : {}) } });
+  });
+
+export const deleteRelationship = (id: string) => run(() => db.brandRelationship.delete({ where: { id } }));
+
+// ---------------- Data quality ----------------
+
+const DAY = 86_400_000;
+export const SOURCE_EXPIRY_DAYS = 180;
+
+export async function dataQuality(now = new Date()) {
+  const products = await db.product.findMany({
+    select: {
+      id: true, name: true, status: true, contentUpdatedAt: true, pricingCheckedAt: true,
+      review: { select: { reviewStatus: true } },
+      snapshots: { where: { status: "VERIFIED" }, select: { id: true } },
+      sources: { select: { status: true, checkedAt: true } },
+      facts: { select: { status: true } },
+      links: { select: { active: true } },
+    },
+  });
+  const [sponsors, relationships] = await Promise.all([
+    db.sponsorSlot.findMany({ select: { active: true, endsAt: true } }),
+    db.brandRelationship.findMany({ select: { agreementStatus: true, endDate: true, verifiedAt: true } }),
+  ]);
+  const expired = (d: Date | null) => !d || now.getTime() - d.getTime() > SOURCE_EXPIRY_DAYS * DAY;
+  const perProduct = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    pricingVerified: p.snapshots.length > 0,
+    sourcesVerified: p.sources.filter((s) => s.status === "VERIFIED" && !expired(s.checkedAt)).length,
+    sourcesExpired: p.sources.filter((s) => s.status === "EXPIRED" || (s.status === "VERIFIED" && expired(s.checkedAt))).length,
+    sourcesPending: p.sources.filter((s) => s.status === "NEEDS_VERIFICATION" || s.status === "BROKEN").length,
+    factsVerified: p.facts.filter((f) => f.status === "VERIFIED").length,
+    stale: now.getTime() - p.contentUpdatedAt.getTime() > 90 * DAY,
+    incompleteReview: p.review?.reviewStatus !== "REVIEWED",
+    affiliateActive: p.links.some((l) => l.active),
+  }));
+  return {
+    totals: {
+      products: products.length,
+      published: products.filter((p) => p.status === "PUBLISHED").length,
+      pricingVerified: perProduct.filter((p) => p.pricingVerified).length,
+      withVerifiedSources: perProduct.filter((p) => p.sourcesVerified > 0).length,
+      missingSources: perProduct.filter((p) => p.sourcesVerified === 0).length,
+      expiredSources: perProduct.reduce((n, p) => n + p.sourcesExpired, 0),
+      staleContent: perProduct.filter((p) => p.stale).length,
+      incompleteReviews: perProduct.filter((p) => p.incompleteReview).length,
+      affiliateActive: perProduct.filter((p) => p.affiliateActive).length,
+      activeSponsors: sponsors.filter((s) => s.active && (!s.endsAt || s.endsAt >= now)).length,
+      expiredSponsors: sponsors.filter((s) => s.endsAt && s.endsAt < now).length,
+      activeRelationships: relationships.filter((r) => r.agreementStatus === "ACTIVE" && r.verifiedAt && (!r.endDate || r.endDate >= now)).length,
+    },
+    perProduct,
+  };
 }

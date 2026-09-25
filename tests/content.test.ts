@@ -10,6 +10,7 @@ import { publishProblems } from "../lib/content/publish-validation";
 import { storedComparisonKeys } from "../lib/content/comparison-schema";
 import { comparePairSlug, productSlugProblem } from "../lib/seo/routes";
 import { alternativesFor } from "../lib/catalog";
+import { research } from "../lib/content/seed/research";
 
 test("seed catalog has 10–20 complete, publishable products with unique slugs", () => {
   assert.ok(seedProducts.length >= 10 && seedProducts.length <= 20, `${seedProducts.length} products`);
@@ -24,7 +25,19 @@ test("seed content never contains prices or currency amounts", () => {
   const text = JSON.stringify({ seedProducts, seedUseCases, seedPairs, seedCategories });
   assert.equal(/[$€£¥]/.test(text), false);
   for (const p of seedProducts) assert.equal(/\d/.test(p.pricingNote), false, p.slug);
-  assert.equal(seedCatalog().products.every((p) => p.pricing.length === 0 && p.pricingLastChecked === null), true);
+});
+
+test("every displayed price traces to an evidence-matched research record", () => {
+  for (const p of seedCatalog().products) {
+    const r = research[p.slug];
+    for (const pt of p.pricing) {
+      const src = r?.pricing.plans.find((x) => x.plan === pt.plan && x.billingPeriod === pt.billingPeriod && x.price === pt.price);
+      assert.ok(src && src.evidence.length >= 6, `${p.slug} ${pt.plan} ${pt.billingPeriod} has evidence`);
+      assert.ok(pt.sourceUrl?.startsWith("https://"), `${p.slug} price has an official source URL`);
+    }
+    if (!p.pricing.length) assert.equal(p.pricingLastChecked, null, `${p.slug} is not shown as checked without verified pricing`);
+    for (const f of p.facts) assert.ok(f.evidence && f.sourceUrl?.startsWith("https://"), `${p.slug}.${f.key} sourced`);
+  }
 });
 
 test("unscored seed products stay unscored (no invented ratings)", () => {

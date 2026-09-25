@@ -21,8 +21,10 @@ import { PricingSnapshot } from "@/components/pricing-snapshot";
 import { ScoreBadge } from "@/components/score";
 import { SponsorSlot } from "@/components/sponsor-slot";
 import { ShareButton } from "@/components/share-button";
+import { Prism } from "@/components/prism";
 import { Monogram, catStyle } from "@/components/identity";
-import { CategoryIcon, IconAlert, IconCheck, IconSpark, IconX } from "@/components/icons";
+import { CategoryIcon, IconAlert, IconCheck, IconShield, IconSpark, IconUsers, IconX, IconLayers } from "@/components/icons";
+import { FactsTable, FreshnessStrip, PlanTable, ResourceCenter, SourcesPanel, TrustBadges, fact, verifiedSources } from "@/components/verification";
 
 export const revalidate = 3600;
 
@@ -53,8 +55,9 @@ const REVIEW_STATUS: Record<string, { label: string; tone: string }> = {
 };
 
 const TOC = [
-  ["summary", "Summary"], ["features", "Features"], ["pricing", "Pricing"], ["best-for", "Best for"], ["limitations", "Limitations"],
-  ["pros-cons", "Pros & cons"], ["comparison", "Compare"], ["alternatives", "Alternatives"], ["faq", "FAQs"],
+  ["summary", "Overview"], ["features", "Features"], ["pricing", "Pricing"], ["best-for", "Who it's for"], ["limitations", "Limitations"],
+  ["pros-cons", "Strengths & weaknesses"], ["platforms", "Platforms"], ["use-cases", "Use cases"], ["comparison", "Competitors"], ["alternatives", "Alternatives"],
+  ["facts", "Product facts"], ["sources", "Sources"], ["faq", "FAQs"],
 ] as const;
 
 export default async function ProductReview({ params }: Params) {
@@ -82,6 +85,7 @@ export default async function ProductReview({ params }: Params) {
         <div className="container">
           <Breadcrumbs items={[...(category ? [{ name: category.name, path: routes.category(category.slug) }] : []), { name: `${p.name} review`, path: routes.product(p.slug) }]} />
           <div className="id-hero">
+            <Prism size={150} className="hero-prism" />
             <div className="enter">
               <div className="chip-row" style={{ marginTop: 16 }}>
                 {category && <Link className="chip" href={routes.category(category.slug)}><CategoryIcon slug={category.slug} size={13} /> {category.name}</Link>}
@@ -89,10 +93,11 @@ export default async function ProductReview({ params }: Params) {
                 <span className={`status ${status.tone}`}>{status.label}</span>
               </div>
               <div className="id-title">
-                <Monogram name={p.name} categorySlug={p.categorySlug} size="lg" />
+                <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="xl" />
                 <h1>{p.name} review</h1>
               </div>
               <p className="lead">{p.tagline}</p>
+              <TrustBadges product={p} />
               <div className="actions" style={{ marginTop: 20 }}>
                 <AffiliateCta product={p} ctaType="hero" placement="hero" {...cta} />
                 {alts.length > 0 && <Link className="btn secondary" href={routes.alternatives(p.slug)}>{alts.length} alternatives</Link>}
@@ -107,10 +112,13 @@ export default async function ProductReview({ params }: Params) {
               <dl>
                 <div><dt>Category</dt><dd>{category?.name}</dd></div>
                 <div><dt>Pricing</dt><dd><span className={`status ${ps.tone}`}>{ps.label}</span></dd></div>
+                <div><dt>Free plan</dt><dd>{fact(p, "freePlan")?.value ?? "Not verified"}</dd></div>
+                <div><dt>Free trial</dt><dd>{fact(p, "freeTrial")?.value ?? "Not verified"}</dd></div>
                 <div><dt>Best for</dt><dd>{p.review.bestFor[0]}</dd></div>
                 <div><dt>Last checked</dt><dd>{formatDate(p.pricingLastChecked) ?? "Not yet"}</dd></div>
                 <div><dt>Updated</dt><dd>{formatDate(p.contentUpdatedAt)}</dd></div>
-                {p.vendor && <div><dt>Vendor</dt><dd>{p.vendor}</dd></div>}
+                {p.vendor && <div><dt>Vendor</dt><dd>{fact(p, "company")?.value ?? p.vendor}</dd></div>}
+                <div><dt>Official sources</dt><dd>{verifiedSources(p).length || "Not yet verified"}</dd></div>
               </dl>
               <a className="text-link small" href={p.officialUrl} target="_blank" rel="nofollow noopener">Official website ↗</a>
             </aside>
@@ -126,6 +134,12 @@ export default async function ProductReview({ params }: Params) {
             <h2 className="sr-only">Editorial summary</h2>
             <p style={{ fontSize: "1.08rem", marginTop: 12 }}>{p.review.editorialSummary}</p>
             <p className="muted">{p.description}</p>
+            {fact(p, "officialDescription") && (
+              <blockquote className="official-quote">
+                <p>&ldquo;{fact(p, "officialDescription")!.value}&rdquo;</p>
+                <footer className="tiny muted">— {p.vendor ?? p.name}, <a className="text-link" href={fact(p, "officialDescription")!.sourceUrl ?? p.officialUrl} target="_blank" rel="nofollow noopener noreferrer">official site</a></footer>
+              </blockquote>
+            )}
             {p.review.verdict && <p className="notice" style={{ marginBottom: 0 }}><strong>Verdict:</strong> {p.review.verdict}</p>}
           </section>
 
@@ -151,6 +165,21 @@ export default async function ProductReview({ params }: Params) {
             <div className="feature-grid reveal-stagger">
               {p.features.map((x) => <div className="feature" key={x}><span className="fi"><IconSpark size={16} /></span><span>{x}</span></div>)}
             </div>
+            <h3 className="section-gap">Feature breakdown</h3>
+            <div className="breakdown reveal-stagger">
+              {schema.filter((f) => !f.computed).map((f) => {
+                const v = p.comparison[f.key];
+                const ind = indicatorFor(v);
+                return (
+                  <div className="bd" key={f.key}>
+                    <span className="tiny muted">{f.label}</span>
+                    <strong className="small">{v ?? "—"}</strong>
+                    {ind && <span className={`ind ${ind}`}>{INDICATOR_LABEL[ind]}</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="tiny muted" style={{ marginTop: 8 }}>Feature breakdown is SaaSFinder&apos;s editorial assessment of documented capabilities.</p>
           </section>
 
           {/* 5 + 6. Pricing snapshot and last checked */}
@@ -158,8 +187,9 @@ export default async function ProductReview({ params }: Params) {
 
           {/* 7. Best for */}
           <section className="section-gap reveal" id="best-for">
-            <h2>Best for</h2>
+            <h2>Who {p.name} is for</h2>
             <div className="bestfor-tags">{p.review.bestFor.map((x) => <span key={x}>{x}</span>)}</div>
+            {fact(p, "audience") && <p className="small" style={{ marginTop: 12 }}><strong>Vendor&apos;s stated audience:</strong> {fact(p, "audience")!.value}</p>}
             {guides.length > 0 && (
               <p className="small muted" style={{ marginTop: 12 }}>
                 Featured in: {guides.map((g, i) => <span key={g.slug}>{i > 0 && " · "}<Link href={routes.best(g.slug)}>{g.title}</Link></span>)}
@@ -169,7 +199,7 @@ export default async function ProductReview({ params }: Params) {
 
           {/* 8. Limitations */}
           <section className="section-gap reveal" id="limitations">
-            <h2>Limitations</h2>
+            <h2>Who should avoid it — limitations</h2>
             <ul className="limit-list">{p.review.limitations.map((x) => <li key={x}><IconAlert size={16} />{x}</li>)}</ul>
           </section>
 
@@ -179,9 +209,48 @@ export default async function ProductReview({ params }: Params) {
             <div className="pc cons"><h2><IconX /> Cons</h2><ul>{p.review.cons.map((x) => <li key={x}><IconX size={16} />{x}</li>)}</ul></div>
           </section>
 
+          <section className="section-gap reveal" id="platforms">
+            <h2><IconLayers /> Platforms &amp; integrations</h2>
+            <FactsTable product={p} keys={["platforms", "mobileApps", "browser", "integrations"]} title="Platforms and integrations" />
+          </section>
+
+          <section className="section-gap three-up reveal-stagger" id="ease-security-support">
+            <div className="panel mini-panel">
+              <h3><IconSpark size={18} /> Ease of use</h3>
+              <p className="small">{p.comparison.ease ?? p.comparison.learning ?? p.comparison.setup ?? "Not assessed"}</p>
+              <span className="tiny muted">Editorial assessment</span>
+            </div>
+            <div className="panel mini-panel">
+              <h3><IconShield size={18} /> Security &amp; privacy</h3>
+              <p className="small">{fact(p, "security")?.value ?? "Not verified"}</p>
+              {p.sources.find((x) => x.kind === "SECURITY" && x.status === "VERIFIED") ? <a className="tiny text-link" href={p.sources.find((x) => x.kind === "SECURITY" && x.status === "VERIFIED")!.url} target="_blank" rel="nofollow noopener noreferrer">Official security page ↗</a> : <span className="tiny muted">No official security page verified yet</span>}
+            </div>
+            <div className="panel mini-panel">
+              <h3><IconUsers size={18} /> Support</h3>
+              <p className="small">{fact(p, "support")?.value ?? "Not verified"}</p>
+              {p.sources.find((x) => x.kind === "HELP_CENTER" && x.status === "VERIFIED") ? <a className="tiny text-link" href={p.sources.find((x) => x.kind === "HELP_CENTER" && x.status === "VERIFIED")!.url} target="_blank" rel="nofollow noopener noreferrer">Official help center ↗</a> : <span className="tiny muted">No help center verified yet</span>}
+            </div>
+          </section>
+
+          <section className="section-gap reveal" id="use-cases">
+            <h2>Use cases</h2>
+            {fact(p, "useCases") && <p><strong>Vendor-stated use cases:</strong> {fact(p, "useCases")!.value}</p>}
+            {guides.length > 0 ? (
+              <div className="grid two-col">
+                {guides.map((g) => (
+                  <Link key={g.slug} className="card ucard accent-top" href={routes.best(g.slug)}>
+                    <span className="tag">For {g.audience}</span>
+                    <h3>{g.title}</h3>
+                    <span className="tiny muted">Ranked #{g.products.findIndex((x) => x.slug === p.slug) + 1} of {g.products.length}</span>
+                  </Link>
+                ))}
+              </div>
+            ) : <p className="muted small">Not yet featured in a best-for guide.</p>}
+          </section>
+
           {/* 11. Comparison highlights */}
           <section className="section-gap reveal" id="comparison">
-            <h2>Comparison highlights</h2>
+            <h2>Competitors &amp; comparison highlights</h2>
             <div className="table-wrap">
               <table className="compare slim">
                 <tbody>
@@ -199,9 +268,9 @@ export default async function ProductReview({ params }: Params) {
                   const o = other(pair);
                   return (
                     <Link key={pair.slug} className="card vscard" href={routes.compare(pair.productA, pair.productB)}>
-                      <span className="side"><Monogram name={p.name} categorySlug={p.categorySlug} size="sm" />{p.name}</span>
+                      <span className="side"><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</span>
                       <span className="vs" aria-hidden="true">VS</span>
-                      <span className="side"><Monogram name={o.name} categorySlug={o.categorySlug} size="sm" />{o.name}</span>
+                      <span className="side"><Monogram name={o.name} slug={o.slug} categorySlug={o.categorySlug} size="sm" />{o.name}</span>
                       <span className="sr-only"> versus </span>
                       <span className="sum">{pair.summary}</span>
                     </Link>
@@ -222,7 +291,7 @@ export default async function ProductReview({ params }: Params) {
                 {alts.map(({ product: a, ref }) => (
                   <article className="card hoverable pcard" key={a.slug} style={catStyle(a.categorySlug)}>
                     <div className="pcard-head">
-                      <Monogram name={a.name} categorySlug={a.categorySlug} />
+                      <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} />
                       <div><h3><Link className="stretch" href={routes.product(a.slug)}>{a.name}</Link></h3><div className="sub">{a.subcategory}</div></div>
                     </div>
                     <p>{ref.rationale}</p>
@@ -233,8 +302,26 @@ export default async function ProductReview({ params }: Params) {
             </section>
           )}
 
+          <section className="section-gap reveal" id="facts">
+            <h2>{p.name} product facts</h2>
+            <FactsTable product={p} keys={["company", "founded", "headquarters", "audience", "freePlan", "freeTrial", "billingOptions", "usageLimits"]} title={`${p.name} product facts`} />
+          </section>
+
+          <ResourceCenter product={p} />
+          <SourcesPanel product={p} />
+          <section className="section-gap reveal" id="freshness">
+            <h2>Freshness</h2>
+            <FreshnessStrip product={p} />
+          </section>
+
           {/* 13. FAQs */}
           <FaqSection faqs={p.faqs} title={`${p.name} FAQs`} />
+
+          <section className="panel section-gap reveal" id="editorial-notes">
+            <h2>Editorial notes</h2>
+            <p className="small">{p.review.verdict ?? p.review.editorialSummary}</p>
+            <p className="tiny muted">Review status: {status.label}. Editorial judgements (summary, pros, cons, scores, feature breakdown) are SaaSFinder&apos;s opinion; vendor facts and prices are shown only when verified against official sources.</p>
+          </section>
 
           {/* 14. Affiliate CTA */}
           <section className="cta-band section-gap reveal" id="cta">
@@ -265,7 +352,7 @@ export default async function ProductReview({ params }: Params) {
         <aside className="sidebar" aria-label="Review sidebar">
           <div className="panel">
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <Monogram name={p.name} categorySlug={p.categorySlug} size="sm" />
+              <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />
               <strong>{p.name}</strong>
             </div>
             <p className="muted small" style={{ margin: "10px 0 12px" }}>{lastCheckedText(p)}</p>
@@ -283,7 +370,7 @@ export default async function ProductReview({ params }: Params) {
 
       <div className="sticky-cta" aria-label={`Visit ${p.name}`}>
         <span style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-          <Monogram name={p.name} categorySlug={p.categorySlug} size="sm" />
+          <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />
           <span style={{ display: "grid", minWidth: 0 }}>
             <strong style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</strong>
             <span className="tiny muted">{p.affiliate ? "Affiliate link" : "Official site"}</span>

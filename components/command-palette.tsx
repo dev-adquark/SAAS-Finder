@@ -10,8 +10,9 @@ const GROUPS: { k: SearchKind; label: string }[] = [
   { k: "best", label: "Best-for guides" },
   { k: "compare", label: "Comparisons" },
   { k: "alternatives", label: "Alternatives" },
+  { k: "faq", label: "FAQs" },
 ];
-const GLYPH: Record<SearchKind, string> = { product: "◆", category: "▦", best: "★", compare: "⇄", alternatives: "↺" };
+const GLYPH: Record<SearchKind, string> = { product: "◆", category: "▦", best: "★", compare: "⇄", alternatives: "↺", faq: "?" };
 const RECENT_KEY = "sf:recent-searches";
 export const OPEN_EVENT = "sf:open-search";
 
@@ -74,8 +75,9 @@ export function CommandPalette() {
     if (!items) return [];
     const scored = items.map((it) => ({ it, s: scoreItem(it, q) })).filter((x) => x.s > 0);
     if (q.trim()) scored.sort((a, b) => b.s - a.s || a.it.l.localeCompare(b.it.l));
-    const perGroup = q.trim() ? 6 : 4;
-    return GROUPS.flatMap((g) => scored.filter((x) => x.it.k === g.k).slice(0, perGroup).map((x) => x.it));
+    const perGroup = q.trim() ? 6 : 3;
+    // FAQs only appear once the visitor types a query.
+    return GROUPS.filter((g) => g.k !== "faq" || q.trim()).flatMap((g) => scored.filter((x) => x.it.k === g.k).slice(0, perGroup).map((x) => x.it));
   }, [items, q]);
 
   const close = () => {
@@ -143,7 +145,7 @@ export function CommandPalette() {
                       <li key={r.h} id={`pi-${i}`} role="option" aria-selected={i === active} className="palette-item" style={{ ["--cat" as string]: `var(--cat-${r.c}, var(--primary))` }} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
                         <span className="pi-icon" aria-hidden="true">{GLYPH[r.k]}</span>
                         <span>{r.l}</span>
-                        <span className="pi-meta">{r.m}</span>
+                        <span className="pi-meta">{r.v && <span className={`ind ${r.v === "Pricing verified" ? "included" : "varies"}`} style={{ marginRight: 8 }}>{r.v}</span>}{r.m}</span>
                       </li>
                     );
                   })}
