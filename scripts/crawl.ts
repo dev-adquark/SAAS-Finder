@@ -146,7 +146,9 @@ async function main() {
   if (!goEvil.res.headers.get("location")?.startsWith("https://www.wix.com/")) fail(`/go/wix ignored stored URL: ${goEvil.res.headers.get("location")}`);
   if (goEvil.res.headers.get("x-robots-tag") !== "noindex, nofollow") fail("/go must be noindex");
   const goTraversal = await get("/go/..%2F..%2Fadmin");
-  if (goTraversal.res.status !== 302 || !goTraversal.res.headers.get("location")?.endsWith("/products")) fail("/go traversal not rejected");
+  // Either the app redirects to /products or the platform edge rejects the encoded path (4xx).
+  const travOk = (goTraversal.res.status === 302 && goTraversal.res.headers.get("location")?.endsWith("/products")) || (goTraversal.res.status >= 400 && goTraversal.res.status < 500);
+  if (!travOk) fail(`/go traversal not rejected (${goTraversal.res.status})`);
 
   // Redirect rules.
   const expectRedirect = async (from: string, to: string, status: number) => {

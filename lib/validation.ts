@@ -60,3 +60,10 @@ export function parseOptionalDate(value: unknown): Date | null | undefined {
 export function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";
 }
+/** Parses an optional integer query parameter; missing, blank or non-numeric values use the fallback. */
+export function boundedInt(value: string | null | undefined, fallback: number, min: number, max: number): number {
+  if (value === null || value === undefined || value.trim() === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.floor(parsed), min), max);
+}

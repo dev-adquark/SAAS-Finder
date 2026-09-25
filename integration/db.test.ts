@@ -140,10 +140,11 @@ if (!url) {
 
     await t.test("cron queues refresh tasks for never-verified products only", async () => {
       assert.equal((await cron.GET(req("/api/cron/content-refresh"))).status, 401);
-      const r = await cron.GET(req("/api/cron/content-refresh?limit=100", { headers: { authorization: "Bearer integration-cron-secret" } }));
+      const r = await cron.GET(req("/api/cron/content-refresh", { headers: { authorization: "Bearer integration-cron-secret" } }));
       assert.equal(r.status, 200);
       const body = await json(r);
       assert.equal(body.mode, "queue-only");
+      assert.ok(Number(body.createdCount) > 1, "default batch (no ?limit) queues more than one product");
       const wix = await db.product.findUniqueOrThrow({ where: { slug: "wix" }, include: { refreshes: { where: { completedAt: null } } } });
       assert.equal(wix.refreshes.length, 0, "recently verified product is not queued");
       const trello = await db.product.findUniqueOrThrow({ where: { slug: "trello" }, include: { refreshes: { where: { completedAt: null } } } });

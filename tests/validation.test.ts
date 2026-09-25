@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { requireAdmin } from "../lib/admin-auth";
 import { requireCronSecret } from "../lib/cron-auth";
-import { isBoolean, isContentStatus, isHttpUrl, isNonEmptyString, isNonNegativeInteger, isRating, isSnapshotType, parseOptionalDate, slugify } from "../lib/validation";
+import { boundedInt, isBoolean, isContentStatus, isHttpUrl, isNonEmptyString, isNonNegativeInteger, isRating, isSnapshotType, parseOptionalDate, slugify } from "../lib/validation";
 
 test("accepts HTTP and HTTPS URLs only", () => {
   assert.equal(isHttpUrl("https://example.com"), true);
@@ -75,4 +75,13 @@ test("requires the configured cron secret", () => {
     if (previous === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = previous;
   }
+});
+
+test("boundedInt falls back when the parameter is missing (cron default batch size)", () => {
+  assert.equal(boundedInt(null, 25, 1, 100), 25);
+  assert.equal(boundedInt("", 25, 1, 100), 25);
+  assert.equal(boundedInt("abc", 25, 1, 100), 25);
+  assert.equal(boundedInt("0", 25, 1, 100), 1);
+  assert.equal(boundedInt("500", 25, 1, 100), 100);
+  assert.equal(boundedInt("7.9", 25, 1, 100), 7);
 });
