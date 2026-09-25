@@ -41,8 +41,17 @@ export function faqJsonLd(faqs: Faq[]): Json | null {
 /** Only offers with a verified numeric price and ISO currency are complete enough to publish. */
 function completeOffers(p: Product) {
   return p.pricing
-    .filter((pt) => pt.price !== null && pt.currency && /^[A-Z]{3}$/.test(pt.currency))
-    .map((pt) => ({ "@type": "Offer", name: pt.plan ?? undefined, price: pt.price!.toFixed(2), priceCurrency: pt.currency, url: pt.sourceUrl ?? p.pricingUrl ?? undefined }));
+    // Verified, non-promotional prices with a currency; the vendor's own unit wording (e.g.
+    // "per user per month, billed annually") travels with the price so it is never misread.
+    .filter((pt) => pt.price !== null && pt.currency && /^[A-Z]{3}$/.test(pt.currency) && !pt.promotional && (pt.unit || pt.price === 0))
+    .map((pt) => ({
+      "@type": "Offer",
+      name: pt.plan ?? undefined,
+      price: pt.price!.toFixed(2),
+      priceCurrency: pt.currency,
+      url: pt.sourceUrl ?? p.pricingUrl ?? undefined,
+      ...(pt.unit ? { priceSpecification: { "@type": "UnitPriceSpecification", price: pt.price!.toFixed(2), priceCurrency: pt.currency, unitText: pt.unit } } : {}),
+    }));
 }
 
 /** A published editorial rating counts only when a human review has been completed. */

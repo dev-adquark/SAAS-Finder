@@ -93,6 +93,10 @@ test("structured data is truthful", () => {
   const reviewed = { ...wix, review: { ...wix.review, reviewStatus: "REVIEWED" as const, lastReviewedAt: "2026-09-01T00:00:00.000Z" }, pricing: [{ plan: "Core", price: 29, currency: "USD", billingPeriod: "MONTHLY" as const, note: "", sourceUrl: "https://www.wix.com/upgrade/website", sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: "2026-09-01T00:00:00.000Z", unit: null, perSeat: false, promotional: false, regionDependent: false }, { plan: "Custom", price: null, currency: null, billingPeriod: "CUSTOM" as const, note: "", sourceUrl: null, sourceType: "OFFICIAL_PRICING_PAGE" as const, capturedAt: "2026-09-01T00:00:00.000Z", unit: null, perSeat: false, promotional: false, regionDependent: false }] };
   const ld2 = productJsonLd(reviewed, "Website Builders") as { review?: { reviewRating: { ratingValue: number } }; offers?: unknown[] };
   assert.equal(ld2.review?.reviewRating.ratingValue, wix.review.rating);
-  assert.equal(ld2.offers?.length, 1, "incomplete offers are dropped");
+  assert.equal(ld2.offers?.length ?? 0, 0, "offers without the vendor's unit wording are dropped");
+  const withUnit = { ...reviewed, pricing: reviewed.pricing.map((x) => ({ ...x, unit: "per user per month, billed annually" })) };
+  const ld3 = productJsonLd(withUnit, "Website Builders") as { offers?: { priceSpecification?: { unitText: string } }[] };
+  assert.equal(ld3.offers?.length, 1, "incomplete offers (no price/currency) are dropped");
+  assert.equal(ld3.offers?.[0].priceSpecification?.unitText, "per user per month, billed annually");
   assert.equal(serializeJsonLd({ x: "</script><script>" }).includes("</script>"), false);
 });
