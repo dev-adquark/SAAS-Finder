@@ -14,6 +14,10 @@ export function pooledUrl(raw: string | undefined, building = process.env.NEXT_P
   try {
     const url = new URL(raw);
     if (!url.searchParams.has("connection_limit")) url.searchParams.set("connection_limit", building ? "2" : "5");
+    // Supabase's transaction pooler (Supavisor, port 6543) multiplexes server connections per query,
+    // so Prisma's named prepared statements collide ("42P05 prepared statement \"s0\" already exists").
+    // `pgbouncer=true` makes Prisma skip them; it is required for this endpoint.
+    if (/\.pooler\.supabase\.com$/i.test(url.hostname) && url.port === "6543" && !url.searchParams.has("pgbouncer")) url.searchParams.set("pgbouncer", "true");
     return url.toString();
   } catch {
     return raw;
