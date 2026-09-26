@@ -2,7 +2,7 @@
    SaaSFinder — "The SaaS Atlas" design system
    Light-first editorial system: paper surfaces, ink typography, hairline rules,
    offset-print cards and one signature accent pair per category (colour = information).
-   Type roles: DISPLAY (Fraunces) · BODY (Geist) · UTILITY/DATA (Geist Mono).
+   Type roles: DISPLAY + BODY (Geist, weights 400/500/600) · UTILITY/DATA (Geist Mono).
    ========================================================================== */
 
 :root {
@@ -80,7 +80,7 @@
   --shadow: 0 1px 0 rgba(22, 22, 26, 0.04), 0 12px 30px -18px rgba(22, 22, 26, 0.28);
   --offset: 6px 6px 0 -1px var(--paper), 6px 6px 0 0 var(--line-strong);
   --max: 1240px;
-  --font-display: var(--font-fraunces, "Fraunces"), "Iowan Old Style", Georgia, serif;
+  --font-display: var(--font-geist, "Geist"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-body: var(--font-geist, "Geist"), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono, "Geist Mono"), ui-monospace, SFMono-Regular, Menlo, monospace;
   --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
@@ -110,7 +110,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; line-height: 1.08; margin: 0 0 0.5em; }
 h1 { font-size: clamp(2.6rem, 6vw, 5.2rem); letter-spacing: -0.035em; line-height: 0.98; font-weight: 400; }
 h2 { font-size: clamp(1.7rem, 3vw, 2.6rem); }
-h3 { font-size: 1.2rem; font-family: var(--font-body); font-weight: 650; letter-spacing: -0.01em; line-height: 1.3; }
+h3 { font-size: 1.2rem; font-family: var(--font-body); font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
 p { margin: 0 0 1em; }
 code { font-family: var(--font-mono); font-size: 0.85em; background: var(--raised); padding: 0.1em 0.35em; border-radius: 4px; }
 .serif { font-family: var(--font-display); font-style: italic; font-weight: 400; }
@@ -313,21 +313,21 @@ a.chip:hover { border-color: var(--cat); }
 .atlas-tile a span { transform: rotateZ(36deg); display: block; }
 .atlas-tile a:hover, .atlas-tile a:focus-visible { transform: translateZ(24px); }
 .atlas-tile .shadow { position: absolute; inset: 10% -12% -14% 10%; border-radius: 8px; background: rgba(22, 22, 26, 0.22); filter: blur(5px); transform: translateZ(calc(var(--z, 16px) * -1)); pointer-events: none; }
-.atlas-tile .pin { position: absolute; left: 88%; top: 12%; width: 16px; height: 16px; border-radius: 50%; background: var(--white); border: 2px solid var(--success); transform: translate(-50%, -50%) translateZ(10px); display: grid; place-items: center; font-size: 8px; font-weight: 800; color: var(--success); pointer-events: none; }
+.atlas-tile .pin { position: absolute; left: 88%; top: 12%; width: 16px; height: 16px; border-radius: 50%; background: var(--white); border: 2px solid var(--success); transform: translate(-50%, -50%) translateZ(10px); display: grid; place-items: center; font-size: 8px; font-weight: 600; color: var(--success); pointer-events: none; }
 @keyframes drop { from { opacity: 0; transform: translate(-50%, -50%) translateZ(200px); } }
 .atlas-legend { position: absolute; left: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); animation: fade-in 1s 1.8s both; }
 .atlas-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .atlas-legend .pin-key { border-radius: 50%; border: 2px solid var(--success); background: var(--white); }
 .atlas-legend .line-key { width: 18px; height: 0; border-top: 1px solid var(--ink); border-radius: 0; vertical-align: 3px; }
 .atlas-caption { position: absolute; right: 0; top: 0; text-align: right; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); animation: fade-in 1s 1.5s both; }
-.atlas-caption b { display: block; font-family: var(--font-display); font-size: 2.6rem; letter-spacing: -0.03em; color: var(--ink); font-weight: 300; text-transform: none; line-height: 1; }
+.atlas-caption b { display: block; font-family: var(--font-display); font-size: 2.6rem; letter-spacing: -0.03em; color: var(--ink); font-weight: 500; text-transform: none; line-height: 1; }
 
 /* ---------- Trust strip ---------- */
 .trust-strip { border-block: 1px solid var(--ink); background: var(--ivory); }
 .trust-strip ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .trust-strip li { padding: 22px 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
 .trust-strip li:last-child { border-right: 0; }
-.trust-strip strong { font-family: var(--font-display); font-weight: 300; font-size: clamp(2.2rem, 3.6vw, 3.3rem); line-height: 1; letter-spacing: -0.03em; }
+.trust-strip strong { font-family: var(--font-display); font-weight: 500; font-size: clamp(2.2rem, 3.6vw, 3.3rem); line-height: 1; letter-spacing: -0.03em; }
 .trust-strip li > span { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 
 /* ---------- Product identity tiles ---------- */
@@ -357,7 +357,7 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 .dcard::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 28%; background: var(--cat); transition: width 0.6s var(--ease-out); }
 .dcard:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 -1px var(--paper), 6px 6px 0 0 var(--cat); border-color: var(--cat); }
 .dcard:hover::before { width: 100%; }
-.dcard .initials { position: absolute; right: -4px; bottom: -30px; font-family: var(--font-display); font-weight: 300; font-size: 8.5rem; line-height: 1; color: color-mix(in srgb, var(--cat) 9%, transparent); letter-spacing: -0.06em; pointer-events: none; transition: color 0.4s, transform 0.7s var(--ease-out); }
+.dcard .initials { position: absolute; right: -4px; bottom: -30px; font-family: var(--font-display); font-weight: 500; font-size: 8.5rem; line-height: 1; color: color-mix(in srgb, var(--cat) 9%, transparent); letter-spacing: -0.06em; pointer-events: none; transition: color 0.4s, transform 0.7s var(--ease-out); }
 .dcard:hover .initials { color: color-mix(in srgb, var(--cat) 17%, transparent); transform: translateY(-8px); }
 .dcard h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; position: relative; }
 .dcard .meta { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; position: relative; }
@@ -381,7 +381,7 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 .cat-blocks { display: grid; border-top: 1px solid var(--ink); }
 .cat-block { position: relative; display: grid; grid-template-columns: 120px minmax(0, 1.05fr) minmax(0, 1fr) 280px; gap: 28px; align-items: center; padding: 34px 0; border-bottom: 1px solid var(--line-strong); transition: background 0.4s; }
 .cat-block:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 6%, transparent), transparent 70%); }
-.cat-no { font-family: var(--font-display); font-size: 4.6rem; line-height: 0.9; color: var(--cat); font-weight: 300; letter-spacing: -0.04em; transition: transform 0.5s var(--ease-out); }
+.cat-no { font-family: var(--font-display); font-size: 4.6rem; line-height: 0.9; color: var(--cat); font-weight: 500; letter-spacing: -0.04em; transition: transform 0.5s var(--ease-out); }
 .cat-block:hover .cat-no { transform: translateX(6px); }
 .cat-title { font-family: var(--font-display); font-size: clamp(2rem, 3.6vw, 3.1rem); line-height: 0.95; letter-spacing: -0.03em; text-transform: uppercase; font-weight: 400; margin: 0; }
 .cat-title a::after { content: ""; position: absolute; inset: 0; }
@@ -458,11 +458,11 @@ a.vscard:hover .side:last-child { transform: translateX(6px); }
 
 /* ---------- Verification feature (ink zone) ---------- */
 .trace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 64px; align-items: start; }
-.trace h2 { font-size: clamp(2.2rem, 4.4vw, 3.8rem); font-weight: 300; }
+.trace h2 { font-size: clamp(2.2rem, 4.4vw, 3.8rem); font-weight: 500; }
 .trace h2 em { font-style: italic; color: #9fb4ff; }
 .trace-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(246, 242, 234, 0.25); margin-top: 32px; }
 .trace-stats div { padding: 22px 16px 22px 0; }
-.trace-stats strong { display: block; font-family: var(--font-display); font-weight: 300; font-size: clamp(3rem, 6vw, 5rem); line-height: 1; letter-spacing: -0.04em; color: var(--paper); }
+.trace-stats strong { display: block; font-family: var(--font-display); font-weight: 500; font-size: clamp(3rem, 6vw, 5rem); line-height: 1; letter-spacing: -0.04em; color: var(--paper); }
 .trace-stats div > span { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: #b9b4aa; }
 .pipeline { list-style: none; margin: 0; padding: 0; display: grid; counter-reset: stage; }
 .pipeline li { counter-increment: stage; display: grid; grid-template-columns: 56px 1fr; gap: 16px; padding: 18px 0; border-top: 1px solid rgba(246, 242, 234, 0.2); }
@@ -642,7 +642,7 @@ tr.sourced th[scope="row"]::after { content: " · sourced"; font-family: var(--f
 
 /* Picks */
 .pick { display: grid; grid-template-columns: auto 1fr; gap: 22px; }
-.pick-rank { font-family: var(--font-display); font-weight: 300; font-size: 3.2rem; line-height: 0.9; color: var(--cat); width: 64px; }
+.pick-rank { font-family: var(--font-display); font-weight: 500; font-size: 3.2rem; line-height: 0.9; color: var(--cat); width: 64px; }
 .pick.top { border: 1px solid var(--ink); box-shadow: var(--offset); }
 .criteria { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); border-top: 1px solid var(--ink); column-gap: 24px; }
 .criterion { padding: 18px 0; border-bottom: 1px solid var(--line); }
@@ -808,7 +808,7 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 
 /* Footer */
 .footer { margin-top: 90px; background: var(--ink); color: #b9b4aa; padding: 72px 0 28px; font-size: 0.9rem; }
-.footer .closing { font-family: var(--font-display); font-weight: 300; color: var(--paper); font-size: clamp(2.3rem, 5.6vw, 5rem); line-height: 1; letter-spacing: -0.035em; margin: 0 0 56px; max-width: 18ch; }
+.footer .closing { font-family: var(--font-display); font-weight: 500; color: var(--paper); font-size: clamp(2.3rem, 5.6vw, 5rem); line-height: 1; letter-spacing: -0.035em; margin: 0 0 56px; max-width: 18ch; }
 .footer .closing em { font-style: italic; color: #9fb4ff; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(5, minmax(0, 1fr)); gap: 28px; padding-top: 28px; border-top: 1px solid rgba(246, 242, 234, 0.2); }
 .footer .brand { color: var(--paper); }
@@ -931,7 +931,7 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
   .compare.stackable tr { padding: 12px 16px; border-bottom: 1px solid var(--line); }
   .compare.stackable th[scope="row"] { position: static; box-shadow: none; padding: 0 0 6px; width: 100%; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: transparent; border: 0; }
   .compare.stackable td { padding: 6px 0; border: 0; }
-  .compare.stackable td[data-label]::before { content: attr(data-label); display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 2px; color: var(--ink); }
+  .compare.stackable td[data-label]::before { content: attr(data-label); display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 2px; color: var(--ink); }
 }
 @media (max-width: 560px) {
   .container { width: calc(100% - 32px); }
@@ -996,7 +996,7 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 .flow-layout > div > section:first-child { margin-top: 0; }
 .flow-intro { font-size: 1.1rem; }
 .flow-intro > p:first-of-type { font-family: var(--font-display); font-size: clamp(1.3rem, 2vw, 1.6rem); line-height: 1.45; color: var(--ink); font-weight: 400; }
-.id-title h1 .serif { font-weight: 300; }
+.id-title h1 .serif { font-weight: 500; }
 .price-table .pt-price { font-family: var(--font-display); font-weight: 400; font-size: 1.3rem; }
 .price-table { min-width: 720px; }
 .price-table td:nth-child(2) { min-width: 110px; }
@@ -1012,7 +1012,7 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 .hero-stats { display: flex; flex-wrap: wrap; gap: 0; margin-top: 26px; border-top: 1px solid var(--ink); width: fit-content; }
 .hero-stats div { display: flex; flex-direction: column; padding: 14px 28px 0 0; margin-right: 28px; border-right: 1px solid var(--line); }
 .hero-stats div:last-child { border-right: 0; margin-right: 0; }
-.hero-stats strong { font-family: var(--font-display); font-weight: 300; font-size: 2.4rem; line-height: 1; letter-spacing: -0.03em; }
+.hero-stats strong { font-family: var(--font-display); font-weight: 500; font-size: 2.4rem; line-height: 1; letter-spacing: -0.03em; }
 .hero-stats span { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 
 /* ==========================================================================
@@ -1169,4 +1169,38 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
   .hero-blobs { inset: 0 -25%; opacity: 0.6; }
   .hero-blobs span { width: 80vw !important; height: 80vw !important; }
   .marquee span { font-size: 1.1rem; padding: 0 18px; }
+}
+
+/* ==========================================================================
+   Typography v3 — one sharp, technical sans system (Geist + Geist Mono).
+   Three weights only: 400 body · 500 display · 600 emphasis. No italics: emphasis is
+   carried by colour and weight, which a sans renders crisply at every size.
+   ========================================================================== */
+em, i, .serif, .grad-text, .pull, .official-quote p, .cat-block .tagline, .vs-mark span, .vscard .vs, .duel-mid .vs, .price, .brand b, .hero-search input::placeholder { font-style: normal; }
+h1, h2 { font-weight: 500; font-feature-settings: "ss01", "cv11"; }
+h1 { letter-spacing: -0.045em; line-height: 0.98; }
+h2 { letter-spacing: -0.035em; line-height: 1.05; }
+h3 { font-weight: 600; letter-spacing: -0.015em; }
+.hero h1 { letter-spacing: -0.055em; line-height: 0.94; }
+.hero h1 em, .trace h2 em, .footer .closing em, .id-title h1 .serif { font-style: normal; }
+.hero h1 em { font-weight: 500; padding-right: 0; }
+.hero h1 { font-size: clamp(2.9rem, 6vw, 5rem); }
+.serif { font-weight: 400; color: var(--muted); }
+.id-title h1 .serif { font-weight: 400; }
+.grad-text { font-weight: 500; }
+.brand b { font-weight: 500; color: var(--muted); }
+.pull { font-weight: 500; letter-spacing: -0.02em; line-height: 1.3; }
+.official-quote p { font-weight: 500; letter-spacing: -0.01em; }
+.cat-block .tagline { font-weight: 400; letter-spacing: -0.01em; font-size: 1.12rem; line-height: 1.5; }
+.vs-mark span, .vscard .vs, .duel-mid .vs { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
+.price { font-weight: 500; letter-spacing: -0.02em; }
+.hero-search input { font-family: var(--font-body); font-size: 1.08rem; }
+/* Big numerals: tabular figures keep count-ups from jittering horizontally. */
+.trust-strip strong, .trace-stats strong, .hero-stats strong, .cat-no, .pick-rank, .atlas-caption b, .marker b { font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
+.dcard .initials { letter-spacing: -0.07em; }
+.marquee span { letter-spacing: -0.02em; font-weight: 500; }
+.footer .closing { letter-spacing: -0.04em; }
+@media (max-width: 760px) {
+  h1 { letter-spacing: -0.04em; }
+  .hero h1 { letter-spacing: -0.05em; }
 }
