@@ -167,14 +167,43 @@ async function databaseCatalog(): Promise<Catalog> {
   };
 }
 
+// Transient connection failures (pool wait timeout, server unreachable, pooler reset) are retried a
+// bounded number of times; anything else is a real error and is thrown immediately.
+const TRANSIENT = new Set(["P1001", "P1002", "P1017", "P2024"]);
+async function readDatabaseCatalog(attempts = 3): Promise<Catalog> {
+  for (let i = 1; ; i++) {
+    try {
+      return sanitizeCatalog(await databaseCatalog());
+    } catch (error) {
+      const code = (error as { code?: unknown })?.code;
+      if (i >= attempts || typeof code !== "string" || !TRANSIENT.has(code)) throw error;
+      await new Promise((r) => setTimeout(r, 750 * i));
+    }
+  }
+}
+
+// `next build` renders every static page in parallel workers. React `cache` only dedupes within one
+// render, so without this each page (and each generateStaticParams) re-ran the full catalog query set
+// and exhausted the connection pool on higher-latency databases. During the build, each worker reads
+// the catalog once and every page is generated from that single consistent snapshot.
+const isBuild = () => process.env.NEXT_PHASE === "phase-production-build";
+let buildSnapshot: Promise<Catalog> | null = null;
+
 /**
- * Loads the public catalog once per request. Database errors are thrown rather than swallowed so
- * ISR keeps serving the last good page instead of caching an empty one.
+ * Loads the public catalog once per request (once per worker during the build). Database errors are
+ * thrown rather than swallowed so ISR keeps serving the last good page instead of caching an empty one.
  */
 export const loadCatalog = cache(async (): Promise<Catalog> => {
   if (!hasDatabase()) return sanitizeCatalog(seedCatalog());
   try {
-    return sanitizeCatalog(await databaseCatalog());
+    if (isBuild()) {
+      buildSnapshot ??= readDatabaseCatalog().catch((e) => {
+        buildSnapshot = null;
+        throw e;
+      });
+      return await buildSnapshot;
+    }
+    return await readDatabaseCatalog();
   } catch (error) {
     console.error("[catalog] database read failed", error instanceof Error ? error.message : "unknown error");
     throw error;
