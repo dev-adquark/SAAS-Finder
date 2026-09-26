@@ -408,7 +408,7 @@ export const parseChangelog = (b: unknown) => read(b).str("version", { max: 60, 
 export type RefreshInput = { reason: string; dueAt: Date };
 export const parseRefresh = (b: unknown) => read(b).str("reason", { max: 500, required: true }).date("dueAt", { required: true }).done<RefreshInput>();
 
-export const SOURCE_KINDS = ["PRICING", "PRODUCT", "DOCUMENTATION", "HELP_CENTER", "SECURITY", "CHANGELOG", "NEWSROOM", "ABOUT", "CONTACT", "INTEGRATIONS", "STATUS", "INDEPENDENT"] as const;
+export const SOURCE_KINDS = ["PRICING", "PRODUCT", "DOCUMENTATION", "HELP_CENTER", "SECURITY", "CHANGELOG", "NEWSROOM", "ABOUT", "CONTACT", "INTEGRATIONS", "STATUS", "INDEPENDENT", "PRIVACY", "TERMS"] as const;
 export const SOURCE_STATUSES = ["VERIFIED", "NEEDS_VERIFICATION", "EXPIRED", "BROKEN"] as const;
 export const FACT_KEYS = ["company", "founded", "headquarters", "officialDescription", "audience", "useCases", "integrations", "platforms", "mobileApps", "browser", "security", "support", "freePlan", "freeTrial", "billingOptions", "usageLimits"] as const;
 export const RELATIONSHIP_TYPES = ["AFFILIATE", "SPONSORSHIP", "PARTNERSHIP", "COLLABORATION"] as const;

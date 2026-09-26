@@ -12,7 +12,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "test:db": "prisma migrate deploy && tsx prisma/seed.ts && tsx --test 'integration/**/*.test.ts'",
+    "test:db": "prisma migrate deploy && tsx prisma/seed.ts && tsx --test --test-concurrency=1 'integration/**/*.test.ts'",
     "test:e2e": "tsx scripts/crawl.ts",
     "db:deploy": "prisma migrate deploy",
     "db:seed:refresh": "tsx prisma/seed.ts --refresh-seed",

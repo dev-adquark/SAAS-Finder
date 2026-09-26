@@ -1204,3 +1204,4 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
   h1 { letter-spacing: -0.04em; }
   .hero h1 { letter-spacing: -0.05em; }
 }
+.btn:disabled, .btn[disabled] { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }

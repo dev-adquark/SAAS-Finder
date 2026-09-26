@@ -13,6 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { seedProducts } from "../lib/content/seed/products";
+import { EXTRA_DOMAINS, norm, normRaw, priceInEvidence, registrable } from "../lib/research/evidence";
 
 export {};
 
@@ -22,9 +23,6 @@ if (!dir) throw new Error("usage: tsx scripts/import-research.ts <research-dir>"
 const FACT_KEYS = new Set(["company", "founded", "headquarters", "officialDescription", "audience", "useCases", "integrations", "platforms", "mobileApps", "browser", "security", "support", "freePlan", "freeTrial", "billingOptions", "usageLimits"]);
 const SOURCE_KINDS = new Set(["PRICING", "PRODUCT", "DOCUMENTATION", "HELP_CENTER", "SECURITY", "CHANGELOG", "NEWSROOM", "ABOUT", "CONTACT", "INTEGRATIONS", "STATUS"]);
 const PERIODS = new Set(["MONTHLY", "ANNUAL", "FREE", "CUSTOM"]);
-// Vendors whose official pages live on a parent-company domain.
-const EXTRA_DOMAINS: Record<string, string[]> = { trello: ["atlassian.com"], "adobe-express": ["adobe.com"], monday: ["monday.com"], figma: ["figma.com"] };
-
 // Editorial exclusions after human review of flagged items (claim evidenced but unsuitable to publish).
 const EXCLUSIONS: Record<string, { match: string; reason: string }[]> = {
   hubspot: [{ match: "fact:audience", reason: "evidence is a navigation label, not an audience statement" }],
@@ -32,22 +30,6 @@ const EXCLUSIONS: Record<string, { match: string; reason: string }[]> = {
   trello: [{ match: "plan:Enterprise:ANNUAL", reason: "volume-dependent estimate for 50 users, not a list price" }],
 };
 const excluded = (slug: string, id: string) => EXCLUSIONS[slug]?.find((x) => x.match === id);
-
-const registrable = (host: string) => host.replace(/^www\./, "").split(".").slice(-2).join(".");
-const decode = (s: string) =>
-  s
-    .replace(/&nbsp;|&#160;| /g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;|&#34;/g, '"')
-    .replace(/&#x27;|&#39;|&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-    .replace(/\\u002F/gi, "/")
-    .replace(/\\"/g, '"');
-const norm = (s: string) => decode(s).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
-const normRaw = (s: string) => decode(s).replace(/\s+/g, " ").trim().toLowerCase();
 
 type Rejection = { slug: string; item: string; reason: string };
 const rejected: Rejection[] = [];
@@ -71,13 +53,6 @@ function evidenced(file: string | undefined, evidence: string | undefined): bool
   } catch {
     return false;
   }
-}
-
-function priceInEvidence(price: number, evidence: string): boolean {
-  // Numbers are often split across tags (e.g. `117</span><span>.33`): strip tags, then whitespace.
-  const e = decode(evidence).replace(/<[^>]*>/g, "").replace(/\s/g, "");
-  const variants = new Set([String(price), price.toFixed(2), price.toLocaleString("en-US"), price.toLocaleString("en-US", { minimumFractionDigits: 2 }), price.toLocaleString("en-IN"), String(price).replace(".", ",")]);
-  return [...variants].some((v) => e.includes(v));
 }
 
 type Out = {

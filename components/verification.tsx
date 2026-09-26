@@ -37,9 +37,11 @@ const SOURCE_LABEL: Record<SourceKind, string> = {
   INTEGRATIONS: "Integrations",
   STATUS: "Status page",
   INDEPENDENT: "Independent source",
+  PRIVACY: "Privacy policy",
+  TERMS: "Terms of service",
 };
 
-const RESOURCE_ORDER: SourceKind[] = ["PRODUCT", "PRICING", "DOCUMENTATION", "HELP_CENTER", "SECURITY", "CHANGELOG", "NEWSROOM", "INTEGRATIONS", "STATUS", "CONTACT", "ABOUT"];
+const RESOURCE_ORDER: SourceKind[] = ["PRODUCT", "PRICING", "DOCUMENTATION", "HELP_CENTER", "SECURITY", "CHANGELOG", "NEWSROOM", "INTEGRATIONS", "STATUS", "CONTACT", "ABOUT", "PRIVACY", "TERMS"];
 
 export const verifiedFacts = (p: Pick<Product, "facts">) => p.facts.filter((f) => f.status === "VERIFIED");
 export const fact = (p: Pick<Product, "facts">, key: string): FactRef | undefined => verifiedFacts(p).find((f) => f.key === key);

@@ -24,7 +24,7 @@ export type PricePoint = {
   regionDependent: boolean;
 };
 
-export type SourceKind = "PRICING" | "PRODUCT" | "DOCUMENTATION" | "HELP_CENTER" | "SECURITY" | "CHANGELOG" | "NEWSROOM" | "ABOUT" | "CONTACT" | "INTEGRATIONS" | "STATUS" | "INDEPENDENT";
+export type SourceKind = "PRICING" | "PRODUCT" | "DOCUMENTATION" | "HELP_CENTER" | "SECURITY" | "CHANGELOG" | "NEWSROOM" | "ABOUT" | "CONTACT" | "INTEGRATIONS" | "STATUS" | "INDEPENDENT" | "PRIVACY" | "TERMS";
 export type SourceStatus = "VERIFIED" | "NEEDS_VERIFICATION" | "EXPIRED" | "BROKEN";
 
 export type SourceRef = { kind: SourceKind; url: string; name: string; section: string | null; checkedAt: string | null; status: SourceStatus };

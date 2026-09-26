@@ -11,6 +11,9 @@ import {
   parseSnapshot, parseSponsor, parseUseCase, parseUseCaseProduct, read, parseSource, parseFact, parseRelationship,
 } from "@/lib/admin/inputs";
 import * as svc from "@/lib/admin/services";
+import { advanceSyncs, startSync, SyncError } from "@/lib/sync/run";
+import { acceptChange, keepExisting, rejectChange, revertChange } from "@/lib/sync/review";
+import { advanceInBackground } from "@/lib/sync/schedule";
 
 const BACK = /^\/admin(?:\/[A-Za-z0-9_-]+)*$/;
 
@@ -22,6 +25,7 @@ function backTo(fd: FormData, fallback: string) {
 function message(e: unknown) {
   if (e instanceof InputError) return e.problems.join("; ");
   if (e instanceof svc.NotFoundError) return e.message || "Not found";
+  if (e instanceof SyncError) return e.message;
   if (e instanceof Error && e.message === "Unauthorized") return "Your session expired. Sign in again.";
   console.error("[admin-action]", e instanceof Error ? e.name : "error");
   return "Save failed. Please try again.";
@@ -316,4 +320,47 @@ export async function updateRelationshipAction(fd: FormData) {
 
 export async function deleteRelationshipAction(fd: FormData) {
   await perform("/admin/relationships", "Relationship deleted", async () => (confirmed(fd), svc.deleteRelationship(need(fd, "relId"))));
+}
+
+// ---------- Automated research sync ----------
+
+const SYNC_BACK = "/admin/sync";
+const note = (fd: FormData) => read(formToObject(fd)).str("note", { max: 500, nullable: true }).done<{ note?: string | null }>().note ?? null;
+
+export async function startFullSyncAction() {
+  await perform(SYNC_BACK, "Full sync started — official pages are being fetched", async () => {
+    await startSync({ trigger: "MANUAL_FULL" });
+  });
+}
+
+export async function startProductSyncAction(fd: FormData) {
+  const id = need(fd, "productId");
+  await perform(backTo(fd, SYNC_BACK), "Product sync started", async () => {
+    await startSync({ trigger: "MANUAL_PRODUCT", productId: id });
+  });
+}
+
+/** Checks the crawl and processes finished results for one time budget; continues in the background. */
+export async function advanceSyncAction() {
+  await perform(SYNC_BACK, "Sync progress updated", async () => {
+    const r = await advanceSyncs({ budgetMs: 25_000 });
+    if (r.more) advanceInBackground();
+  });
+}
+
+export async function acceptChangeAction(fd: FormData) {
+  const period = String(fd.get("billingPeriod") ?? "") || null;
+  await perform(backTo(fd, SYNC_BACK), "Change accepted and published", () => acceptChange(need(fd, "changeId"), { by: "admin", note: note(fd), billingPeriod: period }));
+}
+
+export async function rejectChangeAction(fd: FormData) {
+  await perform(backTo(fd, SYNC_BACK), "Change rejected", () => rejectChange(need(fd, "changeId"), { by: "admin", note: note(fd) }));
+}
+
+export async function keepChangeAction(fd: FormData) {
+  await perform(backTo(fd, SYNC_BACK), "Existing value kept", () => keepExisting(need(fd, "changeId"), { by: "admin", note: note(fd) }));
+}
+
+export async function revertChangeAction(fd: FormData) {
+  await perform(backTo(fd, SYNC_BACK), "Change reverted to the previous value", async () => (confirmed(fd), revertChange(need(fd, "changeId"), { by: "admin" })));
 }

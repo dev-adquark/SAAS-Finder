@@ -63,6 +63,8 @@ enum SourceKind {
   INTEGRATIONS
   STATUS
   INDEPENDENT
+  PRIVACY
+  TERMS
 }
 
 // Verification state of a source or sourced fact. Only VERIFIED items are presented as verified.
@@ -155,6 +157,8 @@ model Product {
   relationships       BrandRelationship[]
   changelog           ChangeLog[]
   refreshes           ContentRefresh[]
+  syncPages           SyncPage[]
+  dataChanges         DataChange[]
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -465,4 +469,134 @@ model BrandRelationship {
   updatedAt        DateTime         @updatedAt
 
   @@index([agreementStatus, endDate])
+}
+
+// ---------------- Automated research sync (Apify) ----------------
+// Automation never publishes a new value by itself. A run may only re-confirm existing verified
+// claims whose verbatim evidence is still present on the official page (bumping check dates);
+// every difference becomes a DataChange that an editor accepts, rejects or keeps.
+
+enum SyncTrigger {
+  SCHEDULED
+  MANUAL_FULL
+  MANUAL_PRODUCT
+}
+
+enum SyncStatus {
+  RUNNING // Apify crawl in flight
+  PROCESSING // results being validated and diffed (resumable)
+  COMPLETED
+  PARTIAL // finished, but some sources were unavailable
+  FAILED
+}
+
+enum SyncPageStatus {
+  OK
+  UNAVAILABLE // no result: blocked, timed out or failed after retries
+  BLOCKED // anti-bot / captcha / 401-403-429 page
+  NOT_FOUND // 404 / 410
+  MALFORMED // result failed validation (empty, truncated, off-domain redirect)
+}
+
+enum DataChangeKind {
+  PRICE_CHANGED
+  NEW_PLAN
+  PLAN_NOT_FOUND
+  FACT_NOT_FOUND
+  FACT_CHANGED
+  NEW_SOURCE
+  SOURCE_NOT_FOUND
+  SOURCE_UPDATED
+}
+
+enum DataChangeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  KEPT // editor kept the existing value
+  REVERTED
+}
+
+model SyncRun {
+  id             String       @id @default(cuid())
+  trigger        SyncTrigger
+  status         SyncStatus   @default(RUNNING)
+  // ISO week (e.g. "2026-W39") for scheduled runs, so re-invoking the weekly cron is idempotent.
+  weekKey        String?      @unique
+  productId      String?
+  // 1 = known official URLs, 2 = newly discovered official links being validated.
+  phase          Int          @default(1)
+  apifyRunId     String?      @unique
+  apifyDatasetId String?
+  attempts       Int          @default(1)
+  // Dataset offset already processed in the current phase (resumable processing).
+  cursor         Int          @default(0)
+  lockedUntil    DateTime?
+  startedAt      DateTime     @default(now())
+  finishedAt     DateTime?
+  durationMs     Int?
+  error          String?
+  stats          Json         @default("{}")
+  pages          SyncPage[]
+  changes        DataChange[]
+
+  @@index([status, startedAt])
+}
+
+model SyncPage {
+  id          String          @id @default(cuid())
+  runId       String
+  run         SyncRun         @relation(fields: [runId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  phase       Int             @default(1)
+  url         String
+  // Classified kind for discovered links (phase 2).
+  kind        SourceKind?
+  status      SyncPageStatus?
+  httpStatus  Int?
+  contentHash String?
+  title       String?
+  reason      String?
+  fetchedAt   DateTime?
+  processedAt DateTime?
+  // Per-page outcome: claims checked / re-confirmed ids, used for run statistics and product status.
+  outcome     Json?
+
+  @@unique([runId, phase, productId, url])
+  @@index([productId, fetchedAt])
+}
+
+model DataChange {
+  id            String           @id @default(cuid())
+  runId         String?
+  run           SyncRun?         @relation(fields: [runId], references: [id], onDelete: SetNull)
+  productId     String
+  product       Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  kind          DataChangeKind
+  // Human-readable field, e.g. "Pricing · Pro (monthly)", "Fact · freePlan", "Source · Security".
+  field         String
+  // Existing record this change concerns (snapshot, fact or source id).
+  targetId      String?
+  previousValue String?
+  newValue      String?
+  sourceUrl     String?
+  // Verbatim text from the fetched official page supporting the new value.
+  evidence      String?
+  // Structured values needed to apply the change (plan, price, currency, period, kind, name...).
+  payload       Json?
+  // Same detection is never proposed twice; a rejected/kept proposal stays decided.
+  dedupeKey     String
+  status        DataChangeStatus @default(PENDING)
+  detectedAt    DateTime         @default(now())
+  lastSeenAt    DateTime         @default(now())
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  note          String?
+  // What accepting changed (ids and prior state), so an accepted change can be reverted.
+  applied       Json?
+
+  @@index([status, detectedAt])
+  @@index([productId, detectedAt])
+  @@index([productId, dedupeKey])
 }
