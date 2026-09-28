@@ -1308,3 +1308,49 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
   [id="key-differences"], [id="comparison-table"], [id="pricing-matrix"], [id="verdict"] { scroll-margin-top: 190px; }
   .tabx { scroll-margin-top: 80px; }
 }
+
+/* ==========================================================================
+   Mobile-first comfort layer (phones, tablets and any touch screen).
+   Touch: standalone controls are at least 44px tall (40px for inline-flow links). Type: nothing
+   that carries information renders below 12px. This block is a deliberate floor over component
+   styles, hence the scoped !important on the type sizes. Decorative (aria-hidden) art is exempt.
+   ========================================================================== */
+@media (max-width: 900px), (pointer: coarse) {
+  .site-header .brand, .site-header .btn, .site-header button, .site-header nav a { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
+  .footer ul { gap: 0; }
+  .footer ul a, .footer nav a, .footer .brand { display: inline-flex; align-items: center; min-height: 44px; }
+  nav.panel a, .link-groups .list a, .list a, main li > a:only-child { display: inline-flex; align-items: center; min-height: 40px; }
+  .breadcrumbs a { display: inline-flex; align-items: center; min-height: 44px; }
+  .examples a, .card > a.text-link, .panel > a.text-link, .panel > p > a.text-link:only-child { display: inline-flex; align-items: center; min-height: 40px; }
+  .chip, a.chip { min-height: 40px; display: inline-flex; align-items: center; }
+  .btn, button.btn { min-height: 44px; }
+  .filters button, .filters a, .filters select, .searchbar input, .searchbar button { min-height: 44px; }
+  aside.disclosure a { display: inline-flex; align-items: center; min-height: 40px; }
+
+  /* Every selector below was measured below 12px on a phone; each is set to exactly 12px. */
+  .eyebrow, .kicker, .marker, .tag, .status, .ind, .pill, .cta-note, .src-kind, .breadcrumbs, .breadcrumbs a, .breadcrumbs span,
+  .footer h2, .footer kbd, .footer-bottom span, p > kbd, .card .sub, .dcard .sub, .meta > span, .chip-row .status, .chip, a.chip,
+  .vs-row small, .guide .gno, .guide .for, .trust-strip li > span, .hero-stats span, .cat-desc .names, .hero-search .q, .examples .lbl,
+  dt, .stat .k, .compare th, .compare th a, .price-table th, .pricing-steps span, li > time, .sponsor-label, .spectrum-labels span,
+  .spectrum-zone h3, .feature .fi, .step .num, .rn-sub, .tabx-tab small, nav.panel h2, nav.panel h3, .link-groups h2, .link-groups h3 { font-size: 12px !important; }
+  .tiny { font-size: 12.5px !important; }
+}
+
+/* Hero "At a glance" card: never wider than the column (it was sized to its longest chip). */
+.id-hero > * { min-width: 0; }
+.id-hero > .enter-2 { grid-template-columns: minmax(0, 1fr); }
+.hero-card { min-width: 0; max-width: 100%; }
+.hero-card dl div { min-width: 0; }
+.hero-card dd { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 420px) {
+  .hero-card .status { white-space: normal; text-align: left; }
+  .hero-card dl div { flex-wrap: wrap; }
+}
+@media (max-width: 900px), (pointer: coarse) {
+  .trace-stats div > span, .site-header kbd { font-size: 12px !important; }
+  .card .btn, .card a.btn, .chip, a.chip { min-height: 44px; }
+}
+@media (max-width: 900px), (pointer: coarse) {
+  main h2 > a:only-child, main h3 > a:only-child { display: inline-block; padding-block: 6px; }
+  .compare th > a, .matrix th > a, table th > a { display: inline-block; padding-block: 4px; }
+}
