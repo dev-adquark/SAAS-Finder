@@ -287,8 +287,8 @@ a.chip:hover { border-color: var(--cat); }
 .hero-quick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
 
 /* Editorial search */
-.hero-search { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; max-width: 580px; margin: 30px 0 8px; padding: 8px 8px 8px 22px; border-radius: 999px; background: var(--white); border: 1px solid var(--ink); box-shadow: 5px 5px 0 -1px var(--paper), 5px 5px 0 0 var(--ink); transition: box-shadow 0.3s var(--ease-out), transform 0.3s var(--ease-out); }
-.hero-search:focus-within { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 -1px var(--paper), 7px 7px 0 0 var(--c-blue); }
+.hero-search { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; max-width: 580px; margin: 30px 0 8px; padding: 8px 8px 8px 22px; border-radius: 999px; background: var(--white); border: 1px solid var(--ink); box-shadow: 0 2px 10px rgba(22, 22, 26, 0.06); transition: box-shadow 0.25s var(--ease-out), border-color 0.25s var(--ease-out); }
+.hero-search:focus-within { border-color: var(--c-blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-blue) 18%, transparent); }
 .hero-search .q { position: absolute; left: 24px; top: -10px; padding: 0 8px; background: var(--paper); font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .hero-search input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font-family: var(--font-display); font-size: 1.2rem; padding: 10px 0; color: var(--ink); }
 .hero-search input::placeholder { color: var(--faint); font-style: italic; }
