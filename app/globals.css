@@ -921,10 +921,18 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
   .vs-mark span { margin-left: 18px; background: var(--white) !important; }
   .vs-go { justify-self: start; }
   .vs-row:hover .vs-a, .vs-row:hover .vs-b { transform: none; }
-  .cat-block { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 28px 0; }
-  .cat-block .cat-art { grid-column: auto; grid-row: auto; height: 120px; }
+  /* Categories become a swipeable rail of compact cards: the full description and product list
+     for each category are one tap away on /category/[slug], so at-a-glance only needs the name,
+     tool count and a small preview of the art. */
+  .cat-blocks { grid-auto-flow: column; grid-auto-columns: 76%; overflow-x: auto; scroll-snap-type: x mandatory; border-top: 0; gap: 12px; padding-bottom: 4px; }
+  .cat-block { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 20px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--white); scroll-snap-align: start; }
+  .cat-block .tagline, .cat-block .names { display: none; }
+  .cat-block .cat-art { grid-column: auto; grid-row: auto; height: 90px; }
   .cat-block .cat-desc { grid-column: auto; }
-  .cat-no { font-size: 3rem; }
+  .cat-no { font-size: 2.6rem; }
+  /* The 5-step pipeline duplicates /methodology (linked right below it), so it's dropped here to
+     keep the homepage's verification section to its headline claim, stats and coverage bars. */
+  .pipeline { display: none; }
   /* Tables become readable blocks */
   .compare.stackable thead { display: none; }
   .compare.stackable, .compare.stackable tbody, .compare.stackable tr, .compare.stackable td, .compare.stackable th { display: block; width: 100%; min-width: 0; }

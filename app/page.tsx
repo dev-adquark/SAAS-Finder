@@ -52,7 +52,11 @@ export default async function Home() {
   const byStatus = c.products.reduce<Record<PricingStatusKind, number>>((m, p) => ((m[pricingState(p).kind] += 1), m), { verified: 0, region: 0, custom: 0, unverified: 0 });
   const timeline = [...c.products].filter((p) => p.pricingLastChecked || p.sourceCheckedAt).sort((a, b) => +new Date(b.pricingLastChecked ?? b.sourceCheckedAt!) - +new Date(a.pricingLastChecked ?? a.sourceCheckedAt!)).slice(0, 8);
   const firstPerCategory = c.categories.map((x) => c.pairs.find((p) => p.categorySlug === x.slug)).filter((p): p is (typeof c.pairs)[number] => Boolean(p));
-  const pairs = [...firstPerCategory, ...c.pairs.filter((p) => !firstPerCategory.includes(p))].slice(0, 8);
+  // Homepage sections show only a top slice of each list; "Show all" links to the full index page.
+  const TOP_PRODUCTS = 6;
+  const TOP_PAIRS = 4;
+  const TOP_GUIDES = 4;
+  const pairs = [...firstPerCategory, ...c.pairs.filter((p) => !firstPerCategory.includes(p))].slice(0, TOP_PAIRS);
   const statusRows: [string, number, string][] = [
     ["Verified", byStatus.verified, "var(--c-emerald)"],
     ["Verified · region-dependent", byStatus.region, "var(--c-sky)"],
@@ -121,13 +125,13 @@ export default async function Home() {
         <div className="container">
           <div className="section-head">
             <div><Marker no="01" label="Discover" /><h2>The tools buyers weigh up most</h2><p>Ordered by how many of our curated comparisons and alternatives lists include each tool.</p></div>
-            <Link className="btn ghost" href={routes.products()}>All {c.products.length} reviews <span className="arrow-right">→</span></Link>
+            <Link className="btn ghost" href={routes.products()}>Show all {c.products.length} reviews <span className="arrow-right">→</span></Link>
           </div>
           <div className="discovery reveal-stagger">
-            {ranked.map((p, i) => {
+            {ranked.slice(0, TOP_PRODUCTS).map((p, i) => {
               const ps = pricingState(p);
-              // Sizes chosen so every row of the 12-column grid fills exactly (xl, 2×md, 3×wide, rest small).
-              const size = i === 0 ? "xl" : i <= 2 ? "md" : [3, 8, 13].includes(i) ? "wide" : "";
+              // Sizes chosen so every row of the 12-column grid fills exactly (xl, 2×md, 1×wide, rest small).
+              const size = i === 0 ? "xl" : i <= 2 ? "md" : i === 3 ? "wide" : "";
               const sources = p.sources.filter((s) => s.status === "VERIFIED").length;
               return (
                 <article key={p.slug} className={`dcard ${size}`} style={catStyle(p.categorySlug)}>
@@ -175,7 +179,7 @@ export default async function Home() {
       {/* Comparisons — A vs B */}
       <section className="section">
         <div className="container">
-          <div className="section-head"><div><Marker no="03" label="Compare" /><h2>Head-to-head, criterion by criterion</h2></div><Link className="btn ghost" href={routes.comparisons()}>All {c.pairs.length} comparisons <span className="arrow-right">→</span></Link></div>
+          <div className="section-head"><div><Marker no="03" label="Compare" /><h2>Head-to-head, criterion by criterion</h2></div><Link className="btn ghost" href={routes.comparisons()}>Show all {c.pairs.length} comparisons <span className="arrow-right">→</span></Link></div>
           <div className="vs-list">
             {pairs.map((pair) => {
               const a = findProduct(c, pair.productA)!;
@@ -216,9 +220,9 @@ export default async function Home() {
       {/* Best for */}
       <section className="section">
         <div className="container">
-          <div className="section-head"><div><Marker no="05" label="Best for" /><h2>Buying guides, written for a situation</h2></div><Link className="btn ghost" href={routes.bestIndex()}>All guides <span className="arrow-right">→</span></Link></div>
+          <div className="section-head"><div><Marker no="05" label="Best for" /><h2>Buying guides, written for a situation</h2></div><Link className="btn ghost" href={routes.bestIndex()}>Show all {c.useCases.length} guides <span className="arrow-right">→</span></Link></div>
           <div className="guides reveal-stagger">
-            {c.useCases.map((u, i) => (
+            {c.useCases.slice(0, TOP_GUIDES).map((u, i) => (
               <article key={u.slug} className="guide" style={catStyle(u.categorySlug)}>
                 <span className="bar" aria-hidden="true" />
                 <span className="gno">{String(i + 1).padStart(2, "0")} — {catName.get(u.categorySlug)}</span>
