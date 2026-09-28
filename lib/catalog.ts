@@ -4,25 +4,56 @@ import { db } from "@/lib/db";
 import { lastCheckedAt } from "@/lib/freshness-rules";
 import { sanitizeCatalog } from "@/lib/content/sanitize";
 import { seedCatalog } from "@/lib/content/seed-catalog";
-import type { Catalog, Category, ComparisonPair, Criterion, PricePoint, Product, UseCase } from "@/lib/content/types";
+import type {
+  Catalog,
+  Category,
+  ComparisonPair,
+  Criterion,
+  PricePoint,
+  Product,
+  UseCase,
+} from "@/lib/content/types";
 import { isHttpUrl } from "@/lib/validation";
 import { comparePairSlug } from "@/lib/seo/routes";
 
 export const hasDatabase = () => Boolean(process.env.DATABASE_URL);
 
 export const strArray = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((x): x is string => typeof x === "string" && x.trim().length > 0) : [];
+  Array.isArray(value)
+    ? value.filter(
+        (x): x is string =>
+          typeof x === "string" && x.trim().length > 0,
+      )
+    : [];
 
 export const strRecord = (value: unknown): Record<string, string> =>
   value && typeof value === "object" && !Array.isArray(value)
-    ? Object.fromEntries(Object.entries(value as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === "string"))
+    ? Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).filter(
+          (e): e is [string, string] => typeof e[1] === "string",
+        ),
+      )
     : {};
 
 const criteria = (value: unknown): Criterion[] =>
   Array.isArray(value)
     ? value
-        .filter((x): x is { name: string; description: string } => Boolean(x) && typeof x === "object" && typeof (x as Criterion).name === "string" && typeof (x as Criterion).description === "string")
-        .map((x) => ({ name: x.name, description: x.description }))
+        .filter(
+          (
+            x,
+          ): x is {
+            name: string;
+            description: string;
+          } =>
+            Boolean(x) &&
+            typeof x === "object" &&
+            typeof (x as Criterion).name === "string" &&
+            typeof (x as Criterion).description === "string",
+        )
+        .map((x) => ({
+          name: x.name,
+          description: x.description,
+        }))
     : [];
 
 const productInclude = {
@@ -30,16 +61,49 @@ const productInclude = {
   review: true,
   tags: { include: { tag: true } },
   faqs: { orderBy: { sortOrder: "asc" } },
-  snapshots: { where: { status: "VERIFIED", snapshotType: "PRICING" }, orderBy: { capturedAt: "desc" } },
-  links: { where: { active: true }, orderBy: { updatedAt: "desc" } },
-  alternativesFrom: { where: { active: true }, include: { alternative: { select: { slug: true } }, useCase: { select: { slug: true } } }, orderBy: { sortOrder: "asc" } },
-  changelog: { orderBy: { changedAt: "desc" }, take: 10 },
-  sources: { orderBy: [{ kind: "asc" }, { name: "asc" }] },
-  facts: { include: { source: { select: { url: true } } }, orderBy: { key: "asc" } },
-  relationships: { where: { agreementStatus: "ACTIVE", verifiedAt: { not: null } } },
+  snapshots: {
+    where: {
+      status: "VERIFIED",
+      snapshotType: "PRICING",
+    },
+    orderBy: { capturedAt: "desc" },
+  },
+  links: {
+    where: { active: true },
+    orderBy: { updatedAt: "desc" },
+  },
+  alternativesFrom: {
+    where: { active: true },
+    include: {
+      alternative: { select: { slug: true } },
+      useCase: { select: { slug: true } },
+    },
+    orderBy: { sortOrder: "asc" },
+  },
+  changelog: {
+    orderBy: { changedAt: "desc" },
+    take: 10,
+  },
+  sources: {
+    orderBy: [{ kind: "asc" }, { name: "asc" }],
+  },
+  facts: {
+    include: {
+      source: { select: { url: true } },
+    },
+    orderBy: { key: "asc" },
+  },
+  relationships: {
+    where: {
+      agreementStatus: "ACTIVE",
+      verifiedAt: { not: null },
+    },
+  },
 } satisfies Prisma.ProductInclude;
 
-type DbProduct = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
+type DbProduct = Prisma.ProductGetPayload<{
+  include: typeof productInclude;
+}>;
 
 function mapPricing(rows: DbProduct["snapshots"]): PricePoint[] {
   return rows.map((s) => ({
@@ -59,13 +123,36 @@ function mapPricing(rows: DbProduct["snapshots"]): PricePoint[] {
 }
 
 /** A relationship is public only while documented, active and within its dates. */
-export function isActiveRelationship(r: { agreementStatus: string; verifiedAt: Date | null; startDate: Date | null; endDate: Date | null }, now = new Date()) {
-  return r.agreementStatus === "ACTIVE" && Boolean(r.verifiedAt) && (!r.startDate || r.startDate <= now) && (!r.endDate || r.endDate >= now);
+export function isActiveRelationship(
+  r: {
+    agreementStatus: string;
+    verifiedAt: Date | null;
+    startDate: Date | null;
+    endDate: Date | null;
+  },
+  now = new Date(),
+) {
+  return (
+    r.agreementStatus === "ACTIVE" &&
+    Boolean(r.verifiedAt) &&
+    (!r.startDate || r.startDate <= now) &&
+    (!r.endDate || r.endDate >= now)
+  );
 }
 
 export function mapDbProduct(p: DbProduct): Product {
-  const affiliateRow = p.links.find((l) => l.active && isHttpUrl(l.url) && l.url.startsWith("https://"));
-  const checked = lastCheckedAt(p.pricingCheckedAt, p.snapshots[0]?.capturedAt);
+  const affiliateRow = p.links.find(
+    (l) =>
+      l.active &&
+      isHttpUrl(l.url) &&
+      l.url.startsWith("https://"),
+  );
+
+  const checked = lastCheckedAt(
+    p.pricingCheckedAt,
+    p.snapshots[0]?.capturedAt,
+  );
+
   return {
     slug: p.slug,
     name: p.name,
@@ -76,7 +163,13 @@ export function mapDbProduct(p: DbProduct): Product {
     description: p.description,
     officialUrl: p.officialUrl,
     pricingUrl: p.pricingUrl,
-    affiliate: affiliateRow ? { url: affiliateRow.url, label: affiliateRow.label, provider: affiliateRow.provider } : null,
+    affiliate: affiliateRow
+      ? {
+          url: affiliateRow.url,
+          label: affiliateRow.label,
+          provider: affiliateRow.provider,
+        }
+      : null,
     status: p.status,
     features: strArray(p.features),
     comparison: strRecord(p.comparison),
@@ -92,39 +185,112 @@ export function mapDbProduct(p: DbProduct): Product {
       bestFor: strArray(p.review?.bestFor),
       limitations: strArray(p.review?.limitations),
       reviewStatus: p.review?.reviewStatus ?? "NOT_STARTED",
-      lastReviewedAt: p.review?.lastReviewedAt?.toISOString() ?? null,
+      lastReviewedAt:
+        p.review?.lastReviewedAt?.toISOString() ?? null,
     },
     tags: p.tags.map((t) => t.tag.name),
-    faqs: p.faqs.map((f) => ({ question: f.question, answer: f.answer })),
+    faqs: p.faqs.map((f) => ({
+      question: f.question,
+      answer: f.answer,
+    })),
     pricing: mapPricing(p.snapshots),
     pricingLastChecked: checked?.toISOString() ?? null,
     pricingRegionNote: p.pricingRegionNote,
-    sources: p.sources.map((x) => ({ kind: x.kind, url: x.url, name: x.name, section: x.section, checkedAt: x.checkedAt?.toISOString() ?? null, status: x.status })),
-    facts: p.facts.map((f) => ({ key: f.key, value: f.value, evidence: f.evidence, sourceUrl: f.source?.url ?? null, checkedAt: f.checkedAt?.toISOString() ?? null, status: f.status })),
-    relationships: p.relationships.filter((r) => isActiveRelationship(r)).map((r) => ({ type: r.relationshipType, brand: r.brand, sourceUrl: r.sourceUrl })),
-    featuresCheckedAt: p.featuresCheckedAt?.toISOString() ?? null,
-    sourceCheckedAt: p.sourceCheckedAt?.toISOString() ?? null,
-    changelog: p.changelog.map((c) => ({ version: c.version, summary: c.summary, changedAt: c.changedAt.toISOString() })),
+    sources: p.sources.map((x) => ({
+      kind: x.kind,
+      url: x.url,
+      name: x.name,
+      section: x.section,
+      checkedAt: x.checkedAt?.toISOString() ?? null,
+      status: x.status,
+    })),
+    facts: p.facts.map((f) => ({
+      key: f.key,
+      value: f.value,
+      evidence: f.evidence,
+      sourceUrl: f.source?.url ?? null,
+      checkedAt: f.checkedAt?.toISOString() ?? null,
+      status: f.status,
+    })),
+    relationships: p.relationships
+      .filter((r) => isActiveRelationship(r))
+      .map((r) => ({
+        type: r.relationshipType,
+        brand: r.brand,
+        sourceUrl: r.sourceUrl,
+      })),
+    featuresCheckedAt:
+      p.featuresCheckedAt?.toISOString() ?? null,
+    sourceCheckedAt:
+      p.sourceCheckedAt?.toISOString() ?? null,
+    changelog: p.changelog.map((c) => ({
+      version: c.version,
+      summary: c.summary,
+      changedAt: c.changedAt.toISOString(),
+    })),
     refreshIntervalDays: p.refreshIntervalDays,
     contentUpdatedAt: p.contentUpdatedAt.toISOString(),
-    alternatives: p.alternativesFrom.map((a) => ({ slug: a.alternative.slug, rationale: a.rationale, keyDifference: a.keyDifference, useCaseSlug: a.useCase?.slug ?? null })),
+    alternatives: p.alternativesFrom.map((a) => ({
+      slug: a.alternative.slug,
+      rationale: a.rationale,
+      keyDifference: a.keyDifference,
+      useCaseSlug: a.useCase?.slug ?? null,
+    })),
   };
 }
 
 async function databaseCatalog(): Promise<Catalog> {
-  const [categories, products, useCases, pairs] = await Promise.all([
-    db.category.findMany({ include: { faqs: { orderBy: { sortOrder: "asc" } } } }),
-    db.product.findMany({ where: { status: "PUBLISHED" }, include: productInclude }),
-    db.useCase.findMany({
-      where: { status: "PUBLISHED" },
-      include: {
-        category: { select: { slug: true } },
-        faqs: { orderBy: { sortOrder: "asc" } },
-        products: { where: { active: true }, include: { product: { select: { slug: true } } }, orderBy: { position: "asc" } },
-      },
-    }),
-    db.competitorPair.findMany({ where: { active: true }, include: { productA: { select: { slug: true } }, productB: { select: { slug: true } }, category: { select: { slug: true } } } }),
-  ]);
+  const [categories, products, useCases, pairs] =
+    await Promise.all([
+      db.category.findMany({
+        include: {
+          faqs: {
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      }),
+
+      db.product.findMany({
+        where: { status: "PUBLISHED" },
+        include: productInclude,
+      }),
+
+      db.useCase.findMany({
+        where: { status: "PUBLISHED" },
+        include: {
+          category: {
+            select: { slug: true },
+          },
+          faqs: {
+            orderBy: { sortOrder: "asc" },
+          },
+          products: {
+            where: { active: true },
+            include: {
+              product: {
+                select: { slug: true },
+              },
+            },
+            orderBy: { position: "asc" },
+          },
+        },
+      }),
+
+      db.competitorPair.findMany({
+        where: { active: true },
+        include: {
+          productA: {
+            select: { slug: true },
+          },
+          productB: {
+            select: { slug: true },
+          },
+          category: {
+            select: { slug: true },
+          },
+        },
+      }),
+    ]);
 
   return {
     categories: categories.map<Category>((c) => ({
@@ -135,10 +301,15 @@ async function databaseCatalog(): Promise<Catalog> {
       seoTitle: c.seoTitle,
       seoDescription: c.seoDescription,
       sortOrder: c.sortOrder,
-      faqs: c.faqs.map((f) => ({ question: f.question, answer: f.answer })),
+      faqs: c.faqs.map((f) => ({
+        question: f.question,
+        answer: f.answer,
+      })),
       updatedAt: c.updatedAt.toISOString(),
     })),
+
     products: products.map(mapDbProduct),
+
     useCases: useCases.map<UseCase>((u) => ({
       slug: u.slug,
       title: u.title,
@@ -149,12 +320,23 @@ async function databaseCatalog(): Promise<Catalog> {
       status: u.status,
       seoTitle: u.seoTitle,
       seoDescription: u.seoDescription,
-      faqs: u.faqs.map((f) => ({ question: f.question, answer: f.answer })),
-      products: u.products.map((x) => ({ slug: x.product.slug, rationale: x.rationale, caveat: x.caveat })),
+      faqs: u.faqs.map((f) => ({
+        question: f.question,
+        answer: f.answer,
+      })),
+      products: u.products.map((x) => ({
+        slug: x.product.slug,
+        rationale: x.rationale,
+        caveat: x.caveat,
+      })),
       contentUpdatedAt: u.contentUpdatedAt.toISOString(),
     })),
+
     pairs: pairs.map<ComparisonPair>((pair) => ({
-      slug: comparePairSlug(pair.productA.slug, pair.productB.slug),
+      slug: comparePairSlug(
+        pair.productA.slug,
+        pair.productB.slug,
+      ),
       productA: pair.productA.slug,
       productB: pair.productB.slug,
       categorySlug: pair.category.slug,
@@ -167,68 +349,201 @@ async function databaseCatalog(): Promise<Catalog> {
   };
 }
 
-// Transient connection failures (pool wait timeout, server unreachable, pooler reset) are retried a
-// bounded number of times; anything else is a real error and is thrown immediately.
-const TRANSIENT = new Set(["P1001", "P1002", "P1017", "P2024"]);
-async function readDatabaseCatalog(attempts = 3): Promise<Catalog> {
+// Only transient Prisma connection failures are retried.
+// Real query/application errors are still thrown immediately.
+const TRANSIENT = new Set([
+  "P1001",
+  "P1002",
+  "P1017",
+  "P2024",
+]);
+
+function prismaErrorCode(error: unknown): string | null {
+  const code = (error as { code?: unknown })?.code;
+  return typeof code === "string" ? code : null;
+}
+
+function isTransientDatabaseError(error: unknown): boolean {
+  const code = prismaErrorCode(error);
+  return code !== null && TRANSIENT.has(code);
+}
+
+async function readDatabaseCatalog(
+  attempts = 3,
+): Promise<Catalog> {
   for (let i = 1; ; i++) {
     try {
       return sanitizeCatalog(await databaseCatalog());
     } catch (error) {
-      const code = (error as { code?: unknown })?.code;
-      if (i >= attempts || typeof code !== "string" || !TRANSIENT.has(code)) throw error;
-      await new Promise((r) => setTimeout(r, 750 * i));
+      if (
+        i >= attempts ||
+        !isTransientDatabaseError(error)
+      ) {
+        throw error;
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 750 * i),
+      );
     }
   }
 }
 
-// `next build` renders every static page in parallel workers. React `cache` only dedupes within one
-// render, so without this each page (and each generateStaticParams) re-ran the full catalog query set
-// and exhausted the connection pool on higher-latency databases. During the build, each worker reads
-// the catalog once and every page is generated from that single consistent snapshot.
-const isBuild = () => process.env.NEXT_PHASE === "phase-production-build";
+// `next build` renders static pages in parallel workers.
+// Keep one consistent catalog snapshot per worker to avoid
+// repeatedly opening the same database connections.
+const isBuild = () =>
+  process.env.NEXT_PHASE === "phase-production-build";
+
 let buildSnapshot: Promise<Catalog> | null = null;
 
 /**
- * Loads the public catalog once per request (once per worker during the build). Database errors are
- * thrown rather than swallowed so ISR keeps serving the last good page instead of caching an empty one.
+ * Loads the public catalog once per request and once per worker
+ * during production builds.
+ *
+ * Normal runtime behavior is unchanged:
+ * - Database available -> real database catalog.
+ * - Database unavailable -> error is thrown.
+ *
+ * During `next build` only:
+ * - Transient database connection failure -> existing seed catalog.
+ * - Non-transient database/query error -> error is still thrown.
  */
-export const loadCatalog = cache(async (): Promise<Catalog> => {
-  if (!hasDatabase()) return sanitizeCatalog(seedCatalog());
-  try {
+export const loadCatalog = cache(
+  async (): Promise<Catalog> => {
+    if (!hasDatabase()) {
+      return sanitizeCatalog(seedCatalog());
+    }
+
     if (isBuild()) {
-      buildSnapshot ??= readDatabaseCatalog().catch((e) => {
-        buildSnapshot = null;
-        throw e;
-      });
+      buildSnapshot ??= readDatabaseCatalog().catch(
+        (error) => {
+          buildSnapshot = null;
+
+          if (isTransientDatabaseError(error)) {
+            console.warn(
+              "[catalog] database unavailable during build; using seed catalog",
+            );
+
+            return sanitizeCatalog(seedCatalog());
+          }
+
+          throw error;
+        },
+      );
+
       return await buildSnapshot;
     }
-    return await readDatabaseCatalog();
-  } catch (error) {
-    console.error("[catalog] database read failed", error instanceof Error ? error.message : "unknown error");
-    throw error;
-  }
-});
+
+    try {
+      return await readDatabaseCatalog();
+    } catch (error) {
+      console.error(
+        "[catalog] database read failed",
+        error instanceof Error
+          ? error.message
+          : "unknown error",
+      );
+
+      throw error;
+    }
+  },
+);
 
 // ---- Query helpers over a loaded catalog (pure, deterministic) ----
 
-export const findProduct = (c: Catalog, slug: string) => c.products.find((p) => p.slug === slug);
-export const findCategory = (c: Catalog, slug: string) => c.categories.find((x) => x.slug === slug);
-export const findUseCase = (c: Catalog, slug: string) => c.useCases.find((u) => u.slug === slug);
-export const findPair = (c: Catalog, slug: string) => c.pairs.find((p) => p.slug === slug);
-export const productsInCategory = (c: Catalog, categorySlug: string) => c.products.filter((p) => p.categorySlug === categorySlug);
-export const guidesInCategory = (c: Catalog, categorySlug: string) => c.useCases.filter((u) => u.categorySlug === categorySlug);
-export const guidesForProduct = (c: Catalog, slug: string) => c.useCases.filter((u) => u.products.some((x) => x.slug === slug));
-export const pairsForProduct = (c: Catalog, slug: string) => c.pairs.filter((p) => p.productA === slug || p.productB === slug);
-export const pairsInCategory = (c: Catalog, categorySlug: string) => c.pairs.filter((p) => p.categorySlug === categorySlug);
+export const findProduct = (
+  c: Catalog,
+  slug: string,
+) => c.products.find((p) => p.slug === slug);
 
-export function alternativesFor(c: Catalog, product: Product) {
+export const findCategory = (
+  c: Catalog,
+  slug: string,
+) => c.categories.find((x) => x.slug === slug);
+
+export const findUseCase = (
+  c: Catalog,
+  slug: string,
+) => c.useCases.find((u) => u.slug === slug);
+
+export const findPair = (
+  c: Catalog,
+  slug: string,
+) => c.pairs.find((p) => p.slug === slug);
+
+export const productsInCategory = (
+  c: Catalog,
+  categorySlug: string,
+) =>
+  c.products.filter(
+    (p) => p.categorySlug === categorySlug,
+  );
+
+export const guidesInCategory = (
+  c: Catalog,
+  categorySlug: string,
+) =>
+  c.useCases.filter(
+    (u) => u.categorySlug === categorySlug,
+  );
+
+export const guidesForProduct = (
+  c: Catalog,
+  slug: string,
+) =>
+  c.useCases.filter((u) =>
+    u.products.some((x) => x.slug === slug),
+  );
+
+export const pairsForProduct = (
+  c: Catalog,
+  slug: string,
+) =>
+  c.pairs.filter(
+    (p) =>
+      p.productA === slug ||
+      p.productB === slug,
+  );
+
+export const pairsInCategory = (
+  c: Catalog,
+  categorySlug: string,
+) =>
+  c.pairs.filter(
+    (p) => p.categorySlug === categorySlug,
+  );
+
+export function alternativesFor(
+  c: Catalog,
+  product: Product,
+) {
   return product.alternatives
-    .map((ref) => ({ ref, product: findProduct(c, ref.slug) }))
-    .filter((x): x is { ref: (typeof product.alternatives)[number]; product: Product } => Boolean(x.product));
+    .map((ref) => ({
+      ref,
+      product: findProduct(c, ref.slug),
+    }))
+    .filter(
+      (
+        x,
+      ): x is {
+        ref: (typeof product.alternatives)[number];
+        product: Product;
+      } => Boolean(x.product),
+    );
 }
 
-export function pairFor(c: Catalog, slugA: string, slugB: string) {
-  if (slugA === slugB) return undefined;
-  return findPair(c, comparePairSlug(slugA, slugB));
+export function pairFor(
+  c: Catalog,
+  slugA: string,
+  slugB: string,
+) {
+  if (slugA === slugB) {
+    return undefined;
+  }
+
+  return findPair(
+    c,
+    comparePairSlug(slugA, slugB),
+  );
 }
