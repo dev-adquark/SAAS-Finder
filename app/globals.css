@@ -358,6 +358,7 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 .dcard:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 -1px var(--paper), 6px 6px 0 0 var(--cat); border-color: var(--cat); }
 .dcard:hover::before { width: 100%; }
 .dcard .initials { position: absolute; right: -4px; bottom: -30px; font-family: var(--font-display); font-weight: 500; font-size: 8.5rem; line-height: 1; color: color-mix(in srgb, var(--cat) 9%, transparent); letter-spacing: -0.06em; pointer-events: none; transition: color 0.4s, transform 0.7s var(--ease-out); }
+.dcard-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; }
 .dcard:hover .initials { color: color-mix(in srgb, var(--cat) 17%, transparent); transform: translateY(-8px); }
 .dcard h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; position: relative; }
 .dcard .meta { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; position: relative; }

@@ -136,7 +136,10 @@ export default async function Home() {
               return (
                 <article key={p.slug} className={`dcard ${size}`} style={catStyle(p.categorySlug)}>
                   <span className="initials" aria-hidden="true">{monogram(p.name)}</span>
-                  <span className="meta"><span>{catName.get(p.categorySlug)}</span><span aria-hidden="true">·</span><span>{p.subcategory}</span></span>
+                  <span className="dcard-brand">
+                    <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size={size === "xl" ? "lg" : size === "" ? "sm" : ""} />
+                    <span className="meta"><span>{catName.get(p.categorySlug)}</span><span aria-hidden="true">·</span><span>{p.subcategory}</span></span>
+                  </span>
                   <h3><Link className="stretch" href={routes.product(p.slug)}>{p.name}</Link></h3>
                   <p className={i > 0 && i <= 2 ? "clamp-6" : undefined}>{i <= 2 ? p.review.editorialSummary : p.tagline}</p>
                   <span className="chip-row" style={{ position: "relative" }}>

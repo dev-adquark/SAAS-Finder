@@ -2,8 +2,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Monogram } from "@/components/identity";
 
-export type SearchItem = { slug: string; href: string; name: string; category: string; categorySlug: string; tagline: string; keywords: string; mono: string };
+export type SearchItem = { slug: string; href: string; name: string; category: string; categorySlug: string; tagline: string; keywords: string };
 
 /**
  * Progressive enhancement: the full list is server-rendered (see the <noscript>-free SSR grid);
@@ -40,7 +41,7 @@ export function SearchProducts({ items, categories, initialQuery = "" }: Props) 
         {list.map((p) => (
           <Link className="card pcard accent-top" key={p.slug} href={p.href} style={{ ["--cat" as string]: `var(--cat-${p.categorySlug}, var(--primary))` }}>
             <div className="pcard-head">
-              <span className="mono" aria-hidden="true">{p.mono}</span>
+              <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
               <div><h2 style={{ fontSize: "1.1rem", margin: 0 }}>{p.name}</h2><div className="sub">{p.category}</div></div>
             </div>
             <p>{p.tagline}</p>
