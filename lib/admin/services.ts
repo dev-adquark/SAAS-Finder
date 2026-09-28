@@ -507,13 +507,15 @@ function ctaRows(rows: { ctaType: string | null; placement: string | null; pageT
 
 export async function analyticsReport(from: Date, to: Date) {
   const where = { createdAt: { gte: from, lte: to } };
-  const [total, byEvent, byProduct, byCta, bySponsor, byPage] = await Promise.all([
+  const [total, byEvent, byProduct, byCta, bySponsor, byPage, byNav, bySource] = await Promise.all([
     db.analyticsEvent.count({ where }),
     db.analyticsEvent.groupBy({ by: ["event"], where: { ...where, event: { in: REPORTED_EVENTS } }, _count: { _all: true } }),
     db.analyticsEvent.groupBy({ by: ["productSlug", "event"], where: { ...where, productSlug: { not: null }, event: { in: ["cta_click", "outbound_click", "affiliate_click"] } }, _count: { _all: true } }),
     db.analyticsEvent.groupBy({ by: ["ctaType", "placement", "pageType", "event"], where: { ...where, event: { in: ["cta_click", "outbound_click"] } }, _count: { _all: true } }),
     db.analyticsEvent.groupBy({ by: ["sponsorId", "pageType"], where: { ...where, event: "sponsor_click" }, _count: { _all: true } }),
     db.analyticsEvent.groupBy({ by: ["path"], where: { ...where, event: "page_view" }, _count: { _all: true }, orderBy: { _count: { path: "desc" } }, take: 25 }),
+    db.analyticsEvent.groupBy({ by: ["pageType", "path"], where: { ...where, event: "nav_click" }, _count: { _all: true }, orderBy: { _count: { path: "desc" } }, take: 25 }),
+    db.analyticsEvent.groupBy({ by: ["productSlug", "pageType"], where: { ...where, event: "source_click" }, _count: { _all: true }, orderBy: { _count: { pageType: "desc" } }, take: 25 }),
   ]);
   const byCount = <T extends { _count: { _all: number } }>(rows: T[]) => [...rows].sort((a, b) => b._count._all - a._count._all);
   return {
@@ -525,6 +527,8 @@ export async function analyticsReport(from: Date, to: Date) {
     ctaPerformance: ctaRows(byCta).slice(0, 50),
     sponsorClicks: byCount(bySponsor).map((r) => ({ sponsorId: r.sponsorId, pageType: r.pageType, count: r._count._all })),
     topPages: byPage.map((r) => ({ path: r.path, count: r._count._all })),
+    navigation: byNav.map((r) => ({ from: r.pageType, to: r.path, count: r._count._all })),
+    sourceClicks: bySource.map((r) => ({ productSlug: r.productSlug, pageType: r.pageType, count: r._count._all })),
   };
 }
 

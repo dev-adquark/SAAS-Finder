@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { PageViewTracker } from "@/components/page-view";
+import { ClickTracker } from "@/components/click-tracker";
 import { RevealObserver } from "@/components/reveal-observer";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main id="main">{children}</main>
         <Footer />
         <PageViewTracker />
+        <ClickTracker />
         <RevealObserver />
       </body>
     </html>

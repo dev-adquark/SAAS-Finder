@@ -33,6 +33,8 @@ export default async function AdminAnalytics({ searchParams }: SP) {
       <Table title="CTA performance" head={["CTA type", "Placement", "Page type", "Clicks (redirects)", "Browser-reported"]} rows={r.ctaPerformance.map((x) => [x.ctaType, x.placement, x.pageType, x.count, x.browserReported])} />
       <p className="tiny muted">Clicks are counted once, when the visitor passes through the tracked redirect. &ldquo;Browser-reported&rdquo; is the same click seen by the page script (lower when scripts are blocked); it is shown for comparison, never added. Crawlers and automated agents are not counted.</p>
       <Table title="Sponsor clicks" head={["Sponsor slot", "Page type", "Clicks"]} rows={r.sponsorClicks.map((x) => [x.sponsorId, x.pageType, x.count])} />
+      <Table title="Navigation into comparisons, alternatives and guides" head={["From page type", "To", "Clicks"]} rows={r.navigation.map((x) => [x.from, x.to, x.count])} />
+      <Table title="Official source clicks (citations, official site, pricing page)" head={["Product", "Page type", "Clicks"]} rows={r.sourceClicks.map((x) => [x.productSlug, x.pageType, x.count])} />
       <Table title="Top pages (views)" head={["Path", "Views"]} rows={r.topPages.map((x) => [x.path, x.count])} />
     </AdminPage>
   );

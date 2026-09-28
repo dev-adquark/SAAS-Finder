@@ -1,6 +1,9 @@
 import { PAGE_TYPES, type PageType, isValidSlug, normalizePath } from "@/lib/seo/routes";
 
-export const EVENT_NAMES = ["page_view", "outbound_click", "cta_click", "sponsor_click", "cpl_submit"] as const;
+// nav_click: internal click into a comparison, alternatives or best-for page (path = destination).
+// source_click: click on an official vendor citation (sources, official site, pricing page).
+// search_submit: a site search form was submitted.
+export const EVENT_NAMES = ["page_view", "outbound_click", "cta_click", "sponsor_click", "cpl_submit", "nav_click", "source_click", "search_submit"] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 // Historic name recorded before `outbound_click` existed; still reported, never accepted.
 export const LEGACY_EVENT_NAMES = ["affiliate_click"] as const;

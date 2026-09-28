@@ -1,6 +1,6 @@
 // Browser-side analytics transport. Fire-and-forget; never throws and never blocks navigation.
 export type ClientEvent = {
-  event: "page_view" | "cta_click" | "cpl_submit";
+  event: "page_view" | "cta_click" | "cpl_submit" | "nav_click" | "source_click" | "search_submit";
   path?: string;
   product?: string;
   pageType?: string;
