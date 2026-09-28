@@ -111,7 +111,7 @@ export default async function CategoryHub({ params }: Params) {
                   <span className="tag">For {u.audience}</span>
                   <h3>{u.title}</h3>
                   <span className="picks">
-                    {u.products.slice(0, 4).map((x) => { const p = findProduct(c, x.slug); return p ? <Monogram key={x.slug} name={p.name} categorySlug={p.categorySlug} size="sm" /> : null; })}
+                    {u.products.slice(0, 4).map((x) => { const p = findProduct(c, x.slug); return p ? <Monogram key={x.slug} name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" /> : null; })}
                     <span className="tiny muted" style={{ marginLeft: 10 }}>{u.products.length} picks</span>
                   </span>
                 </Link>

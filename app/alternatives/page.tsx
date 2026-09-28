@@ -36,7 +36,7 @@ export default async function AlternativesIndex() {
               </div>
               <p className="tiny muted">{p.alternativesIntro}</p>
               <div className="pcard-foot" style={{ justifyContent: "flex-start" }}>
-                <span style={{ display: "flex" }}>{alts.map((a) => <Monogram key={a.product.slug} name={a.product.name} categorySlug={a.product.categorySlug} size="sm" />)}</span>
+                <span style={{ display: "flex" }}>{alts.map((a) => <Monogram key={a.product.slug} name={a.product.name} slug={a.product.slug} categorySlug={a.product.categorySlug} size="sm" />)}</span>
                 <span className="small">{alts.map((a) => a.product.name).join(", ")}</span>
               </div>
             </Link>

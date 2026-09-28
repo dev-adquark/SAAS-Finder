@@ -35,7 +35,7 @@ export default async function Categories() {
                 <h2 style={{ fontSize: "1.3rem", margin: "4px 0 0" }}>{x.name}</h2>
                 <p>{x.description}</p>
                 <span className="chip-row"><span className="tag">{items.length} reviews</span><span className="tag">{guidesInCategory(c, x.slug).length} guides</span><span className="tag">{pairsInCategory(c, x.slug).length} comparisons</span></span>
-                <span className="picks" style={{ display: "flex" }}>{items.map((p) => <Monogram key={p.slug} name={p.name} categorySlug={p.categorySlug} size="sm" />)}</span>
+                <span className="picks" style={{ display: "flex" }}>{items.map((p) => <Monogram key={p.slug} name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />)}</span>
               </Link>
             );
           })}
