@@ -18,6 +18,8 @@ import { SponsorSlot } from "@/components/sponsor-slot";
 import { Monogram, catStyle } from "@/components/identity";
 import { IconAlert, IconCheck, IconScale } from "@/components/icons";
 import { AltNetwork } from "@/components/alt-network";
+import { TabExplorer } from "@/components/tab-explorer";
+import { fact } from "@/components/verification";
 
 export const revalidate = 3600;
 
@@ -128,48 +130,62 @@ export default async function AlternativesPage({ params }: Params) {
             </div>
           </section>
 
-          <h2 className="section-gap" style={{ marginTop: 32 }}>Alternative explorer</h2>
-          {alts.map(({ product: a, ref }, i) => {
-            const pair = pairFor(c, p.slug, a.slug);
-            const ps = pricingState(a);
-            return (
-              <article className="panel section-gap alt-item hoverable card reveal" key={a.slug} id={`alt-${a.slug}`} style={catStyle(a.categorySlug)}>
-                <div className="pcard-head" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="lg" />
+          <h2 className="section-gap" style={{ marginTop: 32 }} id="explorer">Alternative explorer</h2>
+          <p className="muted small">Pick an alternative to see why it made the list, how it differs from {p.name}, and a side-by-side snapshot.</p>
+          <TabExplorer
+            label={`${p.name} alternatives`}
+            items={alts.map(({ product: a }) => ({ id: `alt-${a.slug}`, label: a.name, sub: a.subcategory ?? undefined, icon: <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" /> }))}
+            panels={alts.map(({ product: a, ref }, i) => {
+              const pair = pairFor(c, p.slug, a.slug);
+              const ps = pricingState(a);
+              const side = (x: Product, key: string) => fact(x, key)?.value ?? "Not verified";
+              return (
+                <article key={a.slug} className="panel alt-item card" style={catStyle(a.categorySlug)}>
+                  <div className="pcard-head" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                      <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="lg" />
+                      <div>
+                        <span className="tag">#{i + 1} · {a.subcategory}</span>
+                        <h3 className="alt-name"><Link href={routes.product(a.slug)}>{a.name}</Link></h3>
+                      </div>
+                    </div>
+                    <ScoreBadge product={a} />
+                  </div>
+                  <p className="muted" style={{ marginTop: 12 }}>{a.tagline}</p>
+                  {ref.keyDifference && <p className="alt-diff"><strong>Key difference from {p.name}:</strong> {ref.keyDifference}</p>}
+                  <div className="two">
                     <div>
-                      <span className="tag">#{i + 1} · {a.subcategory}</span>
-                      <h2 style={{ margin: "6px 0 0" }}><Link href={routes.product(a.slug)}>{a.name}</Link></h2>
+                      <h4>Why it&apos;s on this list</h4>
+                      <p>{ref.rationale}</p>
+                    </div>
+                    <div>
+                      <h4>Strengths</h4>
+                      <ul className="limit-list">{a.review.pros.slice(0, 2).map((x) => <li key={x} style={{ background: "rgba(52,211,153,0.06)", borderColor: "rgba(52,211,153,0.22)" }}><IconCheck size={16} style={{ color: "var(--success)" }} />{x}</li>)}</ul>
+                      <h4 className="section-gap">Watch out for</h4>
+                      <ul className="limit-list">{a.review.limitations.slice(0, 1).map((x) => <li key={x}><IconAlert size={16} />{x}</li>)}</ul>
                     </div>
                   </div>
-                  <ScoreBadge product={a} />
-                </div>
-                <p className="muted" style={{ marginTop: 12 }}>{a.tagline}</p>
-                <div className="two">
-                  <div>
-                    <h3>Why it&apos;s on this list</h3>
-                    <p>{ref.rationale}</p>
-                    {ref.keyDifference && (<><h3>Key difference from {p.name}</h3><p>{ref.keyDifference}</p></>)}
+                  <div className="table-wrap alt-vs">
+                    <table className="compare stackable">
+                      <caption className="sr-only">{p.name} compared with {a.name}</caption>
+                      <thead><tr><th scope="col" /><th scope="col">{p.name}</th><th scope="col">{a.name}</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Pricing</th><td data-label={p.name}>{pricingSummary(p)}</td><td data-label={a.name}>{pricingSummary(a)} <span className={`status ${ps.tone}`}>{ps.label}</span></td></tr>
+                        <tr><th scope="row">Best for</th><td data-label={p.name}>{p.review.bestFor.slice(0, 2).join(", ")}</td><td data-label={a.name}>{a.review.bestFor.slice(0, 2).join(", ")}</td></tr>
+                        <tr><th scope="row">Free plan</th><td data-label={p.name}>{side(p, "freePlan")}</td><td data-label={a.name}>{side(a, "freePlan")}</td></tr>
+                        <tr><th scope="row">Free trial</th><td data-label={p.name}>{side(p, "freeTrial")}</td><td data-label={a.name}>{side(a, "freeTrial")}</td></tr>
+                      </tbody>
+                    </table>
                   </div>
-                  <div>
-                    <h3>Strengths</h3>
-                    <ul className="limit-list">{a.review.pros.slice(0, 2).map((x) => <li key={x} style={{ background: "rgba(52,211,153,0.06)", borderColor: "rgba(52,211,153,0.22)" }}><IconCheck size={16} style={{ color: "var(--success)" }} />{x}</li>)}</ul>
-                    <h3 className="section-gap">Watch out for</h3>
-                    <ul className="limit-list">{a.review.limitations.slice(0, 1).map((x) => <li key={x}><IconAlert size={16} />{x}</li>)}</ul>
+                  <div className="actions">
+                    <AffiliateCta product={a} ctaType="button" placement={`alternative-${i + 1}`} {...cta} />
+                    <Link className="btn secondary" href={routes.product(a.slug)}>{a.name} review</Link>
+                    {pair && <Link className="btn secondary" href={routes.compare(pair.productA, pair.productB)}>Full {p.name} vs {a.name} comparison</Link>}
                   </div>
-                </div>
-                <dl className="meta-list">
-                  <div><dt>Best for</dt><dd>{a.review.bestFor.join(", ")}</dd></div>
-                  <div><dt>Pricing</dt><dd><span className={`status ${ps.tone}`}>{ps.label}</span><br /><span className="tiny muted">{pricingSummary(a)}</span></dd></div>
-                </dl>
-                <div className="actions">
-                  <AffiliateCta product={a} ctaType="button" placement={`alternative-${i + 1}`} {...cta} />
-                  <Link className="btn secondary" href={routes.product(a.slug)}>{a.name} review</Link>
-                  {pair && <Link className="btn secondary" href={routes.compare(pair.productA, pair.productB)}>{p.name} vs {a.name}</Link>}
-                </div>
-              </article>
-            );
-          })}
+                </article>
+              );
+            })}
+          />
 
           <AffiliateDisclosure />
           <LinkGroups groups={alternativesLinks(c, p)} />

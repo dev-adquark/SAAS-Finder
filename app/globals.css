@@ -1264,3 +1264,47 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 .mono.logo { background: var(--white); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cat) 28%, var(--line)); }
 .mono.logo img { width: 72%; height: 72%; object-fit: contain; display: block; }
 .id-visual .iv-logo-tile { fill: var(--white); stroke: color-mix(in srgb, var(--cat) 35%, var(--line)); stroke-width: 2; }
+
+/* ---------- Tab explorer (alternatives) ---------- */
+.tabx { margin-top: 14px; scroll-margin-top: 90px; }
+.tabx-list { display: none; }
+.tabx.is-ready .tabx-list { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 2px 2px 10px; margin: 0 -2px 6px; scrollbar-width: thin; }
+.tabx-tab { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 14px 8px 8px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--white); color: var(--ink); cursor: pointer; text-align: left; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s var(--ease-out); }
+.tabx-tab span { display: flex; flex-direction: column; line-height: 1.2; }
+.tabx-tab strong { font-size: 0.95rem; font-weight: 600; }
+.tabx-tab small { font-size: 0.72rem; color: var(--muted); }
+.tabx-tab:hover { border-color: var(--ink); }
+.tabx-tab.active { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink), 0 10px 24px -16px rgba(22, 22, 26, 0.45); }
+.tabx-tab:focus-visible { outline: 2px solid var(--c-blue); outline-offset: 2px; }
+.tabx-panel + .tabx-panel { margin-top: 18px; }
+.tabx.is-ready .tabx-panel + .tabx-panel { margin-top: 0; }
+.tabx-panel[hidden] { display: none; }
+.alt-name { margin: 6px 0 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+.alt-diff { margin: 14px 0; padding: 12px 14px; border-radius: 10px; background: color-mix(in srgb, var(--cat) 7%, var(--white)); border-left: 3px solid var(--cat); }
+.alt-item h4 { font-size: 0.95rem; margin: 0 0 6px; }
+.alt-vs { margin: 16px 0; }
+.alt-vs .compare th[scope="row"] { width: 22%; }
+
+/* ---------- Section navigator (comparisons) ---------- */
+.section-nav { position: sticky; top: 0; z-index: 25; background: color-mix(in srgb, var(--paper) 90%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.section-nav-inner { display: flex; align-items: center; gap: 14px; min-height: 54px; }
+.section-nav-lead { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.92rem; white-space: nowrap; }
+.section-nav-lead .mono { --size: 28px; }
+.section-nav-links { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-left: auto; }
+.section-nav-links::-webkit-scrollbar { display: none; }
+.section-nav-links a { flex: none; display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 999px; font-size: 0.86rem; color: var(--muted); }
+.section-nav-links a:hover { color: var(--ink); }
+.section-nav-links a.active { background: var(--ink); color: var(--paper); }
+@media (max-width: 760px) {
+  .section-nav-inner { flex-direction: column; align-items: stretch; gap: 0; min-height: 0; padding: 6px 0; }
+  .section-nav-lead { padding: 2px 0 4px; font-size: 0.86rem; }
+  .section-nav-links { margin-left: 0; }
+  .tabx-tab { min-height: 52px; }
+}
+[id="key-differences"], [id="comparison-table"], [id="pricing-matrix"], [id="verdict"] { scroll-margin-top: 120px; }
+/* Sticky sub-bars sit below the sticky site header (60px once scrolled). */
+.section-nav, .admin-topbar { top: 60px; }
+@media (max-width: 760px) {
+  [id="key-differences"], [id="comparison-table"], [id="pricing-matrix"], [id="verdict"] { scroll-margin-top: 190px; }
+  .tabx { scroll-margin-top: 80px; }
+}

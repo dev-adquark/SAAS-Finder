@@ -21,6 +21,7 @@ import { SponsorSlot } from "@/components/sponsor-slot";
 import { ShareButton } from "@/components/share-button";
 import { Rings } from "@/components/prism";
 import { Monogram, catStyle } from "@/components/identity";
+import { SectionNav } from "@/components/section-nav";
 import { IconAlert, IconArrow, IconCheck, IconX } from "@/components/icons";
 import { FACT_LABELS, fact } from "@/components/verification";
 import { formatDate } from "@/lib/freshness-rules";
@@ -125,6 +126,12 @@ export default async function ComparePage({ params }: Params) {
         </div>
       </section>
 
+      <SectionNav
+        label={`${a.name} vs ${b.name} sections`}
+        lead={<><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" />{a.name} <span className="muted">vs</span> <Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} size="sm" />{b.name}</>}
+        sections={[{ id: "key-differences", label: "Differences" }, { id: "comparison-table", label: "Side by side" }, { id: "pricing-matrix", label: "Pricing" }, { id: "verdict", label: "Which to choose" }]}
+      />
+
       <div className="container">
         <section className="panel reveal" id="key-differences">
           <h2>Key differences</h2>
@@ -187,7 +194,7 @@ export default async function ComparePage({ params }: Params) {
           <p className="tiny muted" style={{ marginTop: 8 }}>&ldquo;From&rdquo; is the lowest paid price listed for that billing period, as captured from the official page on the check date. Currencies are never converted; plans and limits differ, so compare the full plan tables on each review.</p>
         </section>
 
-        <div className="two section-gap reveal-stagger">
+        <div className="two section-gap reveal-stagger" id="verdict">
           {[a, b].map((p) => (
             <div className="panel" key={p.slug} style={catStyle(p.categorySlug)}>
               <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} /><h2 style={{ margin: 0 }}>{p.name} at a glance</h2></div>
