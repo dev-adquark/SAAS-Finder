@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { findProduct, loadCatalog } from "@/lib/catalog";
+import { loadOutboundProduct } from "@/lib/catalog";
 import { campaignFromSearchParams, isAutomatedAgent } from "@/lib/analytics";
 import { resolveOutbound } from "@/lib/outbound";
 import { recordEvent } from "@/lib/record-event";
@@ -10,7 +10,7 @@ const NO_STORE = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofoll
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = isValidSlug(slug) ? findProduct(await loadCatalog(), slug) : undefined;
+  const product = isValidSlug(slug) ? await loadOutboundProduct(slug) : undefined;
   const target = product ? resolveOutbound(product) : null;
   if (!product || !target) return NextResponse.redirect(absolute(routes.products()), { status: 302, headers: NO_STORE });
 

@@ -233,3 +233,19 @@ export function pairFor(c: Catalog, slugA: string, slugB: string) {
   if (slugA === slugB) return undefined;
   return findPair(c, comparePairSlug(slugA, slugB));
 }
+
+/**
+ * The one product `/go/{slug}` needs, without loading the whole catalog (a full load is ~38 queries
+ * and made every outbound click wait seconds). Same rules as the catalog: only PUBLISHED products,
+ * and the affiliate is the most recently updated active HTTPS link (see mapDbProduct).
+ */
+export async function loadOutboundProduct(slug: string): Promise<Pick<Product, "slug" | "name" | "officialUrl" | "affiliate"> | undefined> {
+  if (!hasDatabase()) return findProduct(await loadCatalog(), slug);
+  const p = await db.product.findFirst({
+    where: { slug, status: "PUBLISHED" },
+    select: { slug: true, name: true, officialUrl: true, links: { where: { active: true }, orderBy: { updatedAt: "desc" }, select: { url: true, label: true, provider: true, active: true } } },
+  });
+  if (!p) return undefined;
+  const row = p.links.find((l) => l.active && isHttpUrl(l.url) && l.url.startsWith("https://"));
+  return { slug: p.slug, name: p.name, officialUrl: p.officialUrl, affiliate: row ? { url: row.url, label: row.label, provider: row.provider } : null };
+}
