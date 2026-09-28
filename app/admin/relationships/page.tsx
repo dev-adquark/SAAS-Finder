@@ -5,6 +5,8 @@ import { AGREEMENT_STATUSES, RELATIONSHIP_TYPES } from "@/lib/admin/inputs";
 import { isActiveRelationship } from "@/lib/catalog";
 import { formatDate } from "@/lib/freshness-rules";
 import { AdminPage, Area, DangerForm, Field, Flash, Hidden, Pill, Select, dateInput } from "@/components/admin/ui";
+import { HubTabs } from "@/components/admin/hub-tabs";
+import { PARTNER_TABS } from "@/components/admin/nav";
 
 type SP = { searchParams: Promise<{ ok?: string; error?: string }> };
 const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
@@ -18,6 +20,7 @@ export default async function AdminRelationships({ searchParams }: SP) {
   ]);
   return (
     <AdminPage title="Brand & partner relationships">
+      <HubTabs tabs={PARTNER_TABS} label="Partner sections" />
       <Flash ok={sp.ok} error={sp.error} />
       <p className="notice">
         Record <strong>documented</strong> agreements only. A product being reviewed is not a relationship. A relationship appears publicly only while it is ACTIVE, has a verification source and verifier, and is within its dates — expired agreements stop appearing automatically.

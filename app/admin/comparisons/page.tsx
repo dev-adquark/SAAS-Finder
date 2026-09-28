@@ -4,19 +4,25 @@ import { requireAdminPage } from "@/lib/admin/guard";
 import * as A from "@/app/admin/actions";
 import { routes } from "@/lib/seo/routes";
 import { AdminPage, Area, Check, DangerForm, Flash, Hidden, Select, lines } from "@/components/admin/ui";
+import { HubTabs } from "@/components/admin/hub-tabs";
+import { PUBLISHING_TABS } from "@/components/admin/nav";
 
-type SP = { searchParams: Promise<{ ok?: string; error?: string }> };
+
+type SP = { searchParams: Promise<{ ok?: string; error?: string; q?: string; status?: string }> };
 
 export default async function AdminComparisons({ searchParams }: SP) {
   await requireAdminPage();
   const sp = await searchParams;
-  const [pairs, products] = await Promise.all([
+  const [allPairs, products] = await Promise.all([
     db.competitorPair.findMany({ include: { productA: { select: { name: true, slug: true } }, productB: { select: { name: true, slug: true } }, category: { select: { name: true } } }, orderBy: { slug: "asc" } }),
     db.product.findMany({ select: { id: true, name: true, category: { select: { name: true } } }, orderBy: [{ category: { name: "asc" } }, { name: "asc" }] }),
   ]);
+  const q = (sp.q ?? "").trim().toLowerCase().slice(0, 80);
+  const pairs = allPairs.filter((p) => (!q || `${p.productA.name} ${p.productB.name} ${p.slug}`.toLowerCase().includes(q)) && (sp.status !== "active" || p.active) && (sp.status !== "inactive" || !p.active));
   const productOptions = products.map((p) => ({ value: p.id, label: `${p.name} (${p.category.name})` }));
   return (
     <AdminPage title="Comparisons">
+      <HubTabs tabs={PUBLISHING_TABS} label="Publishing sections" />
       <Flash ok={sp.ok} error={sp.error} />
       <p className="muted">Pairs are stored in canonical order (alphabetical by slug), so a reversed duplicate cannot be created. Both products must share a category.</p>
       <form action={A.createPairAction} className="panel form-grid">
@@ -29,6 +35,12 @@ export default async function AdminComparisons({ searchParams }: SP) {
         <Area label="Key differences (one per line)" name="highlights" rows={3} />
         <button className="btn primary" type="submit">Create comparison</button>
       </form>
+      <form className="admin-filter section-gap" method="get" role="search">
+        <label className="field">Search<input name="q" defaultValue={sp.q ?? ""} placeholder="Product name" maxLength={80} /></label>
+        <label className="field">Status<select name="status" defaultValue={sp.status ?? ""}><option value="">All</option><option value="active">Published</option><option value="inactive">Inactive</option></select></label>
+        <button className="btn secondary" type="submit">Apply</button>
+      </form>
+      <p className="small muted">{pairs.length} of {allPairs.length} comparisons</p>
       {pairs.map((p) => (
         <section className="panel section-gap" key={p.id}>
           <h2>{p.productA.name} vs {p.productB.name} <span className="small muted">{p.category.name} · <Link href={routes.compare(p.productA.slug, p.productB.slug)}>{routes.compare(p.productA.slug, p.productB.slug)}</Link></span></h2>

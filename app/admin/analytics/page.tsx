@@ -30,7 +30,8 @@ export default async function AdminAnalytics({ searchParams }: SP) {
       <p className="muted">{r.total} events between {r.from.slice(0, 10)} and {r.to.slice(0, 10)}.</p>
       <Table title="Event counts" head={["Event", "Count"]} rows={r.byEvent.map((x) => [x.event, x.count])} />
       <Table title="Product breakdown (CTA + outbound clicks)" head={["Product", "Event", "Count"]} rows={r.byProduct.map((x) => [x.productSlug, x.event, x.count])} />
-      <Table title="CTA performance" head={["CTA type", "Placement", "Page type", "Clicks"]} rows={r.ctaPerformance.map((x) => [x.ctaType, x.placement, x.pageType, x.count])} />
+      <Table title="CTA performance" head={["CTA type", "Placement", "Page type", "Clicks (redirects)", "Browser-reported"]} rows={r.ctaPerformance.map((x) => [x.ctaType, x.placement, x.pageType, x.count, x.browserReported])} />
+      <p className="tiny muted">Clicks are counted once, when the visitor passes through the tracked redirect. &ldquo;Browser-reported&rdquo; is the same click seen by the page script (lower when scripts are blocked); it is shown for comparison, never added. Crawlers and automated agents are not counted.</p>
       <Table title="Sponsor clicks" head={["Sponsor slot", "Page type", "Clicks"]} rows={r.sponsorClicks.map((x) => [x.sponsorId, x.pageType, x.count])} />
       <Table title="Top pages (views)" head={["Path", "Views"]} rows={r.topPages.map((x) => [x.path, x.count])} />
     </AdminPage>

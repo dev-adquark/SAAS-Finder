@@ -4,6 +4,8 @@ import { requireAdminPage } from "@/lib/admin/guard";
 import * as A from "@/app/admin/actions";
 import { formatDate } from "@/lib/freshness-rules";
 import { AdminPage, DangerForm, Flash, Hidden, Pill } from "@/components/admin/ui";
+import { HubTabs } from "@/components/admin/hub-tabs";
+import { PARTNER_TABS } from "@/components/admin/nav";
 
 type SP = { searchParams: Promise<{ ok?: string; error?: string }> };
 
@@ -16,6 +18,7 @@ export default async function AdminAffiliates({ searchParams }: SP) {
   ]);
   return (
     <AdminPage title="Affiliate links">
+      <HubTabs tabs={PARTNER_TABS} label="Partner sections" />
       <Flash ok={sp.ok} error={sp.error} />
       <p className="muted">/go/{"{slug}"} only ever redirects to an active HTTPS link stored here, or to the product&apos;s official URL. Add links from the product editor once a partner relationship is verified.</p>
       <table className="admin-table">

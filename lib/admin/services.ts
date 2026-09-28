@@ -488,13 +488,30 @@ export const deleteSponsor = (id: string) => run(() => db.sponsorSlot.delete({ w
 
 export const REPORTED_EVENTS = [...EVENT_NAMES, ...LEGACY_EVENT_NAMES] as string[];
 
+/**
+ * One row per CTA placement. `count` is the server-recorded redirect through `/go` (exactly one per
+ * click, JavaScript or not); `browserReported` is the client beacon for the same clicks. The two
+ * describe the same clicks and are never added together.
+ */
+function ctaRows(rows: { ctaType: string | null; placement: string | null; pageType: string | null; event: string; _count: { _all: number } }[]) {
+  const m = new Map<string, { ctaType: string | null; placement: string | null; pageType: string | null; count: number; browserReported: number }>();
+  for (const r of rows) {
+    const k = `${r.ctaType}|${r.placement}|${r.pageType}`;
+    const row = m.get(k) ?? { ctaType: r.ctaType, placement: r.placement, pageType: r.pageType, count: 0, browserReported: 0 };
+    if (r.event === "outbound_click") row.count += r._count._all;
+    else row.browserReported += r._count._all;
+    m.set(k, row);
+  }
+  return [...m.values()].sort((a, b) => b.count - a.count || b.browserReported - a.browserReported);
+}
+
 export async function analyticsReport(from: Date, to: Date) {
   const where = { createdAt: { gte: from, lte: to } };
   const [total, byEvent, byProduct, byCta, bySponsor, byPage] = await Promise.all([
     db.analyticsEvent.count({ where }),
     db.analyticsEvent.groupBy({ by: ["event"], where: { ...where, event: { in: REPORTED_EVENTS } }, _count: { _all: true } }),
     db.analyticsEvent.groupBy({ by: ["productSlug", "event"], where: { ...where, productSlug: { not: null }, event: { in: ["cta_click", "outbound_click", "affiliate_click"] } }, _count: { _all: true } }),
-    db.analyticsEvent.groupBy({ by: ["ctaType", "placement", "pageType"], where: { ...where, event: { in: ["cta_click", "outbound_click"] } }, _count: { _all: true } }),
+    db.analyticsEvent.groupBy({ by: ["ctaType", "placement", "pageType", "event"], where: { ...where, event: { in: ["cta_click", "outbound_click"] } }, _count: { _all: true } }),
     db.analyticsEvent.groupBy({ by: ["sponsorId", "pageType"], where: { ...where, event: "sponsor_click" }, _count: { _all: true } }),
     db.analyticsEvent.groupBy({ by: ["path"], where: { ...where, event: "page_view" }, _count: { _all: true }, orderBy: { _count: { path: "desc" } }, take: 25 }),
   ]);
@@ -505,7 +522,7 @@ export async function analyticsReport(from: Date, to: Date) {
     total,
     byEvent: byCount(byEvent).map((r) => ({ event: r.event, count: r._count._all })),
     byProduct: byCount(byProduct).slice(0, 50).map((r) => ({ productSlug: r.productSlug, event: r.event, count: r._count._all })),
-    ctaPerformance: byCount(byCta).slice(0, 50).map((r) => ({ ctaType: r.ctaType, placement: r.placement, pageType: r.pageType, count: r._count._all })),
+    ctaPerformance: ctaRows(byCta).slice(0, 50),
     sponsorClicks: byCount(bySponsor).map((r) => ({ sponsorId: r.sponsorId, pageType: r.pageType, count: r._count._all })),
     topPages: byPage.map((r) => ({ path: r.path, count: r._count._all })),
   };

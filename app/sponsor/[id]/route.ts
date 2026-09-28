@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { campaignFromSearchParams } from "@/lib/analytics";
+import { campaignFromSearchParams, isAutomatedAgent } from "@/lib/analytics";
 import { recordEvent } from "@/lib/record-event";
 import { isRenderableSponsor } from "@/lib/sponsors";
 import { absolute } from "@/lib/site";
@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
   if (!slot || !isRenderableSponsor(slot) || !slot.url) return home;
   const campaign = campaignFromSearchParams(new URL(req.url).searchParams, null);
-  after(() =>
+  if (!isAutomatedAgent(req.headers.get("user-agent"))) after(() =>
     recordEvent({
       event: "sponsor_click",
       path: `/sponsor/${slot.id}`,

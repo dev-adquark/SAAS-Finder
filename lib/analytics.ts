@@ -9,6 +9,14 @@ export const CTA_TYPES = ["button", "inline", "plan", "comparison", "hero"] as c
 export type CtaType = (typeof CTA_TYPES)[number];
 
 export const MAX_BODY_BYTES = 4_000;
+
+// Crawlers, link unfurlers, monitoring and our own QA crawl follow `/go` and `/sponsor` links; counting
+// them as clicks inflates partner reporting. Real browsers always send a user agent.
+const AUTOMATED_AGENT = /bot|crawl|spider|slurp|facebookexternalhit|embedly|preview|whatsapp|telegram|discord|slack|headless|lighthouse|pagespeed|monitor|uptime|curl|wget|python|httpclient|http-client|node-fetch|undici|axios|okhttp|java\/|go-http|saasfinder-crawl-qa/i;
+export function isAutomatedAgent(userAgent: string | null, { emptyIsAutomated = true } = {}): boolean {
+  if (!userAgent || !userAgent.trim()) return emptyIsAutomated;
+  return AUTOMATED_AGENT.test(userAgent);
+}
 export const MAX_METADATA_BYTES = 1_000;
 const MAX_PATH = 300;
 const TOKEN = /^[a-z0-9][a-z0-9_-]{0,63}$/;

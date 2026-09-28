@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { findProduct, loadCatalog } from "@/lib/catalog";
-import { campaignFromSearchParams } from "@/lib/analytics";
+import { campaignFromSearchParams, isAutomatedAgent } from "@/lib/analytics";
 import { resolveOutbound } from "@/lib/outbound";
 import { recordEvent } from "@/lib/record-event";
 import { absolute } from "@/lib/site";
@@ -15,7 +15,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   if (!product || !target) return NextResponse.redirect(absolute(routes.products()), { status: 302, headers: NO_STORE });
 
   const campaign = campaignFromSearchParams(new URL(req.url).searchParams, product.slug);
-  after(() =>
+  // The redirect always works; only human clicks are recorded.
+  if (!isAutomatedAgent(req.headers.get("user-agent"))) after(() =>
     recordEvent({
       event: "outbound_click",
       path: routes.go(product.slug),

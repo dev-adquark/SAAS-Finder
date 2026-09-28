@@ -3,6 +3,8 @@ import { requireAdminPage } from "@/lib/admin/guard";
 import * as A from "@/app/admin/actions";
 import { isRenderableSponsor, SPONSOR_MIN_PRIORITY, SPONSOR_PAGE_TYPES, SPONSOR_PLACEMENTS } from "@/lib/sponsors";
 import { AdminPage, Area, Check, DangerForm, Field, Flash, Hidden, Pill, Select, dateInput } from "@/components/admin/ui";
+import { HubTabs } from "@/components/admin/hub-tabs";
+import { PARTNER_TABS } from "@/components/admin/nav";
 
 type SP = { searchParams: Promise<{ ok?: string; error?: string }> };
 const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
@@ -13,6 +15,7 @@ export default async function AdminSponsors({ searchParams }: SP) {
   const slots = await db.sponsorSlot.findMany({ orderBy: [{ pageType: "asc" }, { placement: "asc" }, { priority: "desc" }] });
   return (
     <AdminPage title="Sponsor slots">
+      <HubTabs tabs={PARTNER_TABS} label="Partner sections" />
       <Flash ok={sp.ok} error={sp.error} />
       <p className="muted">A slot renders only when it is active, within its dates, has a title, an HTTPS URL, a label containing &ldquo;Sponsored&rdquo;, and meets the placement&apos;s minimum priority (sidebar ≥ {SPONSOR_MIN_PRIORITY.sidebar}, inline ≥ {SPONSOR_MIN_PRIORITY.inline}). Sponsors never influence editorial lists. Clicks are tracked as <code>sponsor_click</code> via /sponsor/{"{id}"}.</p>
       <form action={A.createSponsorAction} className="panel form-grid">
