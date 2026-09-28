@@ -5,11 +5,47 @@ declare global {
 }
 
 /**
+ * Removes copy-paste artefacts that can never be part of a valid connection string: surrounding
+ * whitespace, a leading `DATABASE_URL=` (pasting an .env line into a dashboard), and wrapping quotes.
+ */
+export function normalizeDatabaseUrl(raw: string | undefined): string | undefined {
+  if (!raw) return raw;
+  let v = raw.trim().replace(/^DATABASE_URL\s*=\s*/, "").trim();
+  if (v.length >= 2 && (v[0] === '"' || v[0] === "'") && v.at(-1) === v[0]) v = v.slice(1, -1).trim();
+  return v;
+}
+
+/**
+ * Configuration problems detectable from the URL's shape alone. Messages never include credentials.
+ * Used to make a failed database read actionable in build and runtime logs.
+ */
+export function databaseUrlProblems(raw: string | undefined): string[] {
+  const v = normalizeDatabaseUrl(raw);
+  if (!v) return ["DATABASE_URL is not set."];
+  let url: URL;
+  try {
+    url = new URL(v);
+  } catch {
+    return ["DATABASE_URL is not a valid URL (expected postgresql://USER:PASSWORD@HOST:PORT/DATABASE)."];
+  }
+  const out: string[] = [];
+  if (url.protocol !== "postgresql:" && url.protocol !== "postgres:") out.push(`DATABASE_URL must start with postgresql:// (found ${url.protocol}//).`);
+  const direct = url.hostname.match(/^db\.([a-z0-9]+)\.supabase\.co$/i);
+  if (direct) out.push(`DATABASE_URL uses Supabase's direct host (db.${direct[1]}.supabase.co), which is IPv6-only and unreachable from Vercel. Use the transaction pooler: postgresql://postgres.${direct[1]}:PASSWORD@<region>.pooler.supabase.com:6543/postgres?pgbouncer=true`);
+  if (/\.pooler\.supabase\.com$/i.test(url.hostname)) {
+    if (!decodeURIComponent(url.username).includes(".")) out.push("Supabase pooler connections need the username postgres.<project-ref> (e.g. postgres.abcd1234), not postgres.");
+    if (url.port === "5432") out.push("DATABASE_URL uses the Supabase session pooler (port 5432), which allows few clients; use the transaction pooler on port 6543 for Vercel.");
+  }
+  return out;
+}
+
+/**
  * Caps the connection pool unless DATABASE_URL already sets `connection_limit`. `next build` runs
  * many static-generation workers in parallel, and serverless functions scale horizontally, so the
  * default pool size (cpus * 2 + 1 per process) can exhaust Postgres `max_connections`.
  */
-export function pooledUrl(raw: string | undefined, building = process.env.NEXT_PHASE === "phase-production-build"): string | undefined {
+export function pooledUrl(input: string | undefined, building = process.env.NEXT_PHASE === "phase-production-build"): string | undefined {
+  const raw = normalizeDatabaseUrl(input);
   if (!raw) return raw;
   try {
     const url = new URL(raw);

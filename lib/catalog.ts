@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { databaseUrlProblems, db } from "@/lib/db";
 import { lastCheckedAt } from "@/lib/freshness-rules";
 import { sanitizeCatalog } from "@/lib/content/sanitize";
 import { seedCatalog } from "@/lib/content/seed-catalog";
@@ -206,6 +206,7 @@ export const loadCatalog = cache(async (): Promise<Catalog> => {
     return await readDatabaseCatalog();
   } catch (error) {
     console.error("[catalog] database read failed", error instanceof Error ? error.message : "unknown error");
+    for (const hint of databaseUrlProblems(process.env.DATABASE_URL)) console.error(`[catalog] configuration: ${hint}`);
     throw error;
   }
 });
