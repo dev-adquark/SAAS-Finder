@@ -616,17 +616,18 @@ const DAY = 86_400_000;
 export const SOURCE_EXPIRY_DAYS = 180;
 
 export async function dataQuality(now = new Date()) {
-  const products = await db.product.findMany({
-    select: {
-      id: true, name: true, status: true, contentUpdatedAt: true, pricingCheckedAt: true,
-      review: { select: { reviewStatus: true } },
-      snapshots: { where: { status: "VERIFIED" }, select: { id: true } },
-      sources: { select: { status: true, checkedAt: true } },
-      facts: { select: { status: true } },
-      links: { select: { active: true } },
-    },
-  });
-  const [sponsors, relationships] = await Promise.all([
+  // These three don't depend on each other; one round trip instead of two.
+  const [products, sponsors, relationships] = await Promise.all([
+    db.product.findMany({
+      select: {
+        id: true, name: true, status: true, contentUpdatedAt: true, pricingCheckedAt: true,
+        review: { select: { reviewStatus: true } },
+        snapshots: { where: { status: "VERIFIED" }, select: { id: true } },
+        sources: { select: { status: true, checkedAt: true } },
+        facts: { select: { status: true } },
+        links: { select: { active: true } },
+      },
+    }),
     db.sponsorSlot.findMany({ select: { active: true, endsAt: true } }),
     db.brandRelationship.findMany({ select: { agreementStatus: true, endDate: true, verifiedAt: true } }),
   ]);

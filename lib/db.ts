@@ -60,5 +60,9 @@ export function pooledUrl(input: string | undefined, building = process.env.NEXT
   }
 }
 
-export const db = globalThis.prisma ?? new PrismaClient({ datasourceUrl: pooledUrl(process.env.DATABASE_URL) });
+// Opt-in query audit (DEBUG_QUERY_LOG=1): logs every query's SQL and duration to stdout, prefixed
+// so it can be isolated from other log lines. Zero-cost when unset; never enabled by default.
+const withQueryEvents = new PrismaClient({ datasourceUrl: pooledUrl(process.env.DATABASE_URL), log: [{ emit: "event", level: "query" }] });
+if (process.env.DEBUG_QUERY_LOG === "1") withQueryEvents.$on("query", (e) => console.log(`[qlog] ${e.duration}ms ${e.query.slice(0, 200)}`));
+export const db = globalThis.prisma ?? withQueryEvents;
 if (process.env.NODE_ENV !== "production") globalThis.prisma = db;

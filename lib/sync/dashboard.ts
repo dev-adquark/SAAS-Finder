@@ -46,13 +46,18 @@ export async function syncDashboard(now = new Date()) {
   ]);
   const last = runs[0] ?? null;
   const lastFinished = runs.find((r) => r.finishedAt) ?? null;
-  const decided = last ? await db.dataChange.groupBy({ by: ["status"], where: { runId: last.id }, _count: { _all: true } }) : [];
+  // None of these three depends on the others' result (only on `last`, already resolved above), so
+  // they run as one round trip instead of three sequential ones - the biggest single latency cost on
+  // this page against a database in a different region from the app.
+  const [decided, failures, thisWeek] = await Promise.all([
+    last ? db.dataChange.groupBy({ by: ["status"], where: { runId: last.id }, _count: { _all: true } }) : Promise.resolve([]),
+    last
+      ? db.syncPage.findMany({ where: { runId: last.id, status: { not: "OK" }, processedAt: { not: null } }, include: { product: { select: { id: true, name: true } } }, orderBy: [{ productId: "asc" }], take: 200 })
+      : Promise.resolve([]),
+    db.syncRun.findUnique({ where: { weekKey: isoWeekKey(now) }, select: { status: true, attempts: true } }),
+  ]);
   const byStatus = Object.fromEntries(decided.map((d) => [d.status, d._count._all])) as Record<string, number>;
-  const failures = last
-    ? await db.syncPage.findMany({ where: { runId: last.id, status: { not: "OK" }, processedAt: { not: null } }, include: { product: { select: { id: true, name: true } } }, orderBy: [{ productId: "asc" }], take: 200 })
-    : [];
   const stats = ((last?.stats ?? {}) as RunStats);
-  const thisWeek = await db.syncRun.findUnique({ where: { weekKey: isoWeekKey(now) }, select: { status: true, attempts: true } });
   const doneThisWeek = !!thisWeek && (thisWeek.status === "COMPLETED" || thisWeek.status === "PARTIAL" || thisWeek.attempts >= 3);
   return {
     configured: apifyConfigured(),
