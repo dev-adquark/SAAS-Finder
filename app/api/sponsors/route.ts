@@ -13,9 +13,12 @@ export async function GET(req: Request) {
   try {
     const slots = await db.sponsorSlot.findMany({ where: { active: true, pageType, placement }, take: 20 });
     const s = pickSponsor(slots, pageType, placement);
+    // No CDN caching: admin sponsor writes revalidate pages via revalidatePath, which this Route
+    // Handler's response sits outside of, so an s-maxage here could serve a deleted/edited sponsor
+    // to real visitors for up to its full TTL after the change — the opposite of "per request" above.
     return NextResponse.json(
       { sponsor: s ? { id: s.id, title: s.title, label: sponsorDisplayLabel(s.label), description: s.description } : null },
-      { headers: { "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=60" } },
+      { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
     return NextResponse.json({ sponsor: null });
