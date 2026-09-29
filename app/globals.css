@@ -437,6 +437,11 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 a.vscard:hover .side:first-child { transform: translateX(-6px); }
 a.vscard:hover .side:last-child { transform: translateX(6px); }
 .vscard .sum { grid-column: 1 / -1; font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; text-align: left; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vscard-panel { display: block; padding: 22px; }
+.vscard-heads { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 14px; }
+.vscard-heads .side { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; }
+.vscard-panel .sum { margin: 0 0 16px; font-size: 0.98rem; color: var(--text-2); -webkit-line-clamp: unset; }
+.vscard-panel h4 { font-size: 0.95rem; margin: 0 0 6px; }
 
 /* ---------- Best-for editorial cards ---------- */
 .guides { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ink); border-left: 1px solid var(--line-strong); }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { alternativesFor, findCategory, findProduct, guidesForProduct, loadCatalog, pairsForProduct } from "@/lib/catalog";
+import { alternativesFor, findCategory, findProduct, guidesForProduct, loadCatalog, pairsForProduct, strArray } from "@/lib/catalog";
 import { comparisonSchemaFor } from "@/lib/content/comparison-schema";
 import { productLinks } from "@/lib/linking";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -23,6 +23,7 @@ import { SponsorSlot } from "@/components/sponsor-slot";
 import { ShareButton } from "@/components/share-button";
 import { IdVisual } from "@/components/id-visual";
 import { Monogram, catStyle } from "@/components/identity";
+import { TabExplorer } from "@/components/tab-explorer";
 import { CategoryIcon, IconAlert, IconCheck, IconShield, IconSpark, IconUsers, IconX, IconLayers } from "@/components/icons";
 import { FactsTable, FreshnessStrip, PlanTable, ResourceCenter, SourcesPanel, TrustBadges, fact, verifiedSources } from "@/components/verification";
 
@@ -264,20 +265,36 @@ export default async function ProductReview({ params }: Params) {
               </table>
             </div>
             {pairs.length > 0 && (
-              <div className="grid section-gap">
-                {pairs.map((pair) => {
+              <TabExplorer
+                label={`${p.name} comparisons`}
+                items={pairs.map((pair) => { const o = other(pair); return { id: `vs-${pair.slug}`, label: o.name, sub: findCategory(catalog, o.categorySlug)?.name, icon: <Monogram name={o.name} slug={o.slug} categorySlug={o.categorySlug} size="sm" /> }; })}
+                panels={pairs.map((pair) => {
                   const o = other(pair);
+                  const isA = pair.productA === p.slug;
+                  const chooseHere = isA ? pair.chooseA : pair.chooseB;
+                  const chooseOther = isA ? pair.chooseB : pair.chooseA;
                   return (
-                    <Link key={pair.slug} className="card vscard" href={routes.compare(pair.productA, pair.productB)}>
-                      <span className="side"><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</span>
-                      <span className="vs" aria-hidden="true">VS</span>
-                      <span className="side"><Monogram name={o.name} slug={o.slug} categorySlug={o.categorySlug} size="sm" />{o.name}</span>
-                      <span className="sr-only"> versus </span>
-                      <span className="sum">{pair.summary}</span>
-                    </Link>
+                    <article key={pair.slug} className="card vscard-panel" style={catStyle(o.categorySlug)}>
+                      <div className="vscard-heads">
+                        <span className="side"><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} /><strong>{p.name}</strong></span>
+                        <span className="vs" aria-hidden="true">VS</span>
+                        <span className="side"><Monogram name={o.name} slug={o.slug} categorySlug={o.categorySlug} /><strong>{o.name}</strong></span>
+                      </div>
+                      <p className="sum">{pair.summary}</p>
+                      <div className="two">
+                        <div><h4>Choose {p.name} if…</h4><p className="small">{chooseHere}</p></div>
+                        <div><h4>Choose {o.name} if…</h4><p className="small">{chooseOther}</p></div>
+                      </div>
+                      {strArray(pair.highlights).length > 0 && (
+                        <ul className="limit-list">{strArray(pair.highlights).slice(0, 3).map((h) => <li key={h}>{h}</li>)}</ul>
+                      )}
+                      <div className="actions">
+                        <Link className="btn primary" href={routes.compare(pair.productA, pair.productB)}>Full {p.name} vs {o.name} comparison <span className="arrow-right">→</span></Link>
+                      </div>
+                    </article>
                   );
                 })}
-              </div>
+              />
             )}
           </section>
 
