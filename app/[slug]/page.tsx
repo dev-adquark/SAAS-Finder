@@ -24,6 +24,7 @@ import { ShareButton } from "@/components/share-button";
 import { IdVisual } from "@/components/id-visual";
 import { Monogram, catStyle } from "@/components/identity";
 import { TabExplorer } from "@/components/tab-explorer";
+import { ShowMoreSection } from "@/components/show-more";
 import { CategoryIcon, IconAlert, IconCheck, IconShield, IconSpark, IconUsers, IconX, IconLayers } from "@/components/icons";
 import { FactsTable, FreshnessStrip, PlanTable, ResourceCenter, SourcesPanel, TrustBadges, fact, verifiedSources } from "@/components/verification";
 
@@ -211,6 +212,7 @@ export default async function ProductReview({ params }: Params) {
             <div className="pc cons"><h2><IconX /> Cons</h2><ul>{p.review.cons.map((x) => <li key={x}><IconX size={16} />{x}</li>)}</ul></div>
           </section>
 
+          <ShowMoreSection label={`See platforms, comparisons, alternatives, sources and FAQs for ${p.name}`}>
           <section className="section-gap reveal" id="platforms">
             <h2><IconLayers /> Platforms &amp; integrations</h2>
             <FactsTable product={p} keys={["platforms", "mobileApps", "browser", "integrations"]} title="Platforms and integrations" />
@@ -365,6 +367,7 @@ export default async function ProductReview({ params }: Params) {
               </ol>
             </section>
           )}
+          </ShowMoreSection>
         </div>
 
         <aside className="sidebar" aria-label="Review sidebar">

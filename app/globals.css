@@ -1368,3 +1368,15 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
   main h2 > a:only-child, main h3 > a:only-child { display: inline-block; padding-block: 6px; }
   .compare th > a, .matrix th > a, table th > a { display: inline-block; padding-block: 4px; }
 }
+
+/* ---------- Show more (mobile progressive disclosure on long detail pages) ---------- */
+@media (max-width: 760px) {
+  .show-more.is-ready:not(.open) { position: relative; }
+  .show-more.is-ready:not(.open) .show-more-body { max-height: 640px; overflow: hidden; }
+  .show-more.is-ready:not(.open)::before { content: ""; position: absolute; left: 0; right: 0; bottom: 44px; height: 110px; background: linear-gradient(to bottom, transparent, var(--paper)); pointer-events: none; }
+  .show-more-btn { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin-top: 14px; border: 1px solid var(--ink); border-radius: 999px; background: var(--white); font-weight: 600; font-size: 0.95rem; }
+  .show-more-btn:active { background: var(--ivory); }
+}
+@media (min-width: 761px) {
+  .show-more-btn { display: none; }
+}
