@@ -10,6 +10,21 @@ export type SponsorPageType = (typeof SPONSOR_PAGE_TYPES)[number];
 export const SPONSOR_PLACEMENTS = ["sidebar", "inline"] as const;
 export type SponsorPlacement = (typeof SPONSOR_PLACEMENTS)[number];
 
+/**
+ * The one placement each page type's <SponsorSlot> actually requests (see every call site: product,
+ * alternatives and best default to "sidebar"; category and compare pass "inline" explicitly). A slot
+ * whose stored `placement` doesn't match its `pageType` here is invisible on every real page even
+ * though it can look fully "active" and valid — so this mapping is the single source of truth admin
+ * writes are pinned to, not a value an editor picks independently.
+ */
+export const SPONSOR_PLACEMENT_FOR_PAGE_TYPE: Record<SponsorPageType, SponsorPlacement> = {
+  product: "sidebar",
+  alternatives: "sidebar",
+  best: "sidebar",
+  category: "inline",
+  compare: "inline",
+};
+
 /** Minimum priority a slot needs to render per placement (inline placements are more intrusive). */
 export const SPONSOR_MIN_PRIORITY: Record<SponsorPlacement, number> = { sidebar: 0, inline: 10 };
 

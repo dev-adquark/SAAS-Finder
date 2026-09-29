@@ -1,7 +1,7 @@
 import { isHttpUrl } from "@/lib/validation";
 import { isValidSlug, productSlugProblem, slugify } from "@/lib/seo/routes";
 import { CTA_TYPES } from "@/lib/analytics";
-import { isSponsorPageType, isSponsorPlacement, SPONSOR_PAGE_TYPES, SPONSOR_PLACEMENTS } from "@/lib/sponsors";
+import { isSponsorPageType, SPONSOR_PAGE_TYPES, SPONSOR_PLACEMENT_FOR_PAGE_TYPE } from "@/lib/sponsors";
 
 // Input parsing for admin writes. Works on JSON bodies and on FormData converted with
 // `formToObject`. Only keys that are present are returned (PATCH semantics). Every string is
@@ -21,7 +21,7 @@ export const REVIEW_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "NEEDS_UPDATE", "R
 export const BILLING_PERIODS = ["FREE", "MONTHLY", "ANNUAL", "ONE_TIME", "USAGE", "CUSTOM"] as const;
 export const PRICE_SOURCE_TYPES = ["OFFICIAL_PRICING_PAGE", "VENDOR_CONFIRMATION", "MANUAL_CHECK", "AUTOMATED_DETECTION"] as const;
 export const SNAPSHOT_TYPES = ["PRICING", "FEATURE", "GENERAL"] as const;
-export { CTA_TYPES, SPONSOR_PAGE_TYPES, SPONSOR_PLACEMENTS };
+export { CTA_TYPES, SPONSOR_PAGE_TYPES };
 
 class Reader {
   problems: string[] = [];
@@ -387,7 +387,6 @@ export function parseSponsor(b: unknown, create: boolean): SponsorInput {
     .str("label", { max: 60 })
     .str("description", { max: 300, nullable: true })
     .oneOf("pageType", SPONSOR_PAGE_TYPES, { required: create })
-    .oneOf("placement", SPONSOR_PLACEMENTS, { required: create })
     .int("priority", { min: 0, max: 100 })
     .str("campaign", { max: 120, nullable: true })
     .bool("active")
@@ -398,7 +397,10 @@ export function parseSponsor(b: unknown, create: boolean): SponsorInput {
   if (s.startsAt && s.endsAt && s.startsAt > s.endsAt) throw new InputError(["startsAt must be before endsAt"]);
   if (s.label !== undefined && !/sponsored/i.test(s.label)) throw new InputError(["label must contain the word \"Sponsored\""]);
   if (s.pageType !== undefined && !isSponsorPageType(s.pageType)) throw new InputError(["invalid pageType"]);
-  if (s.placement !== undefined && !isSponsorPlacement(s.placement)) throw new InputError(["invalid placement"]);
+  // Placement is never taken from the form: every page type has exactly one placement its
+  // <SponsorSlot> actually requests, so a mismatched (pageType, placement) pair — which passes every
+  // other validity check yet renders nowhere — is prevented by construction rather than merely flagged.
+  if (s.pageType !== undefined) s.placement = SPONSOR_PLACEMENT_FOR_PAGE_TYPE[s.pageType as keyof typeof SPONSOR_PLACEMENT_FOR_PAGE_TYPE];
   return s;
 }
 
