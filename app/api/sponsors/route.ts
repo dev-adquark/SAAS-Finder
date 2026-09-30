@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     // Handler's response sits outside of, so an s-maxage here could serve a deleted/edited sponsor
     // to real visitors for up to its full TTL after the change — the opposite of "per request" above.
     return NextResponse.json(
-      { sponsor: s ? { id: s.id, title: s.title, label: sponsorDisplayLabel(s.label), description: s.description } : null },
+      { sponsor: s ? { id: s.id, title: s.title, label: sponsorDisplayLabel(s.label), description: s.description, logoUrl: s.logoUrl, ctaLabel: s.ctaLabel } : null },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {

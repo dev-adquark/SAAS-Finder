@@ -35,6 +35,8 @@ export type SponsorRecord = {
   title: string;
   label: string;
   description: string | null;
+  logoUrl: string | null;
+  ctaLabel: string | null;
   pageType: string;
   placement: string;
   priority: number;

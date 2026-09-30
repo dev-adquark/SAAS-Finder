@@ -380,6 +380,8 @@ model SponsorSlot {
   title       String
   label       String    @default("Sponsored")
   description String?
+  logoUrl     String?
+  ctaLabel    String?
   pageType    String    @default("product")
   placement   String    @default("sidebar")
   priority    Int       @default(0)

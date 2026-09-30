@@ -17,7 +17,7 @@ test("affiliate URLs are not modified with UTM tags", () => {
   assert.equal(resolveOutbound({ affiliate: { url: "https://p.example/?a=1", label: "x", provider: null }, officialUrl: "https://v.example" })?.url, "https://p.example/?a=1");
 });
 
-const base: SponsorRecord = { id: "s1", title: "Acme", label: "Sponsored", description: null, pageType: "product", placement: "sidebar", priority: 0, active: true, url: "https://acme.example", startsAt: null, endsAt: null };
+const base: SponsorRecord = { id: "s1", title: "Acme", label: "Sponsored", description: null, logoUrl: null, ctaLabel: null, pageType: "product", placement: "sidebar", priority: 0, active: true, url: "https://acme.example", startsAt: null, endsAt: null };
 const now = new Date("2026-09-25T12:00:00Z");
 
 test("sponsor rendering rules", () => {

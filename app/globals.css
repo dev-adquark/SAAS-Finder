@@ -678,8 +678,41 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 .link-groups .list li::before { content: "→ "; color: var(--muted); }
 
 /* Sponsor */
-.sponsor { position: relative; padding: 18px; border-radius: var(--radius); background: var(--white); border: 1px dashed var(--sponsored); display: flex; flex-direction: column; gap: 8px; animation: fade-in 0.4s ease-out; }
-.sponsor-label { align-self: flex-start; font-family: var(--font-mono); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--sponsored); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--sponsored); }
+.sponsor {
+  position: relative;
+  padding: 20px 20px 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--sponsored) 5%, var(--white)), var(--white) 55%);
+  border: 1px solid color-mix(in srgb, var(--sponsored) 22%, var(--line));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  animation: fade-in 0.4s ease-out;
+  transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), border-color 0.3s;
+}
+.sponsor::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--sponsored); opacity: 0.9; }
+.sponsor:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--sponsored) 45%, var(--line)); }
+.sponsor-label { align-self: flex-start; font-family: var(--font-mono); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--sponsored); padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--sponsored) 55%, transparent); background: color-mix(in srgb, var(--sponsored) 8%, transparent); }
+.sponsor-head { display: flex; align-items: center; gap: 10px; }
+.sponsor-logo { width: 38px; height: 38px; flex-shrink: 0; border-radius: 9px; background: var(--white); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 5px; object-fit: contain; }
+.sponsor-title { font-family: var(--font-display); font-weight: 600; font-size: 1.04rem; letter-spacing: -0.01em; line-height: 1.2; }
+.sponsor-desc { font-size: 0.86rem; line-height: 1.48; color: var(--muted); margin: 0; }
+.sponsor-disclosure { font-size: 0.7rem; line-height: 1.4; color: var(--muted); margin: 2px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
+.sponsor-cta { align-self: flex-start; margin-top: 2px; }
+.sponsor-cta span { display: inline-block; transition: transform 0.25s var(--ease-out); }
+.sponsor-cta:hover span { transform: translateX(3px); }
+/* Inline placements (category/compare pages) read as a wide editorial strip rather than a sidebar card. */
+.sponsor-inline { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px 18px; padding: 16px 20px; }
+.sponsor-inline .sponsor-label { flex: 0 0 auto; }
+.sponsor-inline .sponsor-head { flex: 0 0 auto; }
+.sponsor-inline .sponsor-desc { flex: 1 1 260px; margin: 0; }
+.sponsor-inline .sponsor-disclosure { flex-basis: 100%; border-top: none; padding-top: 0; order: 99; }
+.sponsor-inline .sponsor-cta { flex: 0 0 auto; }
+@media (max-width: 640px) {
+  .sponsor-inline { flex-direction: column; align-items: flex-start; }
+  .sponsor-inline .sponsor-desc { flex: none; }
+}
 
 /* Scroll progress */
 .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60; background: var(--ink); transform-origin: 0 50%; transform: scaleX(0); pointer-events: none; }

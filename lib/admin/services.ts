@@ -468,7 +468,7 @@ export const deleteUseCaseProduct = (id: string) =>
 export const createSponsor = (s: SponsorInput) =>
   run(() =>
     db.sponsorSlot.create({
-      data: { title: s.title!, label: s.label ?? "Sponsored", description: s.description ?? null, pageType: s.pageType!, placement: s.placement!, priority: s.priority ?? 0, campaign: s.campaign ?? null, active: s.active === true, url: s.url ?? null, startsAt: s.startsAt ?? null, endsAt: s.endsAt ?? null },
+      data: { title: s.title!, label: s.label ?? "Sponsored", description: s.description ?? null, logoUrl: s.logoUrl ?? null, ctaLabel: s.ctaLabel ?? null, pageType: s.pageType!, placement: s.placement!, priority: s.priority ?? 0, campaign: s.campaign ?? null, active: s.active === true, url: s.url ?? null, startsAt: s.startsAt ?? null, endsAt: s.endsAt ?? null },
     }),
   );
 

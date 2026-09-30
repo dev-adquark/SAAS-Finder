@@ -47,6 +47,8 @@ export default async function AdminSponsors({ searchParams }: SP) {
         <Field label="Priority (0–100)" name="priority" type="number" defaultValue={0} hint="Inline placements (category, compare) need 10+ to render at all." />
         <Field label="Campaign" name="campaign" maxLength={120} />
         <Field label="Destination URL (https)" name="url" type="url" full />
+        <Field label="Logo URL (https, optional)" name="logoUrl" type="url" full hint="A direct image link to the sponsor's own logo. Leave blank to show no logo — never invented." />
+        <Field label="CTA button label (optional)" name="ctaLabel" maxLength={40} hint="Defaults to “Visit sponsor” if left blank." />
         <Area label="Short description" name="description" rows={2} maxLength={300} />
         <Field label="Starts" name="startsAt" type="date" />
         <Field label="Ends" name="endsAt" type="date" />
@@ -66,6 +68,8 @@ export default async function AdminSponsors({ searchParams }: SP) {
               <Field label="Priority" name="priority" type="number" defaultValue={s.priority} />
               <Field label="Campaign" name="campaign" defaultValue={s.campaign} maxLength={120} />
               <Field label="Destination URL" name="url" type="url" defaultValue={s.url} full />
+              <Field label="Logo URL (https, optional)" name="logoUrl" type="url" defaultValue={s.logoUrl} full hint="A direct image link to the sponsor's own logo. Leave blank to show no logo — never invented." />
+              <Field label="CTA button label (optional)" name="ctaLabel" defaultValue={s.ctaLabel} maxLength={40} hint="Defaults to “Visit sponsor” if left blank." />
               <Area label="Description" name="description" defaultValue={s.description} rows={2} maxLength={300} />
               <Field label="Starts" name="startsAt" type="date" defaultValue={dateInput(s.startsAt)} />
               <Field label="Ends" name="endsAt" type="date" defaultValue={dateInput(s.endsAt)} />

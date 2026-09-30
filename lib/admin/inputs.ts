@@ -380,12 +380,14 @@ export type UseCaseProductInput = Partial<{ productId: string; rationale: string
 export const parseUseCaseProduct = (b: unknown, create: boolean) =>
   read(b).id("productId", { required: create }).str("rationale", { max: 1500, min: 40, required: create }).str("caveat", { max: 800, nullable: true }).int("position", { min: 0, max: 1000 }).bool("active").done<UseCaseProductInput>();
 
-export type SponsorInput = Partial<{ title: string; label: string; description: string | null; pageType: string; placement: string; priority: number; campaign: string | null; active: boolean; url: string | null; startsAt: Date | null; endsAt: Date | null }>;
+export type SponsorInput = Partial<{ title: string; label: string; description: string | null; logoUrl: string | null; ctaLabel: string | null; pageType: string; placement: string; priority: number; campaign: string | null; active: boolean; url: string | null; startsAt: Date | null; endsAt: Date | null }>;
 export function parseSponsor(b: unknown, create: boolean): SponsorInput {
   const s = read(b)
     .str("title", { max: 120, required: create })
     .str("label", { max: 60 })
     .str("description", { max: 300, nullable: true })
+    .url("logoUrl", { nullable: true, httpsOnly: true })
+    .str("ctaLabel", { max: 40, nullable: true })
     .oneOf("pageType", SPONSOR_PAGE_TYPES, { required: create })
     .int("priority", { min: 0, max: 100 })
     .str("campaign", { max: 120, nullable: true })
