@@ -11,7 +11,6 @@ import { CountUp } from "@/components/count-up";
 import { Magnetic } from "@/components/magnetic";
 import { TabExplorer } from "@/components/tab-explorer";
 import { SubcategoryGrid } from "@/components/subcategory-grid";
-import { ShowMoreSection } from "@/components/show-more";
 import { AffiliateCta } from "@/components/cta";
 import { AffiliateDisclosure } from "@/components/disclosure";
 import { ScoreBadge } from "@/components/score";
@@ -154,62 +153,66 @@ export default async function Home() {
                   ),
                 };
               });
-              const catPairs = pairsInCategory(c, cat.slug).slice(0, 3);
-              const catGuides = guidesInCategory(c, cat.slug).slice(0, 3);
+              const catPairs = pairsInCategory(c, cat.slug);
+              const catGuides = guidesInCategory(c, cat.slug);
+              const hasRelated = catPairs.length > 0 || catGuides.length > 0;
               return (
                 <div key={cat.slug} className="discover-panel">
                   <div className="discover-panel-intro">
                     <p>{cat.description}</p>
                     <Link className="explore" href={routes.category(cat.slug)}>Explore all {items.length} {cat.name} tools <span className="arrow-right" aria-hidden="true">→</span></Link>
                   </div>
-                  <SubcategoryGrid items={items} label={`Filter ${cat.name} by type`} icon={<CategoryIcon slug={cat.slug} size={15} />} />
-
-                  {(catPairs.length > 0 || catGuides.length > 0) && (
-                    <ShowMoreSection scope="always" label={`See comparisons and buying guides for ${cat.name}`}>
-                      {catPairs.length > 0 && (
-                        <div className="discover-sub">
-                          <div className="discover-sub-head">
-                            <h4>Compare {cat.name} tools</h4>
-                            <Link className="btn ghost sm" href={routes.comparisons()}>All comparisons <span className="arrow-right">→</span></Link>
+                  <div className={hasRelated ? "discover-layout" : undefined}>
+                    {hasRelated && (
+                      <aside className="discover-related">
+                        {catPairs.length > 0 && (
+                          <div className="discover-sub">
+                            <div className="discover-sub-head">
+                              <h4>Compare {cat.name} tools</h4>
+                              <Link className="btn ghost sm" href={routes.comparisons()}>All <span className="arrow-right">→</span></Link>
+                            </div>
+                            <div className="vs-list compact vertical">
+                              {catPairs.map((pair) => {
+                                const a = findProduct(c, pair.productA)!;
+                                const b = findProduct(c, pair.productB)!;
+                                return (
+                                  <article key={pair.slug} className="vs-row" style={catStyle(pair.categorySlug)}>
+                                    <Link className="stretch" href={routes.compare(a.slug, b.slug)} aria-label={`${a.name} versus ${b.name}`} />
+                                    <span className="vs-side vs-a"><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" /><span><strong>{a.name}</strong></span></span>
+                                    <span className="vs-mark" aria-hidden="true"><span>vs</span></span>
+                                    <span className="vs-side vs-b"><Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} size="sm" /><span><strong>{b.name}</strong></span></span>
+                                    <span className="vs-go">Compare <span className="arrow-right" aria-hidden="true">→</span></span>
+                                  </article>
+                                );
+                              })}
+                            </div>
                           </div>
-                          <div className="vs-list compact">
-                            {catPairs.map((pair) => {
-                              const a = findProduct(c, pair.productA)!;
-                              const b = findProduct(c, pair.productB)!;
-                              return (
-                                <article key={pair.slug} className="vs-row" style={catStyle(pair.categorySlug)}>
-                                  <Link className="stretch" href={routes.compare(a.slug, b.slug)} aria-label={`${a.name} versus ${b.name}`} />
-                                  <span className="vs-side vs-a"><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" /><span><strong>{a.name}</strong></span></span>
-                                  <span className="vs-mark" aria-hidden="true"><span>vs</span></span>
-                                  <span className="vs-side vs-b"><Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} size="sm" /><span><strong>{b.name}</strong></span></span>
-                                  <span className="vs-go">Compare <span className="arrow-right" aria-hidden="true">→</span></span>
+                        )}
+
+                        {catGuides.length > 0 && (
+                          <div className="discover-sub">
+                            <div className="discover-sub-head">
+                              <h4>Best {cat.name} guides</h4>
+                              <Link className="btn ghost sm" href={routes.bestIndex()}>All <span className="arrow-right">→</span></Link>
+                            </div>
+                            <div className="guides compact vertical">
+                              {catGuides.map((u) => (
+                                <article key={u.slug} className="guide" style={catStyle(u.categorySlug)}>
+                                  <span className="bar" aria-hidden="true" />
+                                  <span className="for">For {u.audience}</span>
+                                  <h3><Link href={routes.best(u.slug)}>{u.title}</Link></h3>
+                                  <ol>{u.products.slice(0, 3).map((x) => { const p = findProduct(c, x.slug); return p ? <li key={x.slug}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</li> : null; })}</ol>
                                 </article>
-                              );
-                            })}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-
-                      {catGuides.length > 0 && (
-                        <div className="discover-sub">
-                          <div className="discover-sub-head">
-                            <h4>Best {cat.name} guides</h4>
-                            <Link className="btn ghost sm" href={routes.bestIndex()}>All guides <span className="arrow-right">→</span></Link>
-                          </div>
-                          <div className="guides compact">
-                            {catGuides.map((u) => (
-                              <article key={u.slug} className="guide" style={catStyle(u.categorySlug)}>
-                                <span className="bar" aria-hidden="true" />
-                                <span className="for">For {u.audience}</span>
-                                <h3><Link href={routes.best(u.slug)}>{u.title}</Link></h3>
-                                <ol>{u.products.slice(0, 3).map((x) => { const p = findProduct(c, x.slug); return p ? <li key={x.slug}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</li> : null; })}</ol>
-                              </article>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </ShowMoreSection>
-                  )}
+                        )}
+                      </aside>
+                    )}
+                    <div className="discover-main">
+                      <SubcategoryGrid items={items} label={`Filter ${cat.name} by type`} icon={<CategoryIcon slug={cat.slug} size={15} />} />
+                    </div>
+                  </div>
                 </div>
               );
             })}

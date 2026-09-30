@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
  * engines see it all. On mobile only, JS clips it behind a "Show more" button after hydration; a
  * deep link (#id) to anything inside auto-expands first, so in-page navigation still works.
  */
-export function ShowMoreSection({ children, label, scope = "mobile" }: { children: React.ReactNode; label: string; scope?: "mobile" | "always" }) {
+export function ShowMoreSection({ children, label }: { children: React.ReactNode; label: string }) {
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -26,7 +26,7 @@ export function ShowMoreSection({ children, label, scope = "mobile" }: { childre
   }, []);
 
   return (
-    <div ref={root} className={`show-more ${scope}${ready ? " is-ready" : ""}${open ? " open" : ""}`}>
+    <div ref={root} className={`show-more${ready ? " is-ready" : ""}${open ? " open" : ""}`}>
       <div className="show-more-body">{children}</div>
       {ready && !open && (
         <button type="button" className="show-more-btn" onClick={() => setOpen(true)}>

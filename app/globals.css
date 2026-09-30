@@ -462,6 +462,21 @@ a.vscard:hover .side:last-child { transform: translateX(6px); }
   .vs-list.compact .vs-mark { justify-self: start; }
   .vs-list.compact .vs-go { justify-self: start; }
 }
+
+/* Left-rail layout: comparisons + guides in a narrow vertical column, products on the right. */
+.discover-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 28px; }
+.discover-related { display: flex; flex-direction: column; gap: 22px; position: sticky; top: 90px; }
+.discover-related .discover-sub { margin-top: 0; }
+.vs-list.compact.vertical .vs-row { grid-template-columns: minmax(0, 1fr); gap: 6px; text-align: left; padding: 10px 12px; }
+.vs-list.compact.vertical .vs-side, .vs-list.compact.vertical .vs-b { justify-content: flex-start; flex-direction: row; text-align: left; }
+.vs-list.compact.vertical .vs-mark { justify-self: start; }
+.vs-list.compact.vertical .vs-go { justify-self: start; }
+.guides.compact.vertical { grid-template-columns: 1fr; }
+.guides.compact.vertical .guide h3 { font-size: 1rem; }
+@media (max-width: 1080px) {
+  .discover-layout { grid-template-columns: 1fr; }
+  .discover-related { position: static; }
+}
 .ucard { display: flex; flex-direction: column; gap: 10px; }
 .ucard h3 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 1.35rem; }
 .ucard .picks { display: flex; align-items: center; }
@@ -1365,9 +1380,3 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 @media (min-width: 761px) {
   .show-more-btn { display: none; }
 }
-/* "always" scope: collapsed behind a click at every width, not just mobile (e.g. bonus content
-   nested inside a tab panel, where showing everything by default would be too dense). */
-.show-more.always.is-ready:not(.open) { position: relative; }
-.show-more.always.is-ready:not(.open) .show-more-body { max-height: 0; overflow: hidden; }
-.show-more.always.is-ready:not(.open)::before { content: none; }
-.show-more.always .show-more-btn { display: flex; width: auto; padding: 10px 20px; margin-top: 4px; min-height: 0; }
