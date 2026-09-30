@@ -43,7 +43,7 @@ export function CardSlider({ children, label, resetKey }: { children: ReactNode;
 
   // A different card set (e.g. another subcategory) starts from the first card.
   useEffect(() => {
-    track.current?.scrollTo({ left: 0 });
+    track.current?.scrollTo({ left: 0, behavior: "instant" });
     measure();
   }, [resetKey, measure]);
 
