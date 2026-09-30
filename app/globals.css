@@ -440,7 +440,6 @@ a.vscard:hover .side:last-child { transform: translateX(6px); }
 .guides { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ink); border-left: 1px solid var(--line-strong); }
 .guide { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 26px 22px 22px; border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); min-height: 300px; background: var(--paper); transition: background 0.35s; }
 .guide:hover { background: color-mix(in srgb, var(--cat) 6%, var(--white)); }
-.guide .gno { font-family: var(--font-mono); font-size: 0.7rem; color: var(--cat); letter-spacing: 0.1em; }
 .guide .for { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .guide h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; line-height: 1.06; letter-spacing: -0.02em; margin: 0; }
 .guide h3 a::after { content: ""; position: absolute; inset: 0; }
@@ -449,6 +448,27 @@ a.vscard:hover .side:last-child { transform: translateX(6px); }
 .guide ol li::before { content: counter(pick, decimal-leading-zero); font-family: var(--font-mono); font-size: 0.64rem; color: var(--muted); }
 .guide .bar { position: absolute; left: 0; top: -1px; height: 3px; width: 0; background: var(--cat); transition: width 0.6s var(--ease-out); }
 .guide:hover .bar { width: 100%; }
+
+/* Compact variants: the same comparison/best-for cards, condensed to sit inside a category tab panel. */
+.discover-sub { margin-top: 28px; }
+.discover-sub-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.discover-sub-head h4 { font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; margin: 0; }
+.btn.ghost.sm { padding: 4px 10px; font-size: 0.8rem; }
+.vs-list.compact { display: flex; flex-direction: column; gap: 8px; border-top: none; }
+.vs-list.compact .vs-row { grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr) auto; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white); }
+.vs-list.compact .vs-side strong { font-size: 0.92rem; }
+.vs-list.compact .vs-mark { height: auto; }
+.vs-list.compact .vs-mark span { font-size: 0.9rem; }
+.vs-list.compact .vs-go { font-size: 0.82rem; }
+.guides.compact { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); border-top: none; border-left: none; gap: 12px; }
+.guides.compact .guide { border: 1px solid var(--line); border-radius: var(--radius); min-height: 0; padding: 16px 18px; gap: 8px; }
+.guides.compact .guide h3 { font-size: 1.15rem; }
+@media (max-width: 640px) {
+  .vs-list.compact .vs-row { grid-template-columns: minmax(0, 1fr); gap: 6px; text-align: left; }
+  .vs-list.compact .vs-side, .vs-list.compact .vs-b { justify-content: flex-start; flex-direction: row; text-align: left; }
+  .vs-list.compact .vs-mark { justify-self: start; }
+  .vs-list.compact .vs-go { justify-self: start; }
+}
 .ucard { display: flex; flex-direction: column; gap: 10px; }
 .ucard h3 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 1.35rem; }
 .ucard .picks { display: flex; align-items: center; }
@@ -1327,7 +1347,7 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
   /* Every selector below was measured below 12px on a phone; each is set to exactly 12px. */
   .eyebrow, .kicker, .marker, .tag, .status, .ind, .pill, .cta-note, .src-kind, .breadcrumbs, .breadcrumbs a, .breadcrumbs span,
   .footer h2, .footer kbd, .footer-bottom span, p > kbd, .card .sub, .meta > span, .chip-row .status, .chip, a.chip,
-  .vs-row small, .guide .gno, .guide .for, .trust-strip li > span, .hero-stats span, .hero-search .q, .examples .lbl,
+  .vs-row small, .guide .for, .trust-strip li > span, .hero-stats span, .hero-search .q, .examples .lbl,
   dt, .stat .k, .compare th, .compare th a, .price-table th, .pricing-steps span, li > time, .sponsor-label, .spectrum-labels span,
   .spectrum-zone h3, .feature .fi, .step .num, .rn-sub, .tabx-tab small, nav.panel h2, nav.panel h3, .link-groups h2, .link-groups h3 { font-size: 12px !important; }
   .tiny { font-size: 12.5px !important; }

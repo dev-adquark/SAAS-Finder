@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { alternativesFor, findProduct, loadCatalog, pairsForProduct, productsInCategory } from "@/lib/catalog";
+import { alternativesFor, findProduct, guidesInCategory, loadCatalog, pairsForProduct, pairsInCategory, productsInCategory } from "@/lib/catalog";
 import type { Catalog, Product } from "@/lib/content/types";
 import { JsonLd } from "@/components/json-ld";
 import { Atlas } from "@/components/atlas/atlas";
@@ -55,11 +55,6 @@ export default async function Home() {
   const sourceCount = c.products.reduce((n, p) => n + p.sources.filter((s) => s.status === "VERIFIED").length, 0);
   const byStatus = c.products.reduce<Record<PricingStatusKind, number>>((m, p) => ((m[pricingState(p).kind] += 1), m), { verified: 0, region: 0, custom: 0, unverified: 0 });
   const timeline = [...c.products].filter((p) => p.pricingLastChecked || p.sourceCheckedAt).sort((a, b) => +new Date(b.pricingLastChecked ?? b.sourceCheckedAt!) - +new Date(a.pricingLastChecked ?? a.sourceCheckedAt!)).slice(0, 8);
-  const firstPerCategory = c.categories.map((x) => c.pairs.find((p) => p.categorySlug === x.slug)).filter((p): p is (typeof c.pairs)[number] => Boolean(p));
-  // Homepage sections show only a top slice of each list; "Show all" links to the full index page.
-  const TOP_PAIRS = 4;
-  const TOP_GUIDES = 4;
-  const pairs = [...firstPerCategory, ...c.pairs.filter((p) => !firstPerCategory.includes(p))].slice(0, TOP_PAIRS);
   const statusRows: [string, number, string][] = [
     ["Verified", byStatus.verified, "var(--c-emerald)"],
     ["Verified · region-dependent", byStatus.region, "var(--c-sky)"],
@@ -168,6 +163,8 @@ export default async function Home() {
                   ),
                 };
               });
+              const catPairs = pairsInCategory(c, cat.slug).slice(0, 3);
+              const catGuides = guidesInCategory(c, cat.slug).slice(0, 3);
               return (
                 <div key={cat.slug} className="discover-panel">
                   <div className="discover-panel-intro">
@@ -175,34 +172,54 @@ export default async function Home() {
                     <Link className="explore" href={routes.category(cat.slug)}>Explore all {items.length} {cat.name} tools <span className="arrow-right" aria-hidden="true">→</span></Link>
                   </div>
                   <SubcategoryGrid items={items} label={`Filter ${cat.name} by type`} />
+
+                  {catPairs.length > 0 && (
+                    <div className="discover-sub">
+                      <div className="discover-sub-head">
+                        <h4>Compare {cat.name} tools</h4>
+                        <Link className="btn ghost sm" href={routes.comparisons()}>All comparisons <span className="arrow-right">→</span></Link>
+                      </div>
+                      <div className="vs-list compact">
+                        {catPairs.map((pair) => {
+                          const a = findProduct(c, pair.productA)!;
+                          const b = findProduct(c, pair.productB)!;
+                          return (
+                            <article key={pair.slug} className="vs-row" style={catStyle(pair.categorySlug)}>
+                              <Link className="stretch" href={routes.compare(a.slug, b.slug)} aria-label={`${a.name} versus ${b.name}`} />
+                              <span className="vs-side vs-a"><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" /><span><strong>{a.name}</strong></span></span>
+                              <span className="vs-mark" aria-hidden="true"><span>vs</span></span>
+                              <span className="vs-side vs-b"><Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} size="sm" /><span><strong>{b.name}</strong></span></span>
+                              <span className="vs-go">Compare <span className="arrow-right" aria-hidden="true">→</span></span>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {catGuides.length > 0 && (
+                    <div className="discover-sub">
+                      <div className="discover-sub-head">
+                        <h4>Best {cat.name} guides</h4>
+                        <Link className="btn ghost sm" href={routes.bestIndex()}>All guides <span className="arrow-right">→</span></Link>
+                      </div>
+                      <div className="guides compact">
+                        {catGuides.map((u) => (
+                          <article key={u.slug} className="guide" style={catStyle(u.categorySlug)}>
+                            <span className="bar" aria-hidden="true" />
+                            <span className="for">For {u.audience}</span>
+                            <h3><Link href={routes.best(u.slug)}>{u.title}</Link></h3>
+                            <ol>{u.products.slice(0, 3).map((x) => { const p = findProduct(c, x.slug); return p ? <li key={x.slug}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</li> : null; })}</ol>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           />
           <AffiliateDisclosure />
-        </div>
-      </section>
-
-      {/* Comparisons — A vs B */}
-      <section className="section">
-        <div className="container">
-          <div className="section-head"><div><Marker no="02" label="Compare" /><h2>Head-to-head, criterion by criterion</h2></div><Link className="btn ghost" href={routes.comparisons()}>Show all {c.pairs.length} comparisons <span className="arrow-right">→</span></Link></div>
-          <div className="vs-list">
-            {pairs.map((pair) => {
-              const a = findProduct(c, pair.productA)!;
-              const b = findProduct(c, pair.productB)!;
-              return (
-                <article key={pair.slug} className="vs-row reveal" style={catStyle(pair.categorySlug)}>
-                  <Link className="stretch" href={routes.compare(a.slug, b.slug)} aria-label={`${a.name} versus ${b.name}`} />
-                  <span className="vs-side vs-a"><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} /><span><strong>{a.name}</strong><small>{pricingState(a).kind === "unverified" ? "Pricing pending" : "Pricing verified"}</small></span></span>
-                  <span className="vs-mark" aria-hidden="true"><span>vs</span></span>
-                  <span className="vs-side vs-b"><Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} /><span><strong>{b.name}</strong><small>{pricingState(b).kind === "unverified" ? "Pricing pending" : "Pricing verified"}</small></span></span>
-                  <p className="vs-sum">{pair.highlights[0] ?? pair.summary}</p>
-                  <span className="vs-go">Compare <span className="arrow-right" aria-hidden="true">→</span></span>
-                </article>
-              );
-            })}
-          </div>
         </div>
       </section>
 
@@ -212,7 +229,7 @@ export default async function Home() {
           <div className="container split-2-1" style={{ alignItems: "center" }}>
             <div className="reveal"><RadialNetwork c={c} product={graphProduct} /></div>
             <div className="reveal">
-              <Marker no="03" label="Alternatives" />
+              <Marker no="02" label="Alternatives" />
               <h2 style={{ marginTop: 10 }}>Every tool sits in a <em className="serif">network</em> of options.</h2>
               <p className="lead">Curated alternatives to {graphProduct.name}, the category they share and the guides it appears in. Every node is a page.</p>
               <div className="actions">
@@ -224,29 +241,11 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Best for */}
-      <section className="section">
-        <div className="container">
-          <div className="section-head"><div><Marker no="04" label="Best for" /><h2>Buying guides, written for a situation</h2></div><Link className="btn ghost" href={routes.bestIndex()}>Show all {c.useCases.length} guides <span className="arrow-right">→</span></Link></div>
-          <div className="guides reveal-stagger">
-            {c.useCases.slice(0, TOP_GUIDES).map((u, i) => (
-              <article key={u.slug} className="guide" style={catStyle(u.categorySlug)}>
-                <span className="bar" aria-hidden="true" />
-                <span className="gno">{String(i + 1).padStart(2, "0")} — {catName.get(u.categorySlug)}</span>
-                <span className="for">For {u.audience}</span>
-                <h3><Link href={routes.best(u.slug)}>{u.title}</Link></h3>
-                <ol>{u.products.map((x) => { const p = findProduct(c, x.slug); return p ? <li key={x.slug}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</li> : null; })}</ol>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Verification — research you can trace */}
       <section className="section zone-ink">
         <div className="container trace">
           <div>
-            <Marker no="05" label="Verification" />
+            <Marker no="03" label="Verification" />
             <h2 style={{ marginTop: 14 }}>Research you can <em>trace.</em></h2>
             <p>Every price and product fact is published only when an exact quote from the vendor&apos;s official page supports it — with the source linked and the check date shown.</p>
             <div className="trace-stats">
