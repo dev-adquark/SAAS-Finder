@@ -1,5 +1,6 @@
 "use client";
 import { useState, type ReactNode } from "react";
+import { CardSlider } from "@/components/card-slider";
 
 export type SubcategoryItem = { subcategory: string; node: ReactNode };
 
@@ -16,7 +17,8 @@ export function SubcategoryGrid({ items, label, icon }: { items: SubcategoryItem
   const subcats = [...new Set(items.map((i) => i.subcategory))];
   const [active, setActive] = useState<string | null>(null);
   const visible = active ? items.filter((i) => i.subcategory === active) : items;
-  if (subcats.length < 2) return <div className="discover-grid">{items.map((i) => i.node)}</div>;
+  const cardsLabel = label.replace(/^Filter /, "").replace(/ by type$/, "");
+  if (subcats.length < 2) return <CardSlider label={`${cardsLabel} tools`}>{items.map((i) => i.node)}</CardSlider>;
   return (
     <div className="subcat-explorer">
       <nav className="subcat-list" aria-label={label}>
@@ -29,7 +31,7 @@ export function SubcategoryGrid({ items, label, icon }: { items: SubcategoryItem
           </button>
         ))}
       </nav>
-      <div className="discover-grid">{visible.map((i) => i.node)}</div>
+      <CardSlider label={`${active ?? cardsLabel} tools`} resetKey={active ?? "all"}>{visible.map((i) => i.node)}</CardSlider>
     </div>
   );
 }

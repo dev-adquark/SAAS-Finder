@@ -362,6 +362,32 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 .subcat-item.active .subcat-label svg { opacity: 1; }
 .subcat-count { font-family: var(--font-mono); font-size: 0.72rem; opacity: 0.7; flex-shrink: 0; }
 .discover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(215px, 100%), 1fr)); gap: 14px; }
+/* Card slider: one row that scrolls sideways. Column widths reproduce .discover-grid exactly
+   (auto-fill of minmax(215px, 1fr) with a 14px gap → n = floor((W + 14) / 229) cards per view). */
+.card-slider { container: card-slider / inline-size; min-width: 0; }
+.card-slider-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
+.card-slider-bar[hidden] { display: none; }
+.card-slider-count { margin-right: auto; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; color: var(--muted); }
+.card-slider-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--white); color: var(--ink); font-size: 1rem; cursor: pointer; transition: background 0.2s, border-color 0.2s, opacity 0.2s; }
+.card-slider-btn:hover:not(:disabled) { border-color: var(--ink); }
+.card-slider-btn:disabled { opacity: 0.35; cursor: default; }
+.card-track {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 100%; gap: 14px;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  /* Room for the cards' hover lift and focus ring inside the scroller, without changing layout. */
+  padding: 6px 0 16px; margin: -6px 0 -16px;
+}
+.card-track::-webkit-scrollbar { display: none; }
+.card-track > * { scroll-snap-align: start; min-width: 0; }
+.card-track:focus-visible { outline: 2px solid var(--c-blue); outline-offset: 2px; border-radius: var(--radius); }
+@container card-slider (min-width: 444px) { .card-track { grid-auto-columns: calc((100% - 14px) / 2); } }
+@container card-slider (min-width: 673px) { .card-track { grid-auto-columns: calc((100% - 28px) / 3); } }
+@container card-slider (min-width: 902px) { .card-track { grid-auto-columns: calc((100% - 42px) / 4); } }
+@container card-slider (min-width: 1131px) { .card-track { grid-auto-columns: calc((100% - 56px) / 5); } }
+@container card-slider (min-width: 1360px) { .card-track { grid-auto-columns: calc((100% - 70px) / 6); } }
+@media (pointer: coarse) { .card-slider-btn { width: 44px; height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .card-track { scroll-behavior: auto; } }
 .discover-tile { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), border-color 0.3s; }
 .discover-tile::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 28%; background: var(--cat); transition: width 0.5s var(--ease-out); }
 .discover-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--cat); }
@@ -1196,7 +1222,7 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 .admin-menu-btn .burger::before, .admin-menu-btn .burger::after { content: ""; position: absolute; left: 0; }
 .admin-menu-btn .burger::before { top: -5px; }
 .admin-menu-btn .burger::after { top: 5px; }
-.admin-current { flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-current { flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 0.95rem; line-height: 1.25; overflow-wrap: anywhere; }
 .admin-scrim { position: fixed; inset: 0; z-index: 40; background: rgba(22, 22, 26, 0.38); border: 0; cursor: pointer; }
 .admin-sidebar { position: fixed; z-index: 50; top: 0; bottom: 0; left: 0; width: min(300px, 86vw); display: flex; flex-direction: column; gap: 6px; padding: 18px 14px; background: var(--white); border-right: 1px solid var(--line-strong); overflow-y: auto; transform: translateX(-104%); transition: transform 0.25s var(--ease-out); }
 .admin-sidebar.open { transform: none; box-shadow: 24px 0 60px -30px rgba(22, 22, 26, 0.45); }
