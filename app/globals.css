@@ -351,32 +351,33 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 .rating { font-family: var(--font-mono); font-size: 0.8rem; display: inline-flex; gap: 5px; align-items: baseline; }
 .rating .star { color: var(--c-amber); }
 
-/* Discovery (asymmetric editorial grid) */
-.discovery { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: dense; gap: 18px; }
-.dcard { position: relative; grid-column: span 3; display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out), border-color 0.3s; }
-.dcard::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 28%; background: var(--cat); transition: width 0.6s var(--ease-out); }
-.dcard:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 -1px var(--paper), 6px 6px 0 0 var(--cat); border-color: var(--cat); }
-.dcard:hover::before { width: 100%; }
-.dcard .initials { position: absolute; right: -4px; bottom: -30px; font-family: var(--font-display); font-weight: 500; font-size: 8.5rem; line-height: 1; color: color-mix(in srgb, var(--cat) 9%, transparent); letter-spacing: -0.06em; pointer-events: none; transition: color 0.4s, transform 0.7s var(--ease-out); }
-.dcard-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; }
-.dcard:hover .initials { color: color-mix(in srgb, var(--cat) 17%, transparent); transform: translateY(-8px); }
-.dcard h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; position: relative; }
-.dcard .meta { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; position: relative; }
-.dcard p { margin: 0; color: var(--text-2); font-size: 0.95rem; position: relative; }
-.dcard .go { margin-top: auto; position: relative; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); font-weight: 600; font-size: 0.9rem; }
-.dcard .extra { position: relative; font-size: 0.85rem; color: var(--muted); max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.5s var(--ease-out), opacity 0.4s; }
-.dcard:hover .extra, .dcard:focus-within .extra { max-height: 80px; opacity: 1; }
-.dcard.xl { grid-column: span 6; grid-row: span 2; padding: 34px; background: linear-gradient(160deg, color-mix(in srgb, var(--cat) 7%, var(--white)), var(--white) 60%); }
-.dcard.xl h3 { font-size: clamp(2.2rem, 3.8vw, 3.3rem); font-weight: 400; }
-.dcard.xl p { font-size: 1.1rem; max-width: 440px; }
-.dcard.xl .initials { font-size: 17rem; bottom: -64px; }
-.dcard.xl .extra { max-height: none; opacity: 1; }
-.dcard.md { grid-column: span 3; grid-row: span 2; }
-.dcard.wide { grid-column: span 6; background: linear-gradient(120deg, color-mix(in srgb, var(--cat) 5%, var(--white)), var(--white) 55%); }
-.dcard.wide h3 { font-size: 1.9rem; font-weight: 400; }
-.dcard.md .initials { font-size: 11rem; }
-.dcard .status { white-space: normal; }
-.clamp-6 { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+/* Discovery (category-tabbed product grid, with a subcategory refinement sidebar) */
+.subcat-explorer { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: start; }
+.subcat-list { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 90px; }
+.subcat-item { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 9px 10px; border: none; background: none; border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-2); text-align: left; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.subcat-item:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
+.subcat-item.active { background: var(--ink); color: var(--paper); font-weight: 600; }
+.subcat-count { font-family: var(--font-mono); font-size: 0.72rem; opacity: 0.7; }
+.discover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.discover-tile { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), border-color 0.3s; }
+.discover-tile::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 28%; background: var(--cat); transition: width 0.5s var(--ease-out); }
+.discover-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--cat); }
+.discover-tile:hover::before { width: 100%; }
+.discover-tile-head { display: flex; align-items: center; gap: 12px; }
+.discover-tile-head h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.15rem; margin: 0; letter-spacing: -0.01em; }
+.discover-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.discover-features li { display: flex; align-items: flex-start; gap: 8px; font-size: 0.88rem; color: var(--text-2); line-height: 1.35; }
+.discover-features li svg { flex-shrink: 0; margin-top: 2px; color: var(--success); }
+.discover-tile-actions { margin-top: auto; display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+.discover-tile-actions .cta { width: 100%; }
+.discover-tile-actions .cta .btn { width: 100%; justify-content: center; }
+.discover-review-link { text-align: center; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+@media (max-width: 900px) {
+  .subcat-explorer { grid-template-columns: 1fr; }
+  .subcat-list { position: static; flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 4px; scrollbar-width: thin; }
+  .subcat-item { flex: none; white-space: nowrap; border: 1px solid var(--line-strong); }
+  .subcat-item.active { border-color: var(--ink); }
+}
 
 /* ---------- Category editorial blocks ---------- */
 .cat-blocks { display: grid; border-top: 1px solid var(--ink); }
@@ -1123,12 +1124,8 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 @keyframes ribbon-breathe { to { box-shadow: 0 0 0 1px color-mix(in srgb, var(--cat) 30%, transparent), 0 12px 28px -14px var(--cat); filter: saturate(1.5); } }
 
 /* Tinted colour surfaces by category */
-.dcard { background: linear-gradient(170deg, color-mix(in srgb, var(--cat) 9%, var(--white)), var(--white) 70%); }
-.dcard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, var(--cat-2) 14%, transparent) 50%, transparent 65%); background-size: 250% 100%; background-position: 150% 0; transition: background-position 0.9s var(--ease-out); pointer-events: none; }
-.dcard:hover::after { background-position: -50% 0; }
-.dcard::before { height: 4px; background: linear-gradient(90deg, var(--cat), var(--cat-2)); }
-.dcard .initials { background: linear-gradient(160deg, color-mix(in srgb, var(--cat) 14%, transparent), color-mix(in srgb, var(--cat-2) 10%, transparent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.dcard:hover .initials { color: transparent; filter: saturate(1.6); }
+.discover-tile { background: linear-gradient(170deg, color-mix(in srgb, var(--cat) 6%, var(--white)), var(--white) 70%); }
+.discover-tile::before { background: linear-gradient(90deg, var(--cat), var(--cat-2)); }
 .cat-block { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 5%, transparent), transparent 55%); }
 .cat-block::before { content: ""; position: absolute; left: 0; top: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--cat), var(--cat-2)); transition: width 0.8s var(--ease-out); }
 .cat-block:hover::before { width: 100%; }
@@ -1244,7 +1241,6 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 .hero-search input { font-family: var(--font-body); font-size: 1.08rem; }
 /* Big numerals: tabular figures keep count-ups from jittering horizontally. */
 .trust-strip strong, .trace-stats strong, .hero-stats strong, .cat-no, .pick-rank, .atlas-caption b, .marker b { font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
-.dcard .initials { letter-spacing: -0.07em; }
 .marquee span { letter-spacing: -0.02em; font-weight: 500; }
 .footer .closing { letter-spacing: -0.04em; }
 @media (max-width: 760px) {

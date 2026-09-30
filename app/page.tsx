@@ -6,10 +6,15 @@ import { JsonLd } from "@/components/json-ld";
 import { Atlas } from "@/components/atlas/atlas";
 import { CategoryArt } from "@/components/category-art";
 import { RadialNetwork } from "@/components/radial-network";
-import { IconShield, IconScale, IconSpark } from "@/components/icons";
-import { Monogram, catStyle, monogram } from "@/components/identity";
+import { IconShield, IconScale, IconSpark, IconCheck } from "@/components/icons";
+import { Monogram, catStyle } from "@/components/identity";
 import { CountUp } from "@/components/count-up";
 import { Magnetic } from "@/components/magnetic";
+import { TabExplorer } from "@/components/tab-explorer";
+import { SubcategoryGrid } from "@/components/subcategory-grid";
+import { AffiliateCta } from "@/components/cta";
+import { AffiliateDisclosure } from "@/components/disclosure";
+import { ScoreBadge } from "@/components/score";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { itemListJsonLd } from "@/lib/seo/jsonld";
 import { absolute, SITE_NAME } from "@/lib/site";
@@ -53,7 +58,6 @@ export default async function Home() {
   const timeline = [...c.products].filter((p) => p.pricingLastChecked || p.sourceCheckedAt).sort((a, b) => +new Date(b.pricingLastChecked ?? b.sourceCheckedAt!) - +new Date(a.pricingLastChecked ?? a.sourceCheckedAt!)).slice(0, 8);
   const firstPerCategory = c.categories.map((x) => c.pairs.find((p) => p.categorySlug === x.slug)).filter((p): p is (typeof c.pairs)[number] => Boolean(p));
   // Homepage sections show only a top slice of each list; "Show all" links to the full index page.
-  const TOP_PRODUCTS = 6;
   const TOP_PAIRS = 4;
   const TOP_GUIDES = 4;
   const pairs = [...firstPerCategory, ...c.pairs.filter((p) => !firstPerCategory.includes(p))].slice(0, TOP_PAIRS);
@@ -120,38 +124,55 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Product discovery — asymmetric */}
+      {/* Product discovery — by category */}
       <section className="section">
         <div className="container">
           <div className="section-head">
-            <div><Marker no="01" label="Discover" /><h2>The tools buyers weigh up most</h2><p>Ordered by how many of our curated comparisons and alternatives lists include each tool.</p></div>
+            <div><Marker no="01" label="Discover" /><h2>Explore by category</h2><p>Every tool below is editorially reviewed, dated and sourced — nothing here is sponsored or pay-to-rank.</p></div>
             <Link className="btn ghost" href={routes.products()}>Show all {c.products.length} reviews <span className="arrow-right">→</span></Link>
           </div>
-          <div className="discovery reveal-stagger">
-            {ranked.slice(0, TOP_PRODUCTS).map((p, i) => {
-              const ps = pricingState(p);
-              // Sizes chosen so every row of the 12-column grid fills exactly (xl, 2×md, 1×wide, rest small).
-              const size = i === 0 ? "xl" : i <= 2 ? "md" : i === 3 ? "wide" : "";
-              const sources = p.sources.filter((s) => s.status === "VERIFIED").length;
-              return (
-                <article key={p.slug} className={`dcard ${size}`} style={catStyle(p.categorySlug)}>
-                  <span className="initials" aria-hidden="true">{monogram(p.name)}</span>
-                  <span className="dcard-brand">
-                    <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size={size === "xl" ? "lg" : size === "" ? "sm" : ""} />
-                    <span className="meta"><span>{catName.get(p.categorySlug)}</span><span aria-hidden="true">·</span><span>{p.subcategory}</span></span>
-                  </span>
-                  <h3><Link className="stretch" href={routes.product(p.slug)}>{p.name}</Link></h3>
-                  <p className={i > 0 && i <= 2 ? "clamp-6" : undefined}>{i <= 2 ? p.review.editorialSummary : p.tagline}</p>
-                  <span className="chip-row" style={{ position: "relative" }}>
-                    <span className={`status ${ps.tone}`}>{ps.label}</span>
-                    {sources > 0 && <span className="status neutral">{sources} sources</span>}
-                  </span>
-                  <span className="extra">Best for {p.review.bestFor.slice(0, 2).join(" · ")}</span>
-                  <span className="go"><span>Explore review</span><span className="arrow-right" aria-hidden="true">→</span></span>
-                </article>
-              );
+          <TabExplorer
+            label="Browse products by category"
+            items={c.categories.map((cat) => ({ id: `discover-${cat.slug}`, label: cat.name, sub: `${productsInCategory(c, cat.slug).length} tools` }))}
+            panels={c.categories.map((cat) => {
+              const items = productsInCategory(c, cat.slug).map((p) => {
+                const ps = pricingState(p);
+                const sources = p.sources.filter((s) => s.status === "VERIFIED").length;
+                return {
+                  subcategory: p.subcategory ?? cat.name,
+                  node: (
+                    <article key={p.slug} className="discover-tile" style={catStyle(p.categorySlug)}>
+                      <div className="discover-tile-head">
+                        <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="lg" />
+                        <div>
+                          <h3><Link href={routes.product(p.slug)}>{p.name}</Link></h3>
+                          <span className="tiny muted">{p.subcategory}</span>
+                        </div>
+                      </div>
+                      <span className="chip-row">
+                        <ScoreBadge product={p} />
+                        <span className={`status ${ps.tone}`}>{ps.label}</span>
+                        {sources > 0 && <span className="status neutral">{sources} sources</span>}
+                      </span>
+                      {p.features.length > 0 && (
+                        <ul className="discover-features">
+                          {p.features.slice(0, 3).map((f) => (
+                            <li key={f}><IconCheck size={14} /> {f}</li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="discover-tile-actions">
+                        <AffiliateCta product={p} ctaType="button" placement={`discover-${cat.slug}`} pageType="home" pageSlug="/" label={`Visit ${p.name}`} />
+                        <Link className="discover-review-link" href={routes.product(p.slug)}>Read review <span className="arrow-right" aria-hidden="true">→</span></Link>
+                      </div>
+                    </article>
+                  ),
+                };
+              });
+              return <SubcategoryGrid key={cat.slug} items={items} label={`Filter ${cat.name} by type`} />;
             })}
-          </div>
+          />
+          <AffiliateDisclosure />
         </div>
       </section>
 
