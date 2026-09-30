@@ -358,30 +358,20 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 .subcat-item:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
 .subcat-item.active { background: var(--ink); color: var(--paper); font-weight: 600; }
 .subcat-count { font-family: var(--font-mono); font-size: 0.72rem; opacity: 0.7; }
-.discover-grid { display: flex; flex-direction: column; gap: 10px; }
-.discover-tile { position: relative; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 14px 20px; padding: 12px 18px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), border-color 0.3s; }
-.discover-tile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--cat); transition: width 0.3s var(--ease-out); }
-.discover-tile:hover { transform: translateX(3px); box-shadow: var(--shadow); border-color: var(--cat); }
-.discover-tile:hover::before { width: 5px; }
-.discover-tile-head { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; min-width: 190px; }
-.discover-tile-head h3 { font-family: var(--font-display); font-weight: 500; font-size: 0.98rem; margin: 0; letter-spacing: -0.01em; }
-.discover-tile .chip-row { flex: 0 0 auto; }
-.discover-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px 16px; flex: 1 1 220px; }
-.discover-features li { display: flex; align-items: flex-start; gap: 6px; font-size: 0.8rem; color: var(--text-2); line-height: 1.3; white-space: nowrap; }
+.discover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.discover-tile { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), border-color 0.3s; }
+.discover-tile::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 28%; background: var(--cat); transition: width 0.5s var(--ease-out); }
+.discover-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--cat); }
+.discover-tile:hover::before { width: 100%; }
+.discover-tile-head { display: flex; align-items: center; gap: 12px; }
+.discover-tile-head h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.15rem; margin: 0; letter-spacing: -0.01em; }
+.discover-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.discover-features li { display: flex; align-items: flex-start; gap: 8px; font-size: 0.88rem; color: var(--text-2); line-height: 1.35; }
 .discover-features li svg { flex-shrink: 0; margin-top: 2px; color: var(--success); }
-.discover-tile-actions { flex: 0 0 auto; display: flex; flex-direction: row; align-items: center; gap: 12px; margin-left: auto; }
-.discover-tile-actions .cta .btn { padding: 8px 16px; font-size: 0.85rem; }
-.discover-review-link { font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-@media (max-width: 860px) {
-  .discover-tile { flex-direction: column; align-items: stretch; padding: 18px; }
-  .discover-tile::before { top: 0; bottom: auto; width: 100%; height: 3px; }
-  .discover-tile:hover { transform: translateY(-3px); }
-  .discover-features { flex-direction: column; }
-  .discover-features li { white-space: normal; }
-  .discover-tile-actions { flex-direction: column; align-items: stretch; margin-left: 0; padding-top: 12px; border-top: 1px solid var(--line); }
-  .discover-tile-actions .cta .btn { width: 100%; justify-content: center; }
-  .discover-review-link { justify-content: center; }
-}
+.discover-tile-actions { margin-top: auto; display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+.discover-tile-actions .cta { width: 100%; }
+.discover-tile-actions .cta .btn { width: 100%; justify-content: center; }
+.discover-review-link { text-align: center; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 @media (max-width: 900px) {
   .subcat-explorer { grid-template-columns: 1fr; }
   .subcat-list { position: static; flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 4px; scrollbar-width: thin; }
@@ -1383,3 +1373,9 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 @media (min-width: 761px) {
   .show-more-btn { display: none; }
 }
+/* "always" scope: collapsed behind a click at every width, not just mobile (e.g. bonus content
+   nested inside a tab panel, where showing everything by default would be too dense). */
+.show-more.always.is-ready:not(.open) { position: relative; }
+.show-more.always.is-ready:not(.open) .show-more-body { max-height: 0; overflow: hidden; }
+.show-more.always.is-ready:not(.open)::before { content: none; }
+.show-more.always .show-more-btn { display: flex; width: auto; padding: 10px 20px; margin-top: 4px; min-height: 0; }
