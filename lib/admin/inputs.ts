@@ -1,7 +1,7 @@
 import { isHttpUrl } from "@/lib/validation";
 import { isValidSlug, productSlugProblem, slugify } from "@/lib/seo/routes";
 import { CTA_TYPES } from "@/lib/analytics";
-import { isSponsorPageType, SPONSOR_PAGE_TYPES, SPONSOR_PLACEMENT_FOR_PAGE_TYPE } from "@/lib/sponsors";
+import { isSponsorPageType, SPONSOR_MIN_PRIORITY, SPONSOR_PAGE_TYPES, SPONSOR_PLACEMENT_FOR_PAGE_TYPE, type SponsorPlacement } from "@/lib/sponsors";
 
 // Input parsing for admin writes. Works on JSON bodies and on FormData converted with
 // `formToObject`. Only keys that are present are returned (PATCH semantics). Every string is
@@ -403,6 +403,13 @@ export function parseSponsor(b: unknown, create: boolean): SponsorInput {
   // <SponsorSlot> actually requests, so a mismatched (pageType, placement) pair — which passes every
   // other validity check yet renders nowhere — is prevented by construction rather than merely flagged.
   if (s.pageType !== undefined) s.placement = SPONSOR_PLACEMENT_FOR_PAGE_TYPE[s.pageType as keyof typeof SPONSOR_PLACEMENT_FOR_PAGE_TYPE];
+  // An active sponsor below its placement's minimum priority never renders anywhere — it would
+  // otherwise save silently as "Active" and only reveal that it's dead via a status pill on the
+  // sponsors list. Reject it here instead, the same way an incomplete product is rejected at publish.
+  if (s.active === true && s.priority !== undefined && s.placement !== undefined) {
+    const min = SPONSOR_MIN_PRIORITY[s.placement as SponsorPlacement];
+    if (s.priority < min) throw new InputError([`priority must be at least ${min} for ${s.placement} placements (this sponsor's page type is ${s.pageType ?? "unchanged"}) — raise it, or it will save as active but never render`]);
+  }
   return s;
 }
 

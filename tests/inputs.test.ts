@@ -44,6 +44,11 @@ test("sponsor validation", () => {
   assert.ok(problems(() => parseSponsor({ title: "A", pageType: "product", placement: "sidebar", label: "Partner" }, true)).some((p) => p.includes("Sponsored")));
   assert.ok(problems(() => parseSponsor({ title: "A", pageType: "product", placement: "sidebar", startsAt: "2026-10-02", endsAt: "2026-10-01" }, true)).length > 0);
   assert.equal(parseSponsor({ title: "A", pageType: "product", placement: "sidebar", active: "on", priority: "5" }, true).active, true);
+  // An active inline sponsor below priority 10 would silently never render; reject it at save time
+  // instead of only revealing that via a status pill on the sponsors list afterward.
+  assert.ok(problems(() => parseSponsor({ title: "A", pageType: "category", url: "https://x.example", label: "Sponsored", active: "on", priority: "5" }, true)).some((p) => p.includes("priority must be at least 10")));
+  assert.equal(parseSponsor({ title: "A", pageType: "category", url: "https://x.example", label: "Sponsored", active: "on", priority: "10" }, true).priority, 10);
+  assert.equal(parseSponsor({ title: "A", pageType: "category", url: "https://x.example", label: "Sponsored", active: "off", priority: "0" }, true).active, false, "inactive sponsors are not held to the priority minimum");
 });
 
 test("category, pair and use-case parsers", () => {

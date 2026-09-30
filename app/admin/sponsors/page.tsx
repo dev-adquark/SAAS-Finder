@@ -44,7 +44,7 @@ export default async function AdminSponsors({ searchParams }: SP) {
         <Field label="Title" name="title" required maxLength={120} />
         <Field label="Label" name="label" defaultValue="Sponsored" required maxLength={60} />
         <Select label="Page type" name="pageType" options={SPONSOR_PAGE_TYPES.map((v) => ({ value: v, label: `${v} (${SPONSOR_PLACEMENT_FOR_PAGE_TYPE[v]})` }))} />
-        <Field label="Priority (0–100)" name="priority" type="number" defaultValue={0} hint="Inline placements (category, compare) need 10+ to render at all." />
+        <Field label="Priority (0–100)" name="priority" type="number" defaultValue={10} hint="Inline placements (category, compare) need 10+ to render at all; sidebar placements accept 0+." />
         <Field label="Campaign" name="campaign" maxLength={120} />
         <Field label="Destination URL (https)" name="url" type="url" full />
         <Field label="Logo URL (https, optional)" name="logoUrl" type="url" full hint="A direct image link to the sponsor's own logo. Leave blank to show no logo — never invented." />
