@@ -380,27 +380,9 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 }
 
 /* ---------- Category editorial blocks ---------- */
-.cat-blocks { display: grid; border-top: 1px solid var(--ink); }
-.cat-block { position: relative; display: grid; grid-template-columns: 120px minmax(0, 1.05fr) minmax(0, 1fr) 280px; gap: 28px; align-items: center; padding: 34px 0; border-bottom: 1px solid var(--line-strong); transition: background 0.4s; }
-.cat-block:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 6%, transparent), transparent 70%); }
-.cat-no { font-family: var(--font-display); font-size: 4.6rem; line-height: 0.9; color: var(--cat); font-weight: 500; letter-spacing: -0.04em; transition: transform 0.5s var(--ease-out); }
-.cat-block:hover .cat-no { transform: translateX(6px); }
-.cat-title { font-family: var(--font-display); font-size: clamp(2rem, 3.6vw, 3.1rem); line-height: 0.95; letter-spacing: -0.03em; text-transform: uppercase; font-weight: 400; margin: 0; }
-.cat-title a::after { content: ""; position: absolute; inset: 0; }
-.cat-block .tagline { font-family: var(--font-display); font-style: italic; font-size: 1.3rem; color: var(--text-2); margin: 0 0 8px; }
-.cat-block .names { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.cat-block .explore { position: relative; z-index: 1; display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; font-weight: 600; }
-.cat-art { width: 100%; height: 150px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--cat) 30%, transparent); background: color-mix(in srgb, var(--cat) 4%, var(--white)); overflow: hidden; }
-.cat-art svg { width: 100%; height: 100%; display: block; }
-.cat-art .a1 { stroke: var(--cat); fill: none; stroke-width: 1.2; }
-.cat-art .a2 { fill: var(--cat-2); opacity: 0.85; }
-.cat-art .a3 { fill: var(--cat); opacity: 0.9; }
-.cat-art .a4 { stroke: var(--cat-2); fill: none; stroke-width: 1.2; }
-.cat-art .a5 { fill: var(--cat); opacity: 0.12; }
-.cat-art .anim { transition: transform 1.2s var(--ease-out); }
-.cat-block:hover .cat-art .anim { transform: translateX(10px); }
-.cat-block:hover .cat-art .anim-y { transform: translateY(-8px); }
-.cat-art .anim-y { transition: transform 1.2s var(--ease-out); }
+.discover-panel-intro { margin-bottom: 18px; }
+.discover-panel-intro p { margin: 0 0 8px; color: var(--text-2); max-width: 640px; }
+.discover-panel-intro .explore { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 0.9rem; }
 
 /* Category cards (hub lists) */
 .catcard { display: flex; flex-direction: column; gap: 10px; min-height: 200px; border-left: 3px solid var(--cat); }
@@ -903,9 +885,6 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
   .navlinks a { padding: 8px 8px; }
   .search-trigger { min-width: 0; }
   .search-trigger .label { display: none; }
-  .cat-block { grid-template-columns: 90px minmax(0, 1fr) 240px; }
-  .cat-block .cat-desc { grid-column: 2; }
-  .cat-block .cat-art { grid-column: 3; grid-row: 1 / span 2; }
   .discovery .dcard { grid-column: span 6; }
   .discovery .dcard.xl { grid-column: span 12; grid-row: span 1; }
   .discovery .dcard.md { grid-column: span 6; grid-row: span 1; }
@@ -964,12 +943,6 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
   /* Categories become a swipeable rail of compact cards: the full description and product list
      for each category are one tap away on /category/[slug], so at-a-glance only needs the name,
      tool count and a small preview of the art. */
-  .cat-blocks { grid-auto-flow: column; grid-auto-columns: 76%; overflow-x: auto; scroll-snap-type: x mandatory; border-top: 0; gap: 12px; padding-bottom: 4px; }
-  .cat-block { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 20px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--white); scroll-snap-align: start; }
-  .cat-block .tagline, .cat-block .names { display: none; }
-  .cat-block .cat-art { grid-column: auto; grid-row: auto; height: 90px; }
-  .cat-block .cat-desc { grid-column: auto; }
-  .cat-no { font-size: 2.6rem; }
   /* The 5-step pipeline duplicates /methodology (linked right below it), so it's dropped here to
      keep the homepage's verification section to its headline claim, stats and coverage bars. */
   .pipeline { display: none; }
@@ -1002,8 +975,6 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
   /* Guides become a swipeable rail */
   .guides { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; border-left: 0; }
   .guide { scroll-snap-align: start; border-left: 1px solid var(--line-strong); }
-  .cat-block .cat-art { height: 90px; }
-  .dcard.xl .initials { font-size: 11rem; }
   .cta-band { padding: 28px 22px; }
   .card, .panel { padding: 18px; }
   .pick { grid-template-columns: 1fr; gap: 6px; }
@@ -1126,10 +1097,6 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 /* Tinted colour surfaces by category */
 .discover-tile { background: linear-gradient(170deg, color-mix(in srgb, var(--cat) 6%, var(--white)), var(--white) 70%); }
 .discover-tile::before { background: linear-gradient(90deg, var(--cat), var(--cat-2)); }
-.cat-block { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 5%, transparent), transparent 55%); }
-.cat-block::before { content: ""; position: absolute; left: 0; top: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--cat), var(--cat-2)); transition: width 0.8s var(--ease-out); }
-.cat-block:hover::before { width: 100%; }
-.cat-no { background: linear-gradient(160deg, var(--cat), var(--cat-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .guide { background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 7%, var(--paper)), var(--paper) 60%); }
 .guide .bar { background: linear-gradient(90deg, var(--cat), var(--cat-2)); width: 36px; }
 .vs-row::before { content: ""; position: absolute; left: 0; top: 18%; bottom: 18%; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--cat), var(--cat-2)); transform: scaleY(0.4); transition: transform 0.5s var(--ease-out); }
@@ -1141,22 +1108,6 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 .pcard { background: linear-gradient(160deg, color-mix(in srgb, var(--cat) 5%, var(--white)), var(--white) 55%); }
 .mono { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), 0 8px 18px -10px var(--cat); }
 
-/* Category artwork: ambient motion */
-.cat-art .a3, .cat-art .a2 { transform-box: fill-box; transform-origin: center; }
-.cat-art .loop-float { animation: art-float 5s ease-in-out infinite alternate; }
-.cat-art .loop-float-b { animation: art-float 6.5s ease-in-out infinite alternate-reverse; }
-.cat-art .loop-spin { animation: spin 22s linear infinite; transform-box: fill-box; transform-origin: center; }
-.cat-art .loop-wave { stroke-dasharray: 6 8; animation: wave-flow 3s linear infinite; }
-.cat-art .loop-pulse { animation: node-pulse 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.cat-art .loop-slide { animation: bar-slide 4s ease-in-out infinite alternate; }
-.cat-art .loop-scan { animation: scan 4.5s ease-in-out infinite; }
-.cat-art .loop-grow { animation: bar-grow 3.2s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: bottom; }
-@keyframes art-float { to { transform: translateY(-6px); } }
-@keyframes wave-flow { to { stroke-dashoffset: -28; } }
-@keyframes node-pulse { 50% { transform: scale(1.25); opacity: 0.7; } }
-@keyframes bar-slide { to { transform: translateX(14px); } }
-@keyframes scan { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(96px); opacity: 0; } }
-@keyframes bar-grow { from { transform: scaleY(0.55); } to { transform: scaleY(1); } }
 
 /* Radial network: signal dots travelling along spokes (SVG animateMotion) */
 .radnet .signal { fill: var(--cat); }
@@ -1194,21 +1145,15 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 
 /* Scroll-linked motion (progressive enhancement) */
 @supports (animation-timeline: view()) {
-  .cat-no { animation: num-in linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
-  @keyframes num-in { from { transform: translateX(-24px); opacity: 0.2; } }
   .section-head h2 { animation: head-in linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
   @keyframes head-in { from { transform: translateY(18px); opacity: 0.4; } }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-blobs span, .marquee-track, .atlas-tile a, .atlas-tile .pin, .atlas-lines .pulse, .atlas-plane::after, .atlas-ribbon, .radnet .halo, .cat-art *, .id-visual::before, .hero h1 em, .footer .closing em, .trust-strip::before { animation: none !important; }
+  .hero-blobs span, .marquee-track, .atlas-tile a, .atlas-tile .pin, .atlas-lines .pulse, .atlas-plane::after, .atlas-ribbon, .radnet .halo, .id-visual::before, .hero h1 em, .footer .closing em, .trust-strip::before { animation: none !important; }
   .atlas-lines .pulse, .radnet .signal, .radnet .halo { display: none; }
   .marquee-track { transform: none; }
 }
-.cat-art .loop-scan-x { animation: scan-x 6s ease-in-out infinite alternate; }
-@keyframes scan-x { to { transform: translateX(200px); } }
-.cat-art .a1.loop-spin { transform-box: fill-box; }
-@media (prefers-reduced-motion: reduce) { .cat-art .loop-scan, .cat-art .loop-scan-x { display: none; } }
 @media (max-width: 760px) {
   .hero-blobs { inset: 0 -25%; opacity: 0.6; }
   .hero-blobs span { width: 80vw !important; height: 80vw !important; }
@@ -1220,7 +1165,7 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
    Three weights only: 400 body · 500 display · 600 emphasis. No italics: emphasis is
    carried by colour and weight, which a sans renders crisply at every size.
    ========================================================================== */
-em, i, .serif, .grad-text, .pull, .official-quote p, .cat-block .tagline, .vs-mark span, .vscard .vs, .duel-mid .vs, .price, .brand b, .hero-search input::placeholder { font-style: normal; }
+em, i, .serif, .grad-text, .pull, .official-quote p, .vs-mark span, .vscard .vs, .duel-mid .vs, .price, .brand b, .hero-search input::placeholder { font-style: normal; }
 h1, h2 { font-weight: 500; font-feature-settings: "ss01", "cv11"; }
 h1 { letter-spacing: -0.045em; line-height: 0.98; }
 h2 { letter-spacing: -0.035em; line-height: 1.05; }
@@ -1235,12 +1180,11 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 .brand b { font-weight: 500; color: var(--muted); }
 .pull { font-weight: 500; letter-spacing: -0.02em; line-height: 1.3; }
 .official-quote p { font-weight: 500; letter-spacing: -0.01em; }
-.cat-block .tagline { font-weight: 400; letter-spacing: -0.01em; font-size: 1.12rem; line-height: 1.5; }
 .vs-mark span, .vscard .vs, .duel-mid .vs { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
 .price { font-weight: 500; letter-spacing: -0.02em; }
 .hero-search input { font-family: var(--font-body); font-size: 1.08rem; }
 /* Big numerals: tabular figures keep count-ups from jittering horizontally. */
-.trust-strip strong, .trace-stats strong, .hero-stats strong, .cat-no, .pick-rank, .atlas-caption b, .marker b { font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
+.trust-strip strong, .trace-stats strong, .hero-stats strong, .pick-rank, .atlas-caption b, .marker b { font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
 .marquee span { letter-spacing: -0.02em; font-weight: 500; }
 .footer .closing { letter-spacing: -0.04em; }
 @media (max-width: 760px) {
@@ -1372,8 +1316,8 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 
   /* Every selector below was measured below 12px on a phone; each is set to exactly 12px. */
   .eyebrow, .kicker, .marker, .tag, .status, .ind, .pill, .cta-note, .src-kind, .breadcrumbs, .breadcrumbs a, .breadcrumbs span,
-  .footer h2, .footer kbd, .footer-bottom span, p > kbd, .card .sub, .dcard .sub, .meta > span, .chip-row .status, .chip, a.chip,
-  .vs-row small, .guide .gno, .guide .for, .trust-strip li > span, .hero-stats span, .cat-desc .names, .hero-search .q, .examples .lbl,
+  .footer h2, .footer kbd, .footer-bottom span, p > kbd, .card .sub, .meta > span, .chip-row .status, .chip, a.chip,
+  .vs-row small, .guide .gno, .guide .for, .trust-strip li > span, .hero-stats span, .hero-search .q, .examples .lbl,
   dt, .stat .k, .compare th, .compare th a, .price-table th, .pricing-steps span, li > time, .sponsor-label, .spectrum-labels span,
   .spectrum-zone h3, .feature .fi, .step .num, .rn-sub, .tabx-tab small, nav.panel h2, nav.panel h3, .link-groups h2, .link-groups h3 { font-size: 12px !important; }
   .tiny { font-size: 12.5px !important; }

@@ -4,7 +4,6 @@ import { alternativesFor, findProduct, loadCatalog, pairsForProduct, productsInC
 import type { Catalog, Product } from "@/lib/content/types";
 import { JsonLd } from "@/components/json-ld";
 import { Atlas } from "@/components/atlas/atlas";
-import { CategoryArt } from "@/components/category-art";
 import { RadialNetwork } from "@/components/radial-network";
 import { IconShield, IconScale, IconSpark, IconCheck } from "@/components/icons";
 import { Monogram, catStyle } from "@/components/identity";
@@ -169,41 +168,25 @@ export default async function Home() {
                   ),
                 };
               });
-              return <SubcategoryGrid key={cat.slug} items={items} label={`Filter ${cat.name} by type`} />;
+              return (
+                <div key={cat.slug} className="discover-panel">
+                  <div className="discover-panel-intro">
+                    <p>{cat.description}</p>
+                    <Link className="explore" href={routes.category(cat.slug)}>Explore all {items.length} {cat.name} tools <span className="arrow-right" aria-hidden="true">→</span></Link>
+                  </div>
+                  <SubcategoryGrid items={items} label={`Filter ${cat.name} by type`} />
+                </div>
+              );
             })}
           />
           <AffiliateDisclosure />
         </div>
       </section>
 
-      {/* Categories — editorial blocks */}
-      <section className="section zone">
-        <div className="container">
-          <div className="section-head"><div><Marker no="02" label="Explore" /><h2>Five territories of software</h2></div><Link className="btn ghost" href={routes.categories()}>All categories <span className="arrow-right">→</span></Link></div>
-          <div className="cat-blocks">
-            {c.categories.map((x, i) => {
-              const items = productsInCategory(c, x.slug);
-              return (
-                <article key={x.slug} className="cat-block reveal" style={catStyle(x.slug)}>
-                  <span className="cat-no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                  <h3 className="cat-title"><Link href={routes.category(x.slug)}>{x.name}</Link></h3>
-                  <div className="cat-desc">
-                    <p className="tagline">{x.description}</p>
-                    <p className="names">{items.map((p) => p.name).join(" · ")}</p>
-                    <span className="explore">Explore {items.length} tools <span className="arrow-right" aria-hidden="true">→</span></span>
-                  </div>
-                  <div className="cat-art"><CategoryArt slug={x.slug} /></div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* Comparisons — A vs B */}
       <section className="section">
         <div className="container">
-          <div className="section-head"><div><Marker no="03" label="Compare" /><h2>Head-to-head, criterion by criterion</h2></div><Link className="btn ghost" href={routes.comparisons()}>Show all {c.pairs.length} comparisons <span className="arrow-right">→</span></Link></div>
+          <div className="section-head"><div><Marker no="02" label="Compare" /><h2>Head-to-head, criterion by criterion</h2></div><Link className="btn ghost" href={routes.comparisons()}>Show all {c.pairs.length} comparisons <span className="arrow-right">→</span></Link></div>
           <div className="vs-list">
             {pairs.map((pair) => {
               const a = findProduct(c, pair.productA)!;
@@ -229,7 +212,7 @@ export default async function Home() {
           <div className="container split-2-1" style={{ alignItems: "center" }}>
             <div className="reveal"><RadialNetwork c={c} product={graphProduct} /></div>
             <div className="reveal">
-              <Marker no="04" label="Alternatives" />
+              <Marker no="03" label="Alternatives" />
               <h2 style={{ marginTop: 10 }}>Every tool sits in a <em className="serif">network</em> of options.</h2>
               <p className="lead">Curated alternatives to {graphProduct.name}, the category they share and the guides it appears in. Every node is a page.</p>
               <div className="actions">
@@ -244,7 +227,7 @@ export default async function Home() {
       {/* Best for */}
       <section className="section">
         <div className="container">
-          <div className="section-head"><div><Marker no="05" label="Best for" /><h2>Buying guides, written for a situation</h2></div><Link className="btn ghost" href={routes.bestIndex()}>Show all {c.useCases.length} guides <span className="arrow-right">→</span></Link></div>
+          <div className="section-head"><div><Marker no="04" label="Best for" /><h2>Buying guides, written for a situation</h2></div><Link className="btn ghost" href={routes.bestIndex()}>Show all {c.useCases.length} guides <span className="arrow-right">→</span></Link></div>
           <div className="guides reveal-stagger">
             {c.useCases.slice(0, TOP_GUIDES).map((u, i) => (
               <article key={u.slug} className="guide" style={catStyle(u.categorySlug)}>
@@ -263,7 +246,7 @@ export default async function Home() {
       <section className="section zone-ink">
         <div className="container trace">
           <div>
-            <Marker no="06" label="Verification" />
+            <Marker no="05" label="Verification" />
             <h2 style={{ marginTop: 14 }}>Research you can <em>trace.</em></h2>
             <p>Every price and product fact is published only when an exact quote from the vendor&apos;s official page supports it — with the source linked and the check date shown.</p>
             <div className="trace-stats">
