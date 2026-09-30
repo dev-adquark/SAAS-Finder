@@ -3,8 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Migrations need session-level features (advisory locks, multi-statement transactions) that
+  // Supabase's transaction-mode pooler (DATABASE_URL, port 6543) doesn't support. DIRECT_URL should
+  // point at the same database via the session pooler (port 5432, no ?pgbouncer=true) instead —
+  // fine for the one-off connection a migration needs, unlike the app's runtime query volume.
+  directUrl = env("DIRECT_URL")
 }
 
 enum ContentStatus {
