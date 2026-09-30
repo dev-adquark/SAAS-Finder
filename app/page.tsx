@@ -162,7 +162,7 @@ export default async function Home() {
                     <p>{cat.description}</p>
                     <Link className="explore" href={routes.category(cat.slug)}>Explore all {items.length} {cat.name} tools <span className="arrow-right" aria-hidden="true">→</span></Link>
                   </div>
-                  <SubcategoryGrid items={items} label={`Filter ${cat.name} by type`} />
+                  <SubcategoryGrid items={items} label={`Filter ${cat.name} by type`} icon={<CategoryIcon slug={cat.slug} size={15} />} />
 
                   {(catPairs.length > 0 || catGuides.length > 0) && (
                     <ShowMoreSection scope="always" label={`See comparisons and buying guides for ${cat.name}`}>

@@ -357,7 +357,10 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 .subcat-item { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 9px 10px; border: none; background: none; border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-2); text-align: left; cursor: pointer; transition: background 0.2s, color 0.2s; }
 .subcat-item:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
 .subcat-item.active { background: var(--ink); color: var(--paper); font-weight: 600; }
-.subcat-count { font-family: var(--font-mono); font-size: 0.72rem; opacity: 0.7; }
+.subcat-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.subcat-label svg { flex-shrink: 0; opacity: 0.75; }
+.subcat-item.active .subcat-label svg { opacity: 1; }
+.subcat-count { font-family: var(--font-mono); font-size: 0.72rem; opacity: 0.7; flex-shrink: 0; }
 .discover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
 .discover-tile { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), border-color 0.3s; }
 .discover-tile::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 28%; background: var(--cat); transition: width 0.5s var(--ease-out); }
