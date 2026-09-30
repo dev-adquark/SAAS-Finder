@@ -5,7 +5,7 @@ import type { Catalog, Product } from "@/lib/content/types";
 import { JsonLd } from "@/components/json-ld";
 import { Atlas } from "@/components/atlas/atlas";
 import { RadialNetwork } from "@/components/radial-network";
-import { IconShield, IconScale, IconSpark, IconCheck } from "@/components/icons";
+import { IconShield, IconScale, IconSpark, IconCheck, CategoryIcon } from "@/components/icons";
 import { Monogram, catStyle } from "@/components/identity";
 import { CountUp } from "@/components/count-up";
 import { Magnetic } from "@/components/magnetic";
@@ -118,7 +118,7 @@ export default async function Home() {
           </div>
           <TabExplorer
             label="Browse products by category"
-            items={c.categories.map((cat) => ({ id: `discover-${cat.slug}`, label: cat.name, sub: `${productsInCategory(c, cat.slug).length} tools` }))}
+            items={c.categories.map((cat) => ({ id: `discover-${cat.slug}`, label: cat.name, sub: `${productsInCategory(c, cat.slug).length} tools`, icon: <CategoryIcon slug={cat.slug} size={18} /> }))}
             panels={c.categories.map((cat) => {
               const items = productsInCategory(c, cat.slug).map((p) => {
                 const ps = pricingState(p);
