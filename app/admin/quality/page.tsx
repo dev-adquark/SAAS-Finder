@@ -8,7 +8,7 @@ import { productSyncStates, syncDashboard, SYNC_STATE_LABEL } from "@/lib/sync/d
 function Bar({ label, value, total, tone }: { label: string; value: number; total: number; tone: string }) {
   const pct = total ? Math.round((value / total) * 100) : 0;
   return (
-    <div className="bar-row" style={{ gridTemplateColumns: "200px 1fr 70px", ["--cat" as string]: tone }}>
+    <div className="bar-row" style={{ gridTemplateColumns: "minmax(90px, 200px) minmax(0, 1fr) auto", ["--cat" as string]: tone }}>
       <span className="small">{label}</span>
       <div className="bar-track"><div className="bar-fill" style={{ width: `${pct}%` }} /></div>
       <strong className="small">{value}/{total}</strong>

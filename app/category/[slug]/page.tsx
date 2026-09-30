@@ -133,7 +133,7 @@ export default async function CategoryHub({ params }: Params) {
               <h3>By subcategory</h3>
               <div className="bars">
                 {subCount.map(({ s, n }) => (
-                  <div className="bar-row" key={s} style={{ gridTemplateColumns: "1fr 80px 20px" }}>
+                  <div className="bar-row" key={s} style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(40px, 80px) auto" }}>
                     <span className="small">{s}</span>
                     <div className="bar-track"><div className="bar-fill" style={{ width: `${(n / Math.max(...subCount.map((x) => x.n))) * 100}%` }} /></div>
                     <strong className="small">{n}</strong>

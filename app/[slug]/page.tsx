@@ -394,7 +394,7 @@ export default async function ProductReview({ params }: Params) {
         <span style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
           <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />
           <span style={{ display: "grid", minWidth: 0 }}>
-            <strong style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</strong>
+            <strong title={p.name} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</strong>
             <span className="tiny muted">{p.affiliate ? "Affiliate link" : "Official site"}</span>
           </span>
         </span>
