@@ -48,7 +48,6 @@ function Marker({ no, label }: { no: string; label: string }) {
 
 export default async function Home() {
   const c = await loadCatalog();
-  const catName = new Map(c.categories.map((x) => [x.slug, x.name]));
   const ranked = [...c.products].sort((a, b) => referenceCount(c, b) - referenceCount(c, a) || a.name.localeCompare(b.name));
   const mostCompared = ranked.slice(0, 10);
   const graphProduct = [...c.products].sort((a, b) => alternativesFor(c, b).length - alternativesFor(c, a).length || referenceCount(c, b) - referenceCount(c, a))[0];
@@ -109,15 +108,6 @@ export default async function Home() {
           </ul>
         </div>
       </section>
-
-      {/* Colour marquee — decorative index of the atlas (duplicated once for a seamless loop) */}
-      <div className="marquee" aria-hidden="true">
-        <div className="marquee-track">
-          {[0, 1].flatMap((k) => ranked.map((p) => (
-            <span key={`${k}-${p.slug}`} style={catStyle(p.categorySlug)}>{p.name}<small>{catName.get(p.categorySlug)}</small></span>
-          )))}
-        </div>
-      </div>
 
       {/* Product discovery — by category */}
       <section className="section">

@@ -1093,14 +1093,6 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 .trust-strip li strong { color: color-mix(in srgb, var(--tc) 72%, var(--ink)); }
 .marker b { background: var(--spectrum); -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 400% 100%; }
 
-/* Colour marquee band */
-.marquee { position: relative; overflow: hidden; border-block: 1px solid var(--ink); background: var(--ink); color: var(--paper); padding: 14px 0; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
-.marquee-track { display: flex; gap: 0; width: max-content; animation: marquee 48s linear infinite; }
-.marquee:hover .marquee-track { animation-play-state: paused; }
-.marquee span { display: inline-flex; align-items: center; gap: 12px; padding: 0 26px; font-family: var(--font-display); font-size: 1.35rem; white-space: nowrap; color: var(--paper); }
-.marquee span::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--cat); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cat) 30%, transparent); }
-.marquee small { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: color-mix(in srgb, var(--cat) 35%, #d8d3c9); }
-@keyframes marquee { to { transform: translateX(-50%); } }
 
 /* Atlas: floating tiles, pulsing pins, data pulses along comparison lines */
 .atlas-tile a { animation: bob 6s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -0.37s); }
@@ -1170,14 +1162,12 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-blobs span, .marquee-track, .atlas-tile a, .atlas-tile .pin, .atlas-lines .pulse, .atlas-plane::after, .atlas-ribbon, .radnet .halo, .id-visual::before, .hero h1 em, .footer .closing em, .trust-strip::before { animation: none !important; }
+  .hero-blobs span, .atlas-tile a, .atlas-tile .pin, .atlas-lines .pulse, .atlas-plane::after, .atlas-ribbon, .radnet .halo, .id-visual::before, .hero h1 em, .footer .closing em, .trust-strip::before { animation: none !important; }
   .atlas-lines .pulse, .radnet .signal, .radnet .halo { display: none; }
-  .marquee-track { transform: none; }
 }
 @media (max-width: 760px) {
   .hero-blobs { inset: 0 -25%; opacity: 0.6; }
   .hero-blobs span { width: 80vw !important; height: 80vw !important; }
-  .marquee span { font-size: 1.1rem; padding: 0 18px; }
 }
 
 /* ==========================================================================
@@ -1205,7 +1195,6 @@ h3 { font-weight: 600; letter-spacing: -0.015em; }
 .hero-search input { font-family: var(--font-body); font-size: 1.08rem; }
 /* Big numerals: tabular figures keep count-ups from jittering horizontally. */
 .trust-strip strong, .trace-stats strong, .hero-stats strong, .pick-rank, .atlas-caption b, .marker b { font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
-.marquee span { letter-spacing: -0.02em; font-weight: 500; }
 .footer .closing { letter-spacing: -0.04em; }
 @media (max-width: 760px) {
   h1 { letter-spacing: -0.04em; }
