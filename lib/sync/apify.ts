@@ -12,7 +12,11 @@ export class ApifyError extends Error {
 }
 
 export const apifyConfigured = () => Boolean(process.env.APIFY_API_TOKEN?.trim());
-export const apifyActor = () => (process.env.APIFY_ACTOR_ID?.trim() || DEFAULT_ACTOR).replace("/", "~");
+/** The official-site crawler. A G2 actor set in APIFY_ACTOR_ID is ignored here (see g2Actor). */
+export const apifyActor = () => {
+  const v = process.env.APIFY_ACTOR_ID?.trim();
+  return (v && !/g2/i.test(v) ? v : DEFAULT_ACTOR).replace("/", "~");
+};
 /** Overridable for tests (mock server); production always uses the public API. */
 const base = () => process.env.APIFY_API_BASE?.replace(/\/+$/, "") || API;
 
@@ -80,7 +84,7 @@ export const TERMINAL = new Set(["SUCCEEDED", "FAILED", "TIMED-OUT", "ABORTED"])
 export type Webhook = { requestUrl: string; secret: string };
 
 /** Starts an actor run asynchronously; returns immediately with the run id and dataset id. */
-export async function startActorRun(input: unknown, opts: { timeoutSecs: number; memoryMbytes: number; webhook?: Webhook }): Promise<ApifyRun> {
+export async function startActorRun(input: unknown, opts: { timeoutSecs: number; memoryMbytes: number; webhook?: Webhook; actor?: string }): Promise<ApifyRun> {
   const q = new URLSearchParams({ timeout: String(opts.timeoutSecs), memory: String(opts.memoryMbytes) });
   if (opts.webhook) {
     const hooks = [{
@@ -92,7 +96,7 @@ export async function startActorRun(input: unknown, opts: { timeoutSecs: number;
     q.set("webhooks", Buffer.from(JSON.stringify(hooks)).toString("base64"));
   }
   // Starting a run is not idempotent: never retry it blindly (a timeout may still have started one).
-  const r = await call<{ data: ApifyRun }>(`/acts/${encodeURIComponent(apifyActor())}/runs?${q}`, { method: "POST", body: input, retries: 0, timeoutMs: 30_000 });
+  const r = await call<{ data: ApifyRun }>(`/acts/${encodeURIComponent(opts.actor ?? apifyActor())}/runs?${q}`, { method: "POST", body: input, retries: 0, timeoutMs: 30_000 });
   return r.data;
 }
 

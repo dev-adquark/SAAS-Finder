@@ -121,6 +121,7 @@ export default async function ProductReview({ params }: Params) {
                 <div><dt>Updated</dt><dd>{formatDate(p.contentUpdatedAt)}</dd></div>
                 {p.vendor && <div><dt>Vendor</dt><dd>{fact(p, "company")?.value ?? p.vendor}</dd></div>}
                 <div><dt>Official sources</dt><dd>{verifiedSources(p).length || "Not yet verified"}</dd></div>
+                {p.g2 && <div><dt>On G2</dt><dd><a className="text-link" href={p.g2.url} target="_blank" rel="nofollow noopener noreferrer" title={`G2 user rating, as of ${formatDate(p.g2.dataAsOf) ?? "the last sync"}. Not SaaS Finder's editorial score.`}>{p.g2.rating.toFixed(1)}/5 · {p.g2.reviewCount.toLocaleString("en-US")} reviews ↗</a></dd></div>}
               </dl>
               <a className="text-link small" href={p.officialUrl} target="_blank" rel="nofollow noopener">Official website ↗</a>
             </aside>

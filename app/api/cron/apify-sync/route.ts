@@ -8,8 +8,10 @@ import { advanceInBackground } from "@/lib/sync/schedule";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-// Daily tick (vercel.json). Starts the current ISO week's sync once, retries a failed week up to 3
-// times, and advances any run in progress. mode=advance only continues processing.
+// Daily tick (vercel.json). Starts the current 25-day cycle's sync once (official crawl + G2), retries
+// a failed cycle up to 3 times on later ticks, and advances any run in progress. mode=advance only
+// continues processing. Idempotent: the cycle key and the run lock prevent duplicate syncs, including
+// across deployments.
 export async function GET(req: Request) {
   if (!requireCronSecret(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!process.env.DATABASE_URL) return NextResponse.json({ error: "Database is not configured" }, { status: 503 });

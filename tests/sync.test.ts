@@ -3,7 +3,9 @@ import test from "node:test";
 import { classifyLink, discoverLinks, findPlanPrice, jsonLdOffers, normalizeUrl, validateItem } from "../lib/sync/extract";
 import { dedupeKey, evaluateDiscovered, evaluatePage, type Claims } from "../lib/sync/diff";
 import { crawlInput, PAGE_FUNCTION } from "../lib/sync/crawl-input";
-import { isoWeekKey, nextScheduledRun, targetUrls } from "../lib/sync/run";
+import { autoApplicable, cycleKey, cycleStart, nextScheduledRun, targetUrls } from "../lib/sync/run";
+import { autoFill, changedFields, g2Actor, g2Input, matchListing, mergeField, normalizeDomain, normalizeName, parseG2Item, type CatalogEntry } from "../lib/sync/g2";
+import { apifyActor } from "../lib/sync/apify";
 import { officialDomains } from "../lib/research/evidence";
 
 const domains = officialDomains("acme", "https://acme.com/");
@@ -189,11 +191,136 @@ test("target URLs: only official, verified or cited pages, deduplicated", () => 
 test("normalizeUrl and schedule helpers", () => {
   assert.equal(normalizeUrl("https://Acme.com/pricing/#plans"), "https://acme.com/pricing");
   assert.equal(normalizeUrl("https://acme.com/"), "https://acme.com/");
-  assert.equal(isoWeekKey(new Date("2026-09-28T10:00:00Z")), "2026-W40");
-  assert.equal(isoWeekKey(new Date("2027-01-01T10:00:00Z")), "2026-W53");
+});
+
+test("25-day schedule: fixed cycles, one key per cycle, next run at the next cycle's first tick", () => {
   const sat = new Date("2026-09-26T12:00:00Z");
-  assert.equal(nextScheduledRun(sat, false).toISOString(), "2026-09-27T04:00:00.000Z", "not yet synced this week: next daily tick");
-  assert.equal(nextScheduledRun(sat, true).toISOString(), "2026-09-28T04:00:00.000Z", "already synced: first tick of next ISO week (Monday)");
+  assert.equal(cycleKey(sat), "cycle-2026-09-08");
+  assert.equal(cycleKey(new Date("2026-09-08T00:00:00Z")), "cycle-2026-09-08", "cycle start belongs to its own cycle");
+  assert.equal(cycleKey(new Date("2026-10-02T23:59:59Z")), "cycle-2026-09-08");
+  assert.equal(cycleKey(new Date("2026-10-03T00:00:00Z")), "cycle-2026-10-03", "exactly 25 days later a new cycle starts");
+  assert.equal(cycleKey(new Date("2026-01-01T00:00:00Z")), "cycle-2026-01-01");
+  assert.equal(cycleKey(new Date("2025-12-31T00:00:00Z")), "cycle-2025-12-07", "dates before the anchor still map to 25-day cycles");
+  assert.equal((new Date("2026-10-03").getTime() - cycleStart(sat).getTime()) / 86_400_000, 25);
+  assert.equal(nextScheduledRun(sat, false).toISOString(), "2026-09-27T04:00:00.000Z", "not yet synced this cycle: next daily tick");
+  assert.equal(nextScheduledRun(sat, true).toISOString(), "2026-10-03T04:00:00.000Z", "already synced: first tick of the next 25-day cycle");
+  assert.equal(nextScheduledRun(new Date("2026-09-27T03:00:00Z"), false).toISOString(), "2026-09-27T04:00:00.000Z", "same-day tick still ahead");
+});
+
+test("auto-apply policy: complete updates apply now, removals need a second run, unknown billing periods wait", () => {
+  assert.equal(autoApplicable("PRICE_CHANGED", { billingPeriod: "MONTHLY" }, false), true);
+  assert.equal(autoApplicable("PRICE_CHANGED", { billingPeriod: null }, true), false);
+  assert.equal(autoApplicable("NEW_PLAN", { billingPeriod: null }, true), false, "a plan without a stated billing period is never published");
+  assert.equal(autoApplicable("NEW_PLAN", { billingPeriod: "ANNUAL" }, false), true);
+  for (const k of ["FACT_CHANGED", "NEW_SOURCE", "SOURCE_UPDATED"]) assert.equal(autoApplicable(k, {}, false), true, k);
+  for (const k of ["FACT_NOT_FOUND", "PLAN_NOT_FOUND", "SOURCE_NOT_FOUND"]) {
+    assert.equal(autoApplicable(k, {}, false), false, `${k} first sighting`);
+    assert.equal(autoApplicable(k, {}, true), true, `${k} confirmed by a second run`);
+  }
+  assert.equal(autoApplicable("SOMETHING_ELSE", {}, true), false);
+});
+
+// Shapes captured from real memo23~g2-scraper output.
+const g2Search = {
+  scrapedAt: "2026-09-30T12:01:44.077Z", itemType: "Software", resultRank: 1, foundVia: "g2", isSponsored: false, pricingType: null, productName: "Wrike", productId: 1382,
+  productUrl: "https://www.g2.com/products/wrike/reviews", reviewsUrl: "https://www.g2.com/products/wrike/reviews", thumbImageUrl: "https://images.g2crowd.com/uploads/product/image/x/wrike.png",
+  descriptionSnippet: "Wrike is a collaborative work management platform.", vendorName: "Wrike, Inc.", ratingOutOfFive: 0, ratingOutOfTen: 0, reviewCount: 0,
+  relatedCategories: ["Project Management", "Work Management"], companyDomain: "wrike.com", companyWebsite: "https://wrike.com",
+};
+
+test("G2 records: validated and normalized; zero ratings, sponsored and junk rows handled; review text dropped", () => {
+  const l = parseG2Item(g2Search);
+  assert.ok(l.ok && l.record.kind === "listing");
+  if (l.ok && l.record.kind === "listing") {
+    assert.equal(l.record.g2Slug, "wrike");
+    assert.equal(l.record.rating, null, "0 rating with 0 reviews is missing data, not a rating");
+    assert.equal(l.record.reviewCount, null);
+    assert.equal(l.record.companyDomain, "wrike.com");
+    assert.deepEqual(l.record.categories, ["Project Management", "Work Management"]);
+  }
+  const rated = parseG2Item({ ...g2Search, ratingOutOfFive: 4.26, reviewCount: 4538 });
+  assert.ok(rated.ok && rated.record.kind === "listing" && rated.record.rating === 4.3 && rated.record.reviewCount === 4538);
+  const tenOnly = parseG2Item({ ...g2Search, ratingOutOfFive: null, ratingOutOfTen: 8.4, reviewCount: 10 });
+  assert.ok(tenOnly.ok && tenOnly.record.kind === "listing" && tenOnly.record.rating === 4.2, "10-point scale converted");
+
+  const five = parseG2Item({ type: "review_summary", productSlug: "asana", aggregateRating: 4.4, totalReviews: 13994 });
+  assert.ok(five.ok && five.record.kind === "review_summary" && five.record.data.rating === 4.4, "a value up to 5 is on the 5-point scale (real Asana record)");
+  const summary = parseG2Item({ type: "review_summary", productSlug: "wrike", pros: [{ label: "Ease of Use", mentions: 400 }, { bogus: 1 }], cons: [{ label: "Learning Curve", mentions: 364 }], aggregateRating: 8.4, totalReviews: 4538, dataAsOf: "2026-09-30T08:38:59.137Z" });
+  assert.ok(summary.ok && summary.record.kind === "review_summary");
+  if (summary.ok && summary.record.kind === "review_summary") {
+    assert.equal(summary.record.data.rating, 4.2, "a value above 5 is out of 10 (real Wrike record)");
+    assert.deepEqual(summary.record.data.pros, [{ label: "Ease of Use", mentions: 400 }]);
+  }
+  const pricing = parseG2Item({ type: "pricing", productSlug: "wrike", tiers: [], priceMin: 0, priceMax: 0, currency: "USD", status: "SUCCEEDED", companyDomain: "wrike.com", faqs: [{ question: "Q?", answer: "A." }] });
+  assert.ok(pricing.ok && pricing.record.kind === "pricing" && pricing.record.data.priceMin === null, "0/0 without tiers is unknown, not free");
+  assert.equal(parseG2Item({ type: "pricing", productSlug: "wrike", status: "FAILED" }).ok, false);
+
+  const numericId = parseG2Item({ type: "review", review_id: 13660168, review_title: "Excellent", review_rating: 4.5, product_slug: "asana", review_link: "https://www.g2.com/products/asana/reviews/asana-review-13660168" });
+  assert.ok(numericId.ok && numericId.record.kind === "review" && numericId.record.data.id === "13660168", "real G2 review ids are numbers");
+  assert.equal(parseG2Item({ ...g2Search, itemType: "Provider" }).ok, false, "vendor (Provider) rows are not product listings");
+  const review = parseG2Item({ type: "review", review_id: "1", review_title: "Great", review_content: "Long copyrighted text", review_rating: 5, product_slug: "wrike", review_link: "https://www.g2.com/products/wrike/reviews/wrike-review-1", reviewer: { business_size: "Mid-Market" } });
+  assert.ok(review.ok && review.record.kind === "review");
+  assert.ok(!JSON.stringify(review).includes("copyrighted"), "review text is never stored");
+
+  const comp = parseG2Item({ type: "competitor", sourceProductSlug: "wrike", competitorRank: 1, productName: "ClickUp", productSlug: "clickup", productUrl: "https://www.g2.com/products/clickup/reviews", descriptionSnippet: "By ClickUp", ratingOutOfFive: 4.6, reviewCount: 14467, companyDomain: "clickup.com", companyWebsite: "https://clickup.com" });
+  assert.ok(comp.ok && comp.record.kind === "competitor" && comp.record.listing.description === null, "'By <vendor>' is not a description");
+  assert.equal(parseG2Item({ type: "competitor", sourceProductSlug: "wrike", productName: "Wrike", productSlug: "wrike" }).ok, false, "self-competitor rejected");
+
+  for (const bad of [null, "x", [], { type: "review" }, { productName: "No slug" }, { ...g2Search, productUrl: "https://evil.example/products/x", reviewsUrl: "https://evil.example/x" }, { type: "mystery", productSlug: "x" }]) {
+    assert.equal(parseG2Item(bad).ok, false, JSON.stringify(bad));
+  }
+});
+
+test("G2 matching: G2 link, then official domain, then exact name — never fuzzy, never across domains", () => {
+  const cat = (over: Partial<CatalogEntry>): CatalogEntry => ({ id: "x", slug: "x", name: "X", vendor: null, domains: new Set(), g2Slug: null, ...over });
+  const catalog = [
+    cat({ id: "wrike", slug: "wrike", name: "Wrike", domains: new Set(["wrike.com"]) }),
+    cat({ id: "slack", slug: "slack", name: "Slack", vendor: "Salesforce", domains: new Set(["slack.com"]) }),
+    cat({ id: "hub", slug: "hubspot", name: "HubSpot", domains: new Set(["hubspot.com"]), g2Slug: "hubspot-crm" }),
+    cat({ id: "z1", slug: "zoho-crm", name: "Zoho CRM", domains: new Set(["zoho.com"]) }),
+    cat({ id: "z2", slug: "zoho-books", name: "Zoho Books", domains: new Set(["zoho.com"]) }),
+  ];
+  const L = (o: Record<string, unknown>) => ({ g2Slug: "q", name: "Q", vendorName: null, companyDomain: null, ...o });
+  assert.deepEqual(matchListing(L({ g2Slug: "hubspot-crm", name: "Totally different" }), catalog), { productId: "hub", by: "g2Slug" });
+  assert.deepEqual(matchListing(L({ g2Slug: "slack-tech", name: "Slack by Salesforce", companyDomain: "slack.com" }), catalog), { productId: "slack", by: "domain" }, "name variants resolve via official domain");
+  assert.equal(matchListing(L({ name: "Writesonic", companyDomain: "writesonic.com" }), catalog), null, "fuzzy search noise never matches");
+  assert.equal(matchListing(L({ name: "Wrike", companyDomain: "wrike-clone.io" }), catalog), null, "same name on another domain is a different product");
+  assert.deepEqual(matchListing(L({ name: "Zoho CRM", companyDomain: "zoho.com" }), catalog), { productId: "z1", by: "domain" }, "shared vendor domain disambiguated by exact name");
+  assert.equal(matchListing(L({ name: "Zoho Desk", companyDomain: "zoho.com" }), catalog), null, "ambiguous shared domain never guesses");
+  assert.deepEqual(matchListing(L({ name: "WRIKE, Inc.", companyDomain: null }), catalog), { productId: "wrike", by: "name" }, "exact normalized name when G2 gives no domain");
+  assert.equal(normalizeName("Slack Technologies, LLC"), "slack");
+  assert.equal(normalizeDomain("https://www.Wrike.com/pricing"), "wrike.com");
+  assert.equal(normalizeDomain("not a domain"), null);
+});
+
+test("G2 change detection and merge: exact changed fields; missing data never blanks a value", () => {
+  assert.deepEqual(changedFields({ rating: 4.2, reviewCount: 10, categories: ["A"] }, { rating: 4.2, reviewCount: 11, categories: ["A"] }), ["reviewCount"]);
+  assert.deepEqual(changedFields({ pricing: { b: 1, a: 2 } }, { pricing: { a: 2, b: 1 } }), [], "key order is not a change");
+  assert.deepEqual(changedFields(null, { name: "X", rating: null }).sort(), ["name", "rating"]);
+  assert.equal(mergeField(4.2, null), 4.2);
+  assert.equal(mergeField(4.2, undefined), 4.2);
+  assert.equal(mergeField(4.2, 4.4), 4.4);
+  assert.deepEqual(mergeField(["A"], []), ["A"], "empty list keeps existing");
+  assert.deepEqual(autoFill({ vendor: null }, { vendorName: "Wrike, Inc." }), { vendor: "Wrike, Inc." });
+  assert.deepEqual(autoFill({ vendor: "Wrike" }, { vendorName: "Wrike, Inc." }), {}, "editor value is never replaced");
+});
+
+test("G2 actor input and actor ids: known listings by URL, unknown by name; crawler never gets the G2 actor", () => {
+  const input = g2Input([{ productId: "1", name: "Wrike", g2Slug: "wrike" }, { productId: "2", name: "Asana", g2Slug: null }]) as Record<string, unknown>;
+  assert.deepEqual((input.startUrls as { url: string }[]).map((u) => u.url), ["https://www.g2.com/products/wrike/reviews", "https://www.g2.com/products/wrike/pricing", "https://www.g2.com/products/wrike/competitors/alternatives"]);
+  assert.deepEqual(input.searchQueries, ["Asana"]);
+  assert.deepEqual(input.proxy, { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] });
+  const prev = { a: process.env.APIFY_ACTOR_ID, g: process.env.APIFY_G2_ACTOR_ID };
+  delete process.env.APIFY_G2_ACTOR_ID;
+  process.env.APIFY_ACTOR_ID = "memo23~g2-scraper";
+  assert.equal(apifyActor(), "apify~playwright-scraper", "a G2 actor in APIFY_ACTOR_ID never replaces the official crawler");
+  assert.equal(g2Actor(), "memo23~g2-scraper");
+  delete process.env.APIFY_ACTOR_ID;
+  assert.equal(g2Actor(), "memo23~g2-scraper", "default");
+  process.env.APIFY_G2_ACTOR_ID = "someone/other-g2";
+  assert.equal(g2Actor(), "someone~other-g2");
+  if (prev.a === undefined) delete process.env.APIFY_ACTOR_ID; else process.env.APIFY_ACTOR_ID = prev.a;
+  if (prev.g === undefined) delete process.env.APIFY_G2_ACTOR_ID; else process.env.APIFY_G2_ACTOR_ID = prev.g;
 });
 
 test("Apify client: token only in the Authorization header, retries 429/5xx, scrubs errors", async () => {
@@ -220,5 +347,17 @@ test("Apify client: token only in the Authorization header, retries 429/5xx, scr
     globalThis.fetch = prev.fetch;
     if (prev.token === undefined) delete process.env.APIFY_API_TOKEN;
     else process.env.APIFY_API_TOKEN = prev.token;
+  }
+});
+
+test("discovered links: login / sign-up pages (and links that redirect to them) are never proposed", async () => {
+  const { isAuthPage } = await import("../lib/sync/diff");
+  const real = { status: "OK" as const, reason: null, httpStatus: 200, page: { loadedUrl: "https://app.acme.com/-/login", title: "Log in - Acme", text: "x", html: "", contentHash: "h", fetchedAt: new Date(), links: [], description: null, jsonLd: [] } };
+  assert.equal(evaluateDiscovered(claims(), "PRICING", real as never), null, "a gated pricing link that redirects to a login page is dropped");
+  for (const [u, t] of [["https://acme.com/login", "Acme"], ["https://acme.com/users/sign_in", "Sign in to Acme"], ["https://acme.com/auth/", ""], ["https://acme.com/x", "Sign up | Acme"], ["https://acme.com/signup?plan=pro", ""]] as const) {
+    assert.equal(isAuthPage(u, t), true, `${u} ${t}`);
+  }
+  for (const [u, t] of [["https://acme.com/pricing", "Pricing | Acme"], ["https://acme.com/blog/logging-in-best-practices", "Logging best practices"], ["https://acme.com/trust", "Trust at Acme"]] as const) {
+    assert.equal(isAuthPage(u, t), false, `${u} ${t}`);
   }
 });

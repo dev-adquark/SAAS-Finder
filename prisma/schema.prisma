@@ -164,6 +164,9 @@ model Product {
   refreshes           ContentRefresh[]
   syncPages           SyncPage[]
   dataChanges         DataChange[]
+  g2                  G2Listing?
+  // Set when the automated sync created this product from a detected G2 listing.
+  autoCreatedAt       DateTime?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -528,10 +531,12 @@ model SyncRun {
   id             String       @id @default(cuid())
   trigger        SyncTrigger
   status         SyncStatus   @default(RUNNING)
-  // ISO week (e.g. "2026-W39") for scheduled runs, so re-invoking the weekly cron is idempotent.
-  weekKey        String?      @unique
+  // 25-day cycle key (e.g. "cycle-2026-09-08") for scheduled runs, so re-invoking the daily cron is
+  // idempotent. Stored in the column originally named weekKey (weekly schedule), hence the @map.
+  cycleKey       String?      @unique @map("weekKey")
   productId      String?
-  // 1 = known official URLs, 2 = newly discovered official links being validated.
+  // 1 = known official URLs, 2 = newly discovered official links being validated,
+  // 3 = G2 listings (search + known listings), 4 = G2 details for listings matched in phase 3.
   phase          Int          @default(1)
   apifyRunId     String?      @unique
   apifyDatasetId String?
@@ -606,4 +611,50 @@ model DataChange {
   @@index([status, detectedAt])
   @@index([productId, detectedAt])
   @@index([productId, dedupeKey])
+}
+
+enum G2ListingStatus {
+  ACTIVE
+  NOT_FOUND // the listing stopped appearing in G2 results (kept, never deleted)
+}
+
+// Third-party source data from G2 (memo23~g2-scraper), matched to a product by G2 slug or official
+// domain. Candidates (productId null) are G2 products our catalog does not have yet. This is source
+// data only: editorial scores and published prices never come from here.
+model G2Listing {
+  id                  String          @id @default(cuid())
+  g2Slug              String          @unique
+  productId           String?         @unique
+  product             Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  status              G2ListingStatus @default(ACTIVE)
+  name                String
+  vendorName          String?
+  g2Url               String
+  companyDomain       String?
+  companyWebsite      String?
+  description         String?
+  imageUrl            String?
+  // Out of 5; null when G2 reports no rating.
+  rating              Float?
+  reviewCount         Int?
+  pricingType         String?
+  categories          Json            @default("[]")
+  pricing             Json?
+  competitors         Json?
+  reviewSummary       Json?
+  recentReviews       Json?
+  // G2's own freshness stamp for the data, when provided.
+  dataAsOf            DateTime?
+  // Candidates only: how many catalog products list this as a G2 competitor, and in which category.
+  mentions            Int             @default(0)
+  candidateCategoryId String?
+  // Official-domain disagreement with the matched product (the official URL is never changed from G2).
+  domainConflict      Boolean         @default(false)
+  contentHash         String?
+  firstSeenAt         DateTime        @default(now())
+  lastSyncedAt        DateTime        @default(now())
+  lastRunId           String?
+
+  @@index([productId])
+  @@index([status])
 }

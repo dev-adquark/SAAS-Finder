@@ -167,10 +167,16 @@ export function evaluatePage(claims: Claims, url: string, result: ItemResult, pr
 }
 
 /** Phase-2 evaluation: a discovered link is proposed only if it actually loaded on the vendor's domain. */
+/** Login, sign-up and other auth pages (often where a gated link redirects) are never official sources. */
+const AUTH_PATH = /\/(-\/)?(log-?in|sign-?in|sign-?up|signon|register|auth|sso|oauth2?|session\/new)(\/|$|\?|#)/i;
+const AUTH_TITLE = /^\s*(log ?in|sign ?in|sign ?up|create (an |your )?account)\b|\b(log ?in|sign ?in) (to|-|–|—|\|)/i;
+export const isAuthPage = (url: string, title: string | null | undefined) => AUTH_PATH.test(url) || AUTH_TITLE.test(title ?? "");
+
 export function evaluateDiscovered(claims: Claims, kind: SourceKind, result: ItemResult): Proposal | null {
   if (result.status !== "OK" || !result.page) return null;
   const url = normalizeUrl(result.page.loadedUrl);
   if (claims.known.has(url)) return null;
+  if (isAuthPage(url, result.page.title)) return null;
   const name = (result.page.title || kind.replace(/_/g, " ").toLowerCase()).replace(/\s+/g, " ").slice(0, 120);
   return { kind: "NEW_SOURCE", field: sourceField(kind, url), targetId: null, previousValue: null, newValue: `${name} — ${url}`, sourceUrl: url, evidence: result.page.title || null, payload: { kind, url, name } };
 }

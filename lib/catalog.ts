@@ -37,6 +37,7 @@ const productInclude = {
   sources: { orderBy: [{ kind: "asc" }, { name: "asc" }] },
   facts: { include: { source: { select: { url: true } } }, orderBy: { key: "asc" } },
   relationships: { where: { agreementStatus: "ACTIVE", verifiedAt: { not: null } } },
+  g2: { select: { status: true, rating: true, reviewCount: true, g2Url: true, dataAsOf: true, lastSyncedAt: true, domainConflict: true } },
 } satisfies Prisma.ProductInclude;
 
 type DbProduct = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
@@ -108,7 +109,14 @@ export function mapDbProduct(p: DbProduct): Product {
     refreshIntervalDays: p.refreshIntervalDays,
     contentUpdatedAt: p.contentUpdatedAt.toISOString(),
     alternatives: p.alternativesFrom.map((a) => ({ slug: a.alternative.slug, rationale: a.rationale, keyDifference: a.keyDifference, useCaseSlug: a.useCase?.slug ?? null })),
+    g2: mapG2(p.g2),
   };
+}
+
+/** Public G2 data only for an active, domain-consistent listing with a real rating and reviews. */
+function mapG2(g: DbProduct["g2"]): Product["g2"] {
+  if (!g || g.status !== "ACTIVE" || g.domainConflict || g.rating === null || !g.reviewCount || g.reviewCount < 1 || !g.g2Url.startsWith("https://www.g2.com/")) return null;
+  return { rating: g.rating, reviewCount: g.reviewCount, url: g.g2Url, dataAsOf: (g.dataAsOf ?? g.lastSyncedAt).toISOString() };
 }
 
 async function databaseCatalog(): Promise<Catalog> {
