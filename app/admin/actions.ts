@@ -327,7 +327,7 @@ export async function deleteRelationshipAction(fd: FormData) {
 const SYNC_BACK = "/admin/sync";
 const note = (fd: FormData) => read(formToObject(fd)).str("note", { max: 500, nullable: true }).done<{ note?: string | null }>().note ?? null;
 
-/** Manual trigger of the same pipeline the 25-day schedule runs (confirmation required). */
+/** Manual trigger of the same pipeline the 31-day schedule runs (confirmation required). */
 export async function startFullSyncAction(fd: FormData) {
   await perform(SYNC_BACK, "Sync started — official websites, then G2. Progress updates here automatically.", async () => {
     confirmed(fd);

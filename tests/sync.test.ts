@@ -193,17 +193,17 @@ test("normalizeUrl and schedule helpers", () => {
   assert.equal(normalizeUrl("https://acme.com/"), "https://acme.com/");
 });
 
-test("25-day schedule: fixed cycles, one key per cycle, next run at the next cycle's first tick", () => {
+test("31-day schedule: fixed cycles, one key per cycle, next run at the next cycle's first tick", () => {
   const sat = new Date("2026-09-26T12:00:00Z");
-  assert.equal(cycleKey(sat), "cycle-2026-09-08");
-  assert.equal(cycleKey(new Date("2026-09-08T00:00:00Z")), "cycle-2026-09-08", "cycle start belongs to its own cycle");
-  assert.equal(cycleKey(new Date("2026-10-02T23:59:59Z")), "cycle-2026-09-08");
-  assert.equal(cycleKey(new Date("2026-10-03T00:00:00Z")), "cycle-2026-10-03", "exactly 25 days later a new cycle starts");
+  assert.equal(cycleKey(sat), "cycle-2026-09-06");
+  assert.equal(cycleKey(new Date("2026-09-06T00:00:00Z")), "cycle-2026-09-06", "cycle start belongs to its own cycle");
+  assert.equal(cycleKey(new Date("2026-10-06T23:59:59Z")), "cycle-2026-09-06");
+  assert.equal(cycleKey(new Date("2026-10-07T00:00:00Z")), "cycle-2026-10-07", "exactly 31 days later a new cycle starts");
   assert.equal(cycleKey(new Date("2026-01-01T00:00:00Z")), "cycle-2026-01-01");
-  assert.equal(cycleKey(new Date("2025-12-31T00:00:00Z")), "cycle-2025-12-07", "dates before the anchor still map to 25-day cycles");
-  assert.equal((new Date("2026-10-03").getTime() - cycleStart(sat).getTime()) / 86_400_000, 25);
+  assert.equal(cycleKey(new Date("2025-12-31T00:00:00Z")), "cycle-2025-12-01", "dates before the anchor still map to 31-day cycles");
+  assert.equal((new Date("2026-10-07").getTime() - cycleStart(sat).getTime()) / 86_400_000, 31);
   assert.equal(nextScheduledRun(sat, false).toISOString(), "2026-09-27T04:00:00.000Z", "not yet synced this cycle: next daily tick");
-  assert.equal(nextScheduledRun(sat, true).toISOString(), "2026-10-03T04:00:00.000Z", "already synced: first tick of the next 25-day cycle");
+  assert.equal(nextScheduledRun(sat, true).toISOString(), "2026-10-07T04:00:00.000Z", "already synced: first tick of the next 31-day cycle");
   assert.equal(nextScheduledRun(new Date("2026-09-27T03:00:00Z"), false).toISOString(), "2026-09-27T04:00:00.000Z", "same-day tick still ahead");
 });
 

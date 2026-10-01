@@ -25,10 +25,24 @@ if (!url) {
     responder: (() => null) as Responder,
     g2: (() => []) as G2Responder,
     garbage: [] as unknown[],
+    // Logo.dev mock: per-domain behaviour and call counts (default: a real PNG).
+    logo: {} as Record<string, "found" | "missing" | "error">,
+    logoCalls: {} as Record<string, number>,
   };
   let seq = 0;
   const server = http.createServer((req, res) => {
     const send = (code: number, body: unknown) => (res.writeHead(code, { "content-type": "application/json" }), res.end(JSON.stringify(body)));
+    const logo = req.url!.match(/^\/logo\/([^/?]+)\?(.*)$/);
+    if (logo) {
+      const d = decodeURIComponent(logo[1]);
+      mock.logoCalls[d] = (mock.logoCalls[d] ?? 0) + 1;
+      if (!new URLSearchParams(logo[2]).get("token")?.startsWith("pk_")) return send(401, {});
+      const b = mock.logo[d] ?? "found";
+      if (b === "missing") return (res.writeHead(404), res.end());
+      if (b === "error") return (res.writeHead(503), res.end());
+      res.writeHead(200, { "content-type": "image/png" });
+      return res.end(Buffer.from([137, 80, 78, 71]));
+    }
     if (req.headers.authorization !== `Bearer ${process.env.APIFY_API_TOKEN}`) return send(401, { error: { message: "unauthorized" } });
     const u = new URL(req.url!, "http://mock");
     let body = "";
@@ -195,7 +209,7 @@ if (!url) {
       assert.equal(await db.g2Listing.count(), 0);
     });
 
-    await t.test("scheduled sync (official + G2) over unchanged pages re-confirms claims, changes nothing, is idempotent per 25-day cycle, and a duplicate cron starts nothing", async () => {
+    await t.test("scheduled sync (official + G2) over unchanged pages re-confirms claims, changes nothing, is idempotent per 31-day cycle, and a duplicate cron starts nothing", async () => {
       evidence = await evidenceByUrl();
       mock.responder = (u) => (u.startsWith("https://acme-sync.example") ? acme()(u) : unchanged(evidence)(u));
       mock.g2 = () => [];
@@ -233,8 +247,8 @@ if (!url) {
       const again = await run.startSync({ trigger: "SCHEDULED", now: new Date(now.getTime() + 3_600_000) });
       assert.equal(again.started, false);
       assert.match(again.reason ?? "", /Already synced/);
-      const nextCycle = new Date(run.cycleStart(now).getTime() + 25 * 86_400_000);
-      assert.equal(run.cycleKey(nextCycle) === done.cycleKey, false, "the next 25-day cycle is a new key");
+      const nextCycle = new Date(run.cycleStart(now).getTime() + 31 * 86_400_000);
+      assert.equal(run.cycleKey(nextCycle) === done.cycleKey, false, "the next 31-day cycle is a new key");
     });
 
     let priceChange = "";
@@ -472,6 +486,84 @@ if (!url) {
       assert.equal(((await again.json()) as { started: boolean }).started, false, "second cron call is a no-op");
       await finishAll();
       assert.equal((await db.syncRun.findUniqueOrThrow({ where: { id: body.runId } })).status, "COMPLETED");
+    });
+
+    await t.test("Logo.dev: verified logo stored and rendered; unchanged re-run; failures keep the logo; removal needs two misses", async () => {
+      process.env.LOGO_DEV_PUBLISHABLE_KEY = "pk_integration";
+      process.env.LOGO_DEV_IMG_BASE = `${process.env.APIFY_API_BASE}/logo`;
+      mock.g2 = () => [];
+      mock.responder = acme();
+      const sync = async () => { await allowRerun(); const r = await run.startSync({ trigger: "MANUAL_PRODUCT", productId: product.id }); await finishAll(); return db.syncRun.findUniqueOrThrow({ where: { id: r.run!.id }, include: { pages: true } }); };
+      const p = () => db.product.findUniqueOrThrow({ where: { id: product.id }, select: { logoDomain: true, logoCheckedAt: true, logoMisses: true } });
+      const { loadCatalog } = await import("../lib/catalog");
+      const publicLogo = async () => (await loadCatalog()).products.find((x) => x.slug === product.slug)?.logo;
+
+      let r = await sync();
+      const page = r.pages.find((x) => x.phase === 5)!;
+      assert.equal(page.status, "OK");
+      assert.deepEqual((page.outcome as { changed: string[] }).changed, ["logo"]);
+      assert.ok(!page.url.includes("pk_"), "the key is never stored");
+      assert.equal((await p()).logoDomain, "acme-sync.example");
+      assert.equal((r.stats as Record<string, number>).logosUpdated, 1);
+      assert.match((await publicLogo())?.base ?? "", /\/logo\/acme-sync\.example\?token=pk_integration/, "pages render the verified logo");
+
+      r = await sync();
+      assert.equal((r.stats as Record<string, number>).logosUpdated, 0);
+      assert.equal((r.stats as Record<string, number>).logosUnchanged, 1, "unchanged logo is not rewritten");
+
+      mock.logo["acme-sync.example"] = "error";
+      const calls = mock.logoCalls["acme-sync.example"] ?? 0;
+      r = await sync();
+      assert.equal(r.status, "PARTIAL");
+      assert.equal(r.pages.find((x) => x.phase === 5)!.status, "UNAVAILABLE");
+      assert.equal((mock.logoCalls["acme-sync.example"] ?? 0) - calls, 3, "retried before giving up");
+      assert.equal((r.stats as Record<string, number>).logoRetries, 2);
+      assert.equal((await p()).logoDomain, "acme-sync.example", "an API failure never removes a valid logo");
+      assert.ok(await publicLogo(), "site still shows the logo");
+
+      mock.logo["acme-sync.example"] = "missing";
+      await sync();
+      assert.equal((await p()).logoDomain, "acme-sync.example", "one 'no logo' result keeps the logo");
+      assert.equal((await p()).logoMisses, 1);
+      r = await sync();
+      assert.equal((await p()).logoDomain, null, "removed only after a second consecutive miss");
+      assert.equal(await publicLogo(), null, "a confirmed miss shows the static icon / monogram (no Logo.dev URL)");
+      assert.equal((r.stats as Record<string, number>).logosUpdated, 1);
+      mock.logo["acme-sync.example"] = "found";
+      await sync();
+      assert.equal((await p()).logoDomain, "acme-sync.example", "a logo that comes back is restored");
+    });
+
+    await t.test("Logo.dev phase: interrupted runs resume without re-checking, the lock prevents parallel processing, and it runs without Apify", async () => {
+      const token = process.env.APIFY_API_TOKEN;
+      delete process.env.APIFY_API_TOKEN;
+      mock.logoCalls = {};
+      const apifyStarts = mock.inputs.length + mock.g2Inputs.length;
+      await allowRerun();
+      const r = await run.startSync({ trigger: "MANUAL_FULL" });
+      assert.equal(r.run?.phase, 5, "without Apify the run goes straight to Logo.dev");
+      assert.equal(mock.inputs.length + mock.g2Inputs.length, apifyStarts, "no Apify run started");
+      // Interrupt after one small batch (budget ~0), then resume; plus a concurrent worker.
+      // Clock: calls 1–3 (deadline, lock, first loop check) see t=0; afterwards the 1ms budget is spent,
+      // so exactly one batch is processed before the run stops — an interruption mid-phase.
+      let calls = 0;
+      const first = await run.advanceSyncs({ budgetMs: 1, now: () => (calls++ < 3 ? 0 : 10) });
+      assert.equal(first.results[0].state, "processing", "interrupted mid-phase");
+      const done1 = await db.syncPage.count({ where: { runId: r.run!.id, phase: 5, processedAt: { not: null } } });
+      assert.ok(done1 > 0 && done1 < (await db.syncPage.count({ where: { runId: r.run!.id, phase: 5 } })), `partial progress saved (${done1})`);
+      const [a, b] = await Promise.all([run.advanceSyncs({ budgetMs: 60_000 }), run.advanceSyncs({ budgetMs: 60_000 })]);
+      assert.ok([...a.results, ...b.results].some((x) => x.state === "locked"), "the lock blocks a second worker");
+      await finishAll();
+      const fin = await db.syncRun.findUniqueOrThrow({ where: { id: r.run!.id }, include: { pages: true } });
+      assert.equal(fin.status, "COMPLETED");
+      const logoPages = fin.pages.filter((x) => x.phase === 5);
+      assert.ok(logoPages.length > 10 && logoPages.every((x) => x.processedAt), "whole catalog processed");
+      assert.ok(Object.values(mock.logoCalls).every((n) => n === 1), "each domain checked exactly once across the interruption");
+      assert.equal(fin.pages.filter((x) => x.phase !== 5).length, 0);
+      process.env.APIFY_API_TOKEN = token;
+      delete process.env.LOGO_DEV_PUBLISHABLE_KEY;
+      delete process.env.LOGO_DEV_IMG_BASE;
+      await db.product.updateMany({ data: { logoDomain: null, logoCheckedAt: null, logoMisses: 0 } });
     });
 
     await db.g2Listing.deleteMany({});

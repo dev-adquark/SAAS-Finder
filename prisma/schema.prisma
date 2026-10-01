@@ -167,6 +167,12 @@ model Product {
   g2                  G2Listing?
   // Set when the automated sync created this product from a detected G2 listing.
   autoCreatedAt       DateTime?
+  // Logo.dev state verified by the automatic sync: the official hostname Logo.dev has a logo for
+  // (null = none), when it was last checked, and consecutive "no logo" results (a logo is only
+  // removed after two in a row, so one bad response never drops a valid logo).
+  logoDomain          String?
+  logoCheckedAt       DateTime?
+  logoMisses          Int                 @default(0)
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -536,7 +542,8 @@ model SyncRun {
   cycleKey       String?      @unique @map("weekKey")
   productId      String?
   // 1 = known official URLs, 2 = newly discovered official links being validated,
-  // 3 = G2 listings (search + known listings), 4 = G2 details for listings matched in phase 3.
+  // 3 = G2 listings (search + known listings), 4 = G2 details for listings matched in phase 3,
+  // 5 = Logo.dev logo verification (no Apify run; processed in resumable batches).
   phase          Int          @default(1)
   apifyRunId     String?      @unique
   apifyDatasetId String?

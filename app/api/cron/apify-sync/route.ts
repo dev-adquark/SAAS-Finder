@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/cron-auth";
 import { boundedInt } from "@/lib/validation";
-import { apifyConfigured } from "@/lib/sync/apify";
-import { startSync, SyncError } from "@/lib/sync/run";
+import { startSync, SyncError, syncConfigured } from "@/lib/sync/run";
 import { advanceInBackground } from "@/lib/sync/schedule";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-// Daily tick (vercel.json). Starts the current 25-day cycle's sync once (official crawl + G2), retries
+// Daily tick (vercel.json). Starts the current 31-day cycle's sync once (official crawl + G2 + Logo.dev), retries
 // a failed cycle up to 3 times on later ticks, and advances any run in progress. mode=advance only
 // continues processing. Idempotent: the cycle key and the run lock prevent duplicate syncs, including
 // across deployments.
 export async function GET(req: Request) {
   if (!requireCronSecret(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!process.env.DATABASE_URL) return NextResponse.json({ error: "Database is not configured" }, { status: 503 });
-  if (!apifyConfigured()) return NextResponse.json({ ok: false, configured: false, note: "APIFY_API_TOKEN is not set; automated research is disabled." }, { status: 200 });
+  if (!syncConfigured()) return NextResponse.json({ ok: false, configured: false, note: "No sync source is configured (APIFY_API_TOKEN / LOGO_DEV_PUBLISHABLE_KEY); the automatic sync is disabled." }, { status: 200 });
   const url = new URL(req.url);
   const hop = boundedInt(url.searchParams.get("hop"), 0, 0, 1000);
   if (url.searchParams.get("mode") === "advance") {

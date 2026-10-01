@@ -7,7 +7,7 @@ import { seedCatalog } from "@/lib/content/seed-catalog";
 import type { Catalog, Category, ComparisonPair, Criterion, PricePoint, Product, UseCase } from "@/lib/content/types";
 import { isHttpUrl } from "@/lib/validation";
 import { comparePairSlug } from "@/lib/seo/routes";
-import { withLogos } from "@/lib/logos/logo-dev";
+import { logoDevBase, logoDevKey, logoDomain, withLogos } from "@/lib/logos/logo-dev";
 
 export const hasDatabase = () => Boolean(process.env.DATABASE_URL);
 
@@ -111,7 +111,21 @@ export function mapDbProduct(p: DbProduct): Product {
     contentUpdatedAt: p.contentUpdatedAt.toISOString(),
     alternatives: p.alternativesFrom.map((a) => ({ slug: a.alternative.slug, rationale: a.rationale, keyDifference: a.keyDifference, useCaseSlug: a.useCase?.slug ?? null })),
     g2: mapG2(p.g2),
+    logo: mapLogo(p),
   };
+}
+
+/**
+ * Logo from the sync's verified state: a URL when the stored domain is the current official
+ * hostname, null when the sync confirmed there is none, undefined when unknown (never synced, or
+ * the official URL changed since) — unknown products are checked by withLogos at catalog load.
+ */
+function mapLogo(p: Pick<DbProduct, "officialUrl" | "logoDomain" | "logoCheckedAt">): Product["logo"] {
+  const token = logoDevKey();
+  const current = logoDomain(p.officialUrl);
+  if (!token || !p.logoCheckedAt || !current) return undefined;
+  if (p.logoDomain) return p.logoDomain === current ? { base: logoDevBase(current, token), domain: current } : undefined;
+  return null;
 }
 
 /** Public G2 data only for an active, domain-consistent listing with a real rating and reviews. */

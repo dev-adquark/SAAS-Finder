@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { logoDevBase, logoDomain, logoSrc, withLogos } from "../lib/logos/logo-dev";
+import { logoDevBase, logoDomain, logoSrc, verifyLogo, withLogos } from "../lib/logos/logo-dev";
 import type { LogoRef } from "../lib/content/types";
 
 test("logoDomain: exact official hostname, never a guessed or parent domain", () => {
@@ -44,5 +44,36 @@ test("withLogos: no key → untouched; confirmed miss → no logo; check failure
   } finally {
     globalThis.fetch = prev.fetch;
     if (prev.key === undefined) delete process.env.LOGO_DEV_PUBLISHABLE_KEY; else process.env.LOGO_DEV_PUBLISHABLE_KEY = prev.key;
+  }
+});
+
+test("verifyLogo: real image = found, 404 = missing, 429/5xx/timeout/non-image retried then error (never missing)", async () => {
+  const prev = globalThis.fetch;
+  const calls: Record<string, number> = {};
+  globalThis.fetch = (async (url: string) => {
+    const d = new URL(String(url)).pathname.slice(1);
+    calls[d] = (calls[d] ?? 0) + 1;
+    if (d === "ok.example") return new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { "content-type": "image/png" } });
+    if (d === "none.example") return new Response("", { status: 404 });
+    if (d === "flaky.example") return calls[d] < 2 ? new Response("", { status: 429, headers: { "retry-after": "0" } }) : new Response(new Uint8Array([9]), { status: 200, headers: { "content-type": "image/png" } });
+    if (d === "html.example") return new Response("<html>", { status: 200, headers: { "content-type": "text/html" } });
+    if (d === "empty.example") return new Response(new Uint8Array(), { status: 200, headers: { "content-type": "image/png" } });
+    throw new Error("network");
+  }) as typeof fetch;
+  try {
+    const t = { token: "pk_test" };
+    assert.equal((await verifyLogo("ok.example", t)).result, "found");
+    assert.equal((await verifyLogo("none.example", t)).result, "missing");
+    const flaky = await verifyLogo("flaky.example", t);
+    assert.equal(flaky.result, "found");
+    assert.equal(flaky.attempts, 2, "a rate-limited request is retried");
+    for (const d of ["html.example", "empty.example", "down.example"]) {
+      const r = await verifyLogo(d, { ...t, retries: 1 });
+      assert.equal(r.result, "error", `${d} is an error, not "missing"`);
+      assert.equal(r.attempts, 2);
+    }
+    assert.equal((await verifyLogo("ok.example", { token: null })).result, process.env.LOGO_DEV_PUBLISHABLE_KEY ? "found" : "error", "no key → error, never missing");
+  } finally {
+    globalThis.fetch = prev;
   }
 });

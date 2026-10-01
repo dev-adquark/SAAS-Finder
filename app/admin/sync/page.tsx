@@ -39,12 +39,14 @@ export default async function AdminSync({ searchParams }: SP) {
       <Flash ok={sp.ok} error={sp.error} />
       <AutoRefresh active={!!active} />
       <p className="muted">
-        Fully automatic, every 25 days: the official-website crawl and the G2 source run, results are validated, matched to products by G2 link or official domain, compared,
-        written to the database and the site is revalidated. Official pages are authoritative for published prices and facts; confirmed changes apply automatically, and
+        Fully automatic, every 31 days: the official-website crawl, the G2 source and Logo.dev logo verification run; results are validated, matched to products by G2 link or
+        official domain, compared, written to the database and the site is revalidated. Logos are verified for each product&apos;s official domain; a failed check keeps the
+        existing logo, and a logo is only removed after two consecutive runs find none. Official pages are authoritative for published prices and facts; confirmed changes apply automatically, and
         removals apply only after a second successful run confirms them. G2 data is stored as source data (never an editorial score or a published price) and fills only
         configured empty fields. A failed or blocked source never changes data — the previous value and its date stay. This page is monitoring; no action is required.
       </p>
-      {!d.configured && <div className="flash err" role="alert">APIFY_API_TOKEN is not configured on the server. The automatic sync is disabled until it is added to the environment.</div>}
+      {!d.configured && <div className="flash err" role="alert">No sync source is configured on the server (APIFY_API_TOKEN / LOGO_DEV_PUBLISHABLE_KEY). The automatic sync is disabled until one is added to the environment.</div>}
+      {d.configured && (!d.sources.apify || !d.sources.logoDev) && <div className="flash" role="status">{!d.sources.apify ? "APIFY_API_TOKEN is not set: the official-website crawl and G2 are skipped; Logo.dev logos still sync." : "LOGO_DEV_PUBLISHABLE_KEY is not set: logo verification is skipped; the official crawl and G2 still sync."}</div>}
       <div className="inline-form" style={{ gap: 8, flexWrap: "wrap" }}>
         <form action={A.startFullSyncAction} className="inline-form">
           <label className="small muted"><input type="checkbox" name="confirm" required /> confirm</label>
@@ -58,20 +60,26 @@ export default async function AdminSync({ searchParams }: SP) {
         {[
           ["Last sync", d.lastFinished ? when(d.lastFinished.finishedAt) : "Never"],
           ["Last successful sync", d.lastSuccessful ? when(d.lastSuccessful.finishedAt) : "Never"],
+          ["Last failed sync", d.lastFailed ? when(d.lastFailed.finishedAt ?? d.lastFailed.startedAt) : "None"],
           ["Next scheduled sync", when(d.nextRun)],
           ["Current status", active ? active.status.toLowerCase() : d.last ? d.last.status.toLowerCase() : "—"],
           ["Products added", s.productsAdded],
           ["Products updated", s.productsUpdated],
           ["Products unchanged", s.productsUnchanged],
+          ["Products skipped", s.productsSkipped],
           ["Retired (flagged)", s.productsRetiredFlagged],
           ["Official pages synced", s.officialPagesOk],
           ["G2 listings synced", s.g2ListingsOk],
           ["Not listed on G2", s.g2NotListed],
+          ["Logos checked", s.logosChecked],
+          ["Logos updated", s.logosUpdated],
+          ["Logo checks failed", s.logosFailed],
           ["Changes applied", s.changesApplied],
           ["Claims re-confirmed", s.claimsReverified],
           ["Not applied (see below)", s.changesPending],
           ["Sources unavailable", s.sourcesUnavailable],
           ["Validation failures", s.validationFailures],
+          ["Failed items", s.failedItems],
           ["API errors", s.apiErrors],
           ["Retry attempts", s.retries],
           ["Sync duration", dur(s.durationMs)],
@@ -103,7 +111,7 @@ export default async function AdminSync({ searchParams }: SP) {
               <thead><tr><th>When</th><th>Source</th><th>Error</th></tr></thead>
               <tbody>{d.errors.map((e, i) => <tr key={i}><td className="small">{when(new Date(e.at))}</td><td className="small">{e.source}</td><td className="small">{e.message}</td></tr>)}</tbody>
             </table>
-            <p className="tiny muted">Failed sources are retried automatically: API calls up to 3× with backoff, and a failed scheduled sync on the next daily tick (up to 3 attempts per cycle). Existing data was not changed.</p>
+            <p className="tiny muted">Failed sources are retried automatically: API calls up to 3× with backoff, and a failed scheduled sync on the next daily tick (up to 3 attempts per 31-day cycle). Existing data was not changed.</p>
           </>
         )}
       </section>
@@ -278,6 +286,7 @@ export default async function AdminSync({ searchParams }: SP) {
                         <summary>Added {st.productsAdded ?? 0} · updated {st.productsUpdated ?? 0} · unchanged {st.productsUnchanged ?? 0} · errors {(st.errors ?? []).length}</summary>
                         <div className="muted" style={{ marginTop: 6 }}>
                           Official pages OK {st.officialPagesOk ?? 0} · G2 listings OK {st.g2ListingsOk ?? 0} · not on G2 {st.g2NotListed ?? 0} · G2 records scanned {st.g2Scanned ?? 0}, matched {st.g2Matched ?? 0}, invalid {st.g2Invalid ?? 0}<br />
+                          Logos checked {st.logosChecked ?? 0} · updated {st.logosUpdated ?? 0} · unchanged {st.logosUnchanged ?? 0} · none on Logo.dev {st.logosMissing ?? 0} · failed {st.logosFailed ?? 0} · skipped (no domain) {st.productsSkipped ?? 0} · retries {st.logoRetries ?? 0}<br />
                           Changes detected {st.changesDetected ?? 0} · applied {st.changesApplied ?? 0} · outstanding {st.changesPending ?? 0} · claims re-confirmed {st.claimsReverified ?? 0} · validation failures {st.validationFailures ?? 0} · retired flagged {st.productsRetiredFlagged ?? 0}<br />
                           {(st.actorRuns ?? []).map((a) => <span key={a.runId}>Phase {a.phase}: <code>{a.actor}</code> run <code>{a.runId}</code> ({a.status.toLowerCase()})<br /></span>)}
                           {(st.errors ?? []).map((e, i) => <span key={i}>{e.source}: {e.message}<br /></span>)}

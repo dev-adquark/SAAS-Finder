@@ -1,12 +1,15 @@
-// Automatic data sync, every 25 days: start → official-site crawl (phases 1–2) → G2 listings
-// (phases 3–4) → resumable processing → auto-apply → finalize → revalidate.
+// Automatic data sync, every 31 days: start → official-site crawl (phases 1–2) → G2 listings
+// (phases 3–4) → Logo.dev logo verification (phase 5) → resumable processing → auto-apply →
+// finalize → revalidate.
 //
 // Source rules: the official crawl is authoritative for published pricing and facts. Every detected
 // official change is recorded as a DataChange and applied automatically through the same validated
 // path as an editor's accept (see AUTO_APPLY); removals ("no longer found") apply only after a second
 // successful run confirms them, so one bad scrape can never blank data. G2 is an additional source:
 // its data is stored as G2Listing source data, fills configured empty fields only, and never touches
-// editorial content, scores or published prices. A failed, blocked or partial source changes nothing.
+// editorial content, scores or published prices. Logo.dev: each product's official hostname is
+// verified and stored; a failed check keeps the existing logo, and a logo is removed only after two
+// consecutive "no logo" results. A failed, blocked or partial source changes nothing.
 import { createHmac } from "node:crypto";
 import type { Prisma, SyncPageStatus, SyncRun, SyncTrigger } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -17,6 +20,7 @@ import { abortRun, apifyActor, apifyConfigured, datasetItems, getRun, scrub, sta
 import { crawlInput } from "@/lib/sync/crawl-input";
 import { acceptChange } from "@/lib/sync/review";
 import { productSlugProblem } from "@/lib/seo/routes";
+import { logoDevKey, logoDomain, verifyLogo } from "@/lib/logos/logo-dev";
 import {
   autoFill, changedFields, G2, g2Actor, g2Input, g2PageUrl, listingHash, matchListing, mergeField, parseG2Item,
   LISTING_FIELDS, type CatalogEntry, type G2Listing as G2ListingRecord, type G2Target, type ListingFields,
@@ -37,15 +41,20 @@ export const SYNC = {
   maxDiscoveriesPerProduct: 6,
   /** Apify crawl considered stuck after this long; its partial results are processed. */
   stuckAfterMs: 45 * 60_000,
-  cycleDays: 25,
+  cycleDays: 31,
+  logoBatch: 6,
   g2TimeoutSecs: 3600,
   g2MemoryMb: 1024,
   g2StuckAfterMs: 70 * 60_000,
 };
 
+/** At least one source is configured (Apify for the official crawl + G2, or Logo.dev). */
+export const syncConfigured = () => apifyConfigured() || Boolean(process.env.LOGO_DEV_PUBLISHABLE_KEY?.trim());
+
 /** G2 runs as part of every sync unless explicitly switched off (APIFY_G2_ENABLED=false). */
 export const g2Enabled = () => process.env.APIFY_G2_ENABLED?.trim().toLowerCase() !== "false";
-const isG2Phase = (phase: number) => phase >= 3;
+const isG2Phase = (phase: number) => phase === 3 || phase === 4;
+const LOGO_PHASE = 5;
 
 export class SyncError extends Error {}
 
@@ -55,7 +64,7 @@ const DAY = 86_400_000;
 /** Elapsed milliseconds clamped to a valid INT4 (clock skew or a very old run must not break writes). */
 export const elapsed = (from: Date, to = Date.now()) => Math.max(0, Math.min(to - from.getTime(), 2_147_483_647));
 
-/** Scheduled syncs run in fixed 25-day cycles counted from this anchor (UTC). */
+/** Scheduled syncs run in fixed 31-day cycles counted from this anchor (UTC). */
 const CYCLE_ANCHOR = Date.UTC(2026, 0, 1);
 
 export function cycleStart(d: Date): Date {
@@ -63,12 +72,12 @@ export function cycleStart(d: Date): Date {
   return new Date(CYCLE_ANCHOR + n * SYNC.cycleDays * DAY);
 }
 
-/** Idempotency key of the 25-day cycle containing `d`, e.g. "cycle-2026-09-08". */
+/** Idempotency key of the 31-day cycle containing `d`, e.g. "cycle-2026-09-06". */
 export const cycleKey = (d: Date) => `cycle-${cycleStart(d).toISOString().slice(0, 10)}`;
 
 /**
  * Next automatic sync attempt. The cron ticks daily at 04:00 UTC (vercel.json) and starts one sync per
- * 25-day cycle: while the current cycle has not synced successfully the next tick tries (up to 3
+ * 31-day cycle: while the current cycle has not synced successfully the next tick tries (up to 3
  * attempts), otherwise the first tick of the next cycle.
  */
 export function nextScheduledRun(now = new Date(), doneThisCycle = true): Date {
@@ -145,11 +154,11 @@ export type StartResult = { run: SyncRun | null; started: boolean; reason?: stri
 
 type RunStats = Record<string, unknown> & { errors?: { source: string; message: string; at: string }[]; actorRuns?: { phase: number; actor: string; runId: string; status: string }[] };
 const statsOf = (r: Pick<SyncRun, "stats">) => (r.stats ?? {}) as RunStats;
-const sourceOf = (phase: number) => (isG2Phase(phase) ? "G2" : "Official websites");
+const sourceOf = (phase: number) => (phase === LOGO_PHASE ? "Logo.dev" : isG2Phase(phase) ? "G2" : "Official websites");
 
 export async function startSync(opts: { trigger: SyncTrigger; productId?: string; now?: Date }): Promise<StartResult> {
   const now = opts.now ?? new Date();
-  if (!apifyConfigured()) throw new SyncError("APIFY_API_TOKEN is not configured. Add it to the server environment to enable the automatic sync.");
+  if (!syncConfigured()) throw new SyncError("No sync source is configured. Add APIFY_API_TOKEN and/or LOGO_DEV_PUBLISHABLE_KEY to the server environment to enable the automatic sync.");
   await db.syncRun.updateMany({
     where: { status: "RUNNING", apifyRunId: null, lockedUntil: null, startedAt: { lt: new Date(Date.now() - 10 * 60_000) } },
     data: { status: "FAILED", error: "The Apify crawl was never recorded as started", finishedAt: new Date() },
@@ -177,7 +186,8 @@ export async function startSync(opts: { trigger: SyncTrigger; productId?: string
 
   const claims = await loadClaims(opts.productId ? { id: opts.productId } : { status: "PUBLISHED" });
   if (!claims.size) throw new SyncError("No products to sync");
-  const pages = [...claims.values()].flatMap((c) => targetUrls(c).map((url) => ({ productId: c.productId, url, phase: 1 })));
+  // Each source runs only when configured: without Apify the official crawl and G2 are skipped.
+  const pages = apifyConfigured() ? [...claims.values()].flatMap((c) => targetUrls(c).map((url) => ({ productId: c.productId, url, phase: 1 }))) : [];
 
   const created = await db.$transaction(async (tx) => {
     // Distributed start lock: concurrent starts (duplicate cron ticks, overlapping deployments, double
@@ -253,13 +263,74 @@ async function g2Targets(run: SyncRun): Promise<G2Target[]> {
 }
 
 async function startG2(run: SyncRun, phase = 3, only?: string[]): Promise<SyncRun> {
-  if (!g2Enabled()) return finalize(run);
+  if (!g2Enabled() || !apifyConfigured()) return startLogos(run);
   const targets = (await g2Targets(run)).filter((t) => !only || only.includes(t.productId));
-  if (!targets.length) return finalize(run);
+  if (!targets.length) return startLogos(run);
   const next = await db.syncRun.update({ where: { id: run.id }, data: { phase, cursor: 0, status: "RUNNING", apifyRunId: null, apifyDatasetId: null } });
   await db.syncPage.createMany({ data: targets.map((t) => ({ runId: run.id, productId: t.productId, phase, url: g2PageUrl(t) })), skipDuplicates: true });
   const launched = await launch(next, g2Input(targets));
-  return launched ?? finalize(await db.syncRun.findUniqueOrThrow({ where: { id: run.id } }));
+  return launched ?? startLogos(await db.syncRun.findUniqueOrThrow({ where: { id: run.id } }));
+}
+
+// ---------------- Logo.dev (phase 5) ----------------
+
+/** Queues every product in scope for logo verification; skipped (finalize) when no key is set. */
+async function startLogos(run: SyncRun): Promise<SyncRun> {
+  if (!logoDevKey()) return finalize(run);
+  const products = await db.product.findMany({ where: run.productId ? { id: run.productId } : { status: "PUBLISHED" }, select: { id: true, officialUrl: true }, orderBy: { slug: "asc" } });
+  if (!products.length) return finalize(run);
+  await db.syncPage.createMany({ data: products.map((p) => ({ runId: run.id, productId: p.id, phase: LOGO_PHASE, url: `https://logo.dev/${logoDomain(p.officialUrl) ?? "no-domain"}` })), skipDuplicates: true });
+  return db.syncRun.update({ where: { id: run.id }, data: { phase: LOGO_PHASE, cursor: 0, status: "PROCESSING", apifyRunId: null, apifyDatasetId: null } });
+}
+
+/** Verifies one product's logo and stores the result. Never clears a logo on an error. */
+async function syncLogo(runId: string, pageId: string, productId: string) {
+  const p = await db.product.findUnique({ where: { id: productId }, select: { officialUrl: true, logoDomain: true, logoMisses: true } });
+  const now = new Date();
+  const page = (data: Prisma.SyncPageUpdateInput) => db.syncPage.update({ where: { id: pageId }, data: { processedAt: now, fetchedAt: now, ...data } });
+  const domain = p ? logoDomain(p.officialUrl) : null;
+  if (!p || !domain) return page({ status: "MALFORMED", reason: "Skipped: no usable official domain (existing logo kept)", outcome: { skipped: true } });
+  const r = await verifyLogo(domain);
+  const retries = Math.max(0, r.attempts - 1);
+  if (r.result === "error") {
+    console.error("[sync] SOURCE_FAILED Logo.dev", domain, r.detail);
+    return page({ status: "UNAVAILABLE", reason: `Logo.dev check failed after ${r.attempts} attempt(s): ${r.detail}. Existing logo kept; retried next sync.`, outcome: { retries } });
+  }
+  if (r.result === "found") {
+    const changed = p.logoDomain !== domain;
+    await db.$transaction([
+      db.product.update({ where: { id: productId }, data: { logoDomain: domain, logoCheckedAt: now, logoMisses: 0 } }),
+      page({ status: "OK", reason: null, title: domain, outcome: { changed: changed ? ["logo"] : [], retries } }),
+    ]);
+    return;
+  }
+  // Missing: a stored logo for this same domain is removed only on the second consecutive miss.
+  const misses = (p.logoDomain === domain ? p.logoMisses : 0) + 1;
+  const keep = p.logoDomain === domain && misses < 2;
+  await db.$transaction([
+    db.product.update({ where: { id: productId }, data: { logoCheckedAt: now, logoMisses: misses, ...(keep ? {} : { logoDomain: null }) } }),
+    page({ status: "NOT_FOUND", reason: keep ? "Logo.dev returned no logo; existing logo kept until a second run confirms it" : "Logo.dev has no logo for this domain", outcome: { changed: p.logoDomain && !keep ? ["logo"] : [], retries } }),
+  ]);
+}
+
+/** Processes queued logo checks in batches within the time budget; resumable and lock-protected. */
+async function advanceLogos(run: SyncRun, deadline: number, clock: () => number): Promise<AdvanceResult> {
+  let processed = 0;
+  while (clock() < deadline) {
+    const pages = await db.syncPage.findMany({ where: { runId: run.id, phase: LOGO_PHASE, processedAt: null }, orderBy: { id: "asc" }, take: SYNC.logoBatch, select: { id: true, productId: true } });
+    if (!pages.length) {
+      const done = await finishPhase(run);
+      return { runId: run.id, state: done.status === "FAILED" ? "failed" : "finished", processed };
+    }
+    await Promise.all(pages.map((pg) => syncLogo(run.id, pg.id, pg.productId).catch(async (e) => {
+      // A write failure leaves this product untouched; it is recorded and retried next sync.
+      await db.syncPage.update({ where: { id: pg.id }, data: { status: "UNAVAILABLE", reason: scrub(`Could not store the logo check: ${e instanceof Error ? e.message : "error"}`), processedAt: new Date() } }).catch(() => {});
+    })));
+    processed += pages.length;
+    await db.syncRun.update({ where: { id: run.id }, data: { cursor: { increment: pages.length } } });
+    revalidateSite();
+  }
+  return { runId: run.id, state: "processing", processed };
 }
 
 // ---------------- Advance / process ----------------
@@ -308,6 +379,7 @@ async function advanceRun(runId: string, deadline: number, clock: () => number):
       run = await noteActorStatus({ ...run, stats: (await db.syncRun.findUniqueOrThrow({ where: { id: run.id }, select: { stats: true } })).stats }, TERMINAL.has(a.status) ? a.status : "ABORTED");
       if (a.defaultDatasetId && a.defaultDatasetId !== run.apifyDatasetId) run = await db.syncRun.update({ where: { id: run.id }, data: { apifyDatasetId: a.defaultDatasetId } });
     }
+    if (run.phase === LOGO_PHASE) return await advanceLogos(run, deadline, clock);
     const claims = new Map<string, ProductClaims>();
     const g2ctx = isG2Phase(run.phase) ? await loadG2Context(run) : null;
     while (clock() < deadline) {
@@ -740,6 +812,7 @@ async function finishPhase(run: SyncRun): Promise<SyncRun> {
     const fresh = ((statsOf(await db.syncRun.findUniqueOrThrow({ where: { id: run.id } })).g2NewlyMatched as string[] | undefined) ?? []);
     if (fresh.length) return startG2(await db.syncRun.findUniqueOrThrow({ where: { id: run.id } }), 4, fresh);
   }
+  if (run.phase === 3 || run.phase === 4) return startLogos(await db.syncRun.findUniqueOrThrow({ where: { id: run.id } }));
   return finalize(await db.syncRun.findUniqueOrThrow({ where: { id: run.id } }));
 }
 
@@ -755,6 +828,7 @@ async function finalize(run: SyncRun): Promise<SyncRun> {
   const pages = await db.syncPage.findMany({ where: { runId: run.id } });
   const phase1 = pages.filter((p) => p.phase === 1);
   const g2Pages = pages.filter((p) => p.phase === 3);
+  const logoPages = pages.filter((p) => p.phase === LOGO_PHASE);
   const productIds = [...new Set(phase1.map((p) => p.productId))];
   const products: Record<string, { pages: number; ok: number; claims: number; reverified: number }> = {};
   let facts = 0, plans = 0, reverified = 0;
@@ -813,6 +887,13 @@ async function finalize(run: SyncRun): Promise<SyncRun> {
     productsUpdated: updated.size,
     productsUnchanged: [...scope].filter((id) => !updated.has(id)).length,
     productsRetiredFlagged: retiredFlagged.length,
+    logosChecked: logoPages.length,
+    logosUpdated: logoPages.filter((p) => ((p.outcome ?? {}) as PageOutcome).changed?.includes("logo")).length,
+    logosUnchanged: logoPages.filter((p) => p.status === "OK" && !((p.outcome ?? {}) as PageOutcome).changed?.length).length,
+    logosMissing: logoPages.filter((p) => p.status === "NOT_FOUND").length,
+    logosFailed: logoPages.filter((p) => p.status === "UNAVAILABLE").length,
+    productsSkipped: logoPages.filter((p) => p.status === "MALFORMED").length,
+    logoRetries: logoPages.reduce((n, p) => n + Number(((p.outcome ?? {}) as { retries?: number }).retries ?? 0), 0),
     retiredFlagged,
     officialPagesOk: pages.filter((p) => p.phase <= 2 && p.status === "OK").length,
     g2ListingsOk: g2Pages.filter((p) => p.status === "OK").length,
@@ -823,8 +904,9 @@ async function finalize(run: SyncRun): Promise<SyncRun> {
   };
   const officialOk = !phase1.length || phase1.some((p) => p.status === "OK");
   const g2Ok = !g2Pages.length || g2Pages.some((p) => p.status === "OK" || p.status === "NOT_FOUND");
-  const anySource = phase1.length || g2Pages.length;
-  const status = !anySource || (!officialOk && !g2Ok) ? "FAILED" : !officialOk || !g2Ok || officialFailed || g2Failed ? "PARTIAL" : "COMPLETED";
+  const anySource = phase1.length || g2Pages.length || logoPages.length;
+  const logoFailed = logoPages.filter((p) => p.status === "UNAVAILABLE").length;
+  const status = !anySource || (!officialOk && !g2Ok) ? "FAILED" : !officialOk || !g2Ok || officialFailed || g2Failed || logoFailed ? "PARTIAL" : "COMPLETED";
   const done = await db.syncRun.update({
     where: { id: run.id },
     data: { status, stats: stats as Prisma.InputJsonValue, finishedAt: now, durationMs: elapsed(run.startedAt, now.getTime()), lockedUntil: null, error: status === "FAILED" ? (run.error ?? "No source could be fetched") : status === "COMPLETED" ? null : run.error },

@@ -1,6 +1,7 @@
 // Read models for the admin Data Sync / Data Quality screens. Every figure comes from the database.
 import { db } from "@/lib/db";
 import { apifyConfigured } from "@/lib/sync/apify";
+import { logoDevKey } from "@/lib/logos/logo-dev";
 import { cycleKey, nextScheduledRun } from "@/lib/sync/run";
 
 export type ProductSyncState = "verified" | "partial" | "review" | "failed" | "never";
@@ -9,7 +10,8 @@ export const SYNC_STATE_LABEL: Record<ProductSyncState, string> = { verified: "�
 type RunStats = Partial<Record<
   | "productsChecked" | "sourcesChecked" | "factsChecked" | "pricesChecked" | "claimsReverified" | "changesDetected" | "sourcesUnavailable" | "validationFailures" | "linksDiscovered"
   | "productsInScope" | "productsAdded" | "productsUpdated" | "productsUnchanged" | "productsRetiredFlagged" | "officialPagesOk" | "g2ListingsOk" | "g2NotListed" | "g2Unavailable"
-  | "changesApplied" | "changesPending" | "autoApplyFailed" | "itemRetries" | "g2Scanned" | "g2Matched" | "g2Invalid",
+  | "changesApplied" | "changesPending" | "autoApplyFailed" | "itemRetries" | "g2Scanned" | "g2Matched" | "g2Invalid"
+  | "logosChecked" | "logosUpdated" | "logosUnchanged" | "logosMissing" | "logosFailed" | "productsSkipped" | "logoRetries",
   number
 >> & {
   errors?: { source: string; message: string; at: string }[];
@@ -22,6 +24,7 @@ export const runStats = (r: { stats: unknown }) => (r.stats ?? {}) as RunStats;
 /** Human label for the sync lifecycle state of a run. */
 export function runStateLabel(r: { status: string; phase: number; apifyRunId: string | null; cursor: number }): string {
   if (r.status === "RUNNING") return r.phase >= 3 ? `Running · fetching G2 data (phase ${r.phase})` : `Running · crawling official websites (phase ${r.phase})`;
+  if (r.status === "PROCESSING" && r.phase === 5) return `Verifying Logo.dev logos (${r.cursor} products checked)`;
   if (r.status === "PROCESSING") return `Validating, matching and updating (${r.cursor} records processed, phase ${r.phase})`;
   return r.status.toLowerCase();
 }
@@ -69,6 +72,7 @@ export async function syncDashboard(now = new Date()) {
   const lastFinished = runs.find((r) => r.finishedAt) ?? null;
   const lastSuccessful = runs.find((r) => r.status === "COMPLETED" || r.status === "PARTIAL") ?? null;
   const active = runs.find((r) => r.status === "RUNNING" || r.status === "PROCESSING") ?? null;
+  const lastFailed = runs.find((r) => r.status === "FAILED") ?? null;
   // None of these three depends on the others' result (only on `last`, already resolved above), so
   // they run as one round trip instead of three sequential ones - the biggest single latency cost on
   // this page against a database in a different region from the app.
@@ -84,11 +88,13 @@ export async function syncDashboard(now = new Date()) {
   const stats = runStats(lastFinished ?? last ?? { stats: {} });
   const doneThisCycle = !!thisCycle && (thisCycle.status === "COMPLETED" || thisCycle.status === "PARTIAL" || thisCycle.attempts >= 3);
   return {
-    configured: apifyConfigured(),
+    configured: apifyConfigured() || Boolean(logoDevKey()),
+    sources: { apify: apifyConfigured(), logoDev: Boolean(logoDevKey()) },
     nextRun: nextScheduledRun(now, doneThisCycle),
     last,
     lastFinished,
     lastSuccessful,
+    lastFailed,
     active,
     runs,
     g2Listings,
@@ -118,7 +124,13 @@ export async function syncDashboard(now = new Date()) {
       changesApplied: stats.changesApplied ?? 0,
       changesPending: stats.changesPending ?? 0,
       apiErrors: (stats.errors ?? []).length,
-      retries: Math.max(0, (lastFinished?.attempts ?? 1) - 1) + (stats.itemRetries ?? 0),
+      retries: Math.max(0, (lastFinished?.attempts ?? 1) - 1) + (stats.itemRetries ?? 0) + (stats.logoRetries ?? 0),
+      logosChecked: stats.logosChecked ?? 0,
+      logosUpdated: stats.logosUpdated ?? 0,
+      logosMissing: stats.logosMissing ?? 0,
+      logosFailed: stats.logosFailed ?? 0,
+      productsSkipped: stats.productsSkipped ?? 0,
+      failedItems: (stats.sourcesUnavailable ?? 0) + (stats.logosFailed ?? 0) + (stats.validationFailures ?? 0),
       durationMs: (lastFinished ?? last)?.durationMs ?? null,
     },
     pendingChanges,
