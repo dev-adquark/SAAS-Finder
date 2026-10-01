@@ -14,8 +14,34 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-/** Tiles per category ribbon: a curated selection keeps the map readable as the catalog grows. */
-const PER_ROW = 3;
+/**
+ * Tiles on the map: a curated selection keeps it readable as the catalog grows. The budget is
+ * spread evenly over the category ribbons (at most PER_ROW_MAX each); categories with fewer
+ * products leave their share to the others, so the map shows exactly this many when the catalog
+ * has enough products.
+ */
+export const ATLAS_TILES = 20;
+const PER_ROW_MAX = 3;
+
+/** Tiles per category: dealt round-robin (an even split, remainder to the categories listed first). */
+export function atlasQuota(c: Catalog): Map<string, number> {
+  const cap = new Map(c.categories.map((cat) => [cat.slug, Math.min(PER_ROW_MAX, productsInCategory(c, cat.slug).length)]));
+  const quota = new Map(c.categories.map((cat) => [cat.slug, 0]));
+  let left = ATLAS_TILES;
+  let dealt = true;
+  while (left > 0 && dealt) {
+    dealt = false;
+    for (const cat of c.categories) {
+      if (left === 0) break;
+      if (quota.get(cat.slug)! < cap.get(cat.slug)!) {
+        quota.set(cat.slug, quota.get(cat.slug)! + 1);
+        left--;
+        dealt = true;
+      }
+    }
+  }
+  return quota;
+}
 
 /**
  * The most prominent products of a category, from the site's own editorial data: how often a product
@@ -23,7 +49,7 @@ const PER_ROW = 3;
  * (editorial score breaks ties). Two products sharing a company logo (same official domain) never
  * both appear, so no logo repeats on the map.
  */
-export function atlasSelection(c: Catalog, categorySlug: string, limit = PER_ROW): Product[] {
+export function atlasSelection(c: Catalog, categorySlug: string, limit = PER_ROW_MAX): Product[] {
   const refs = (slug: string) =>
     c.pairs.filter((p) => p.productA === slug || p.productB === slug).length * 2 +
     c.useCases.filter((u) => u.products.some((x) => x.slug === slug)).length +
@@ -65,7 +91,9 @@ function TileFace({ p }: { p: Product }) {
  */
 export function Atlas({ c }: { c: Catalog }) {
   const rows = c.categories;
-  const shown = new Map(rows.map((cat) => [cat.slug, atlasSelection(c, cat.slug)]));
+  const quota = atlasQuota(c);
+  const shown = new Map(rows.map((cat) => [cat.slug, atlasSelection(c, cat.slug, quota.get(cat.slug) ?? 0)]));
+  const tileCount = [...shown.values()].reduce((n, l) => n + l.length, 0);
   const pos = new Map<string, { x: number; y: number }>();
   rows.forEach((cat, r) => {
     const items = shown.get(cat.slug)!;
@@ -79,7 +107,7 @@ export function Atlas({ c }: { c: Catalog }) {
   let t = 0;
   return (
     <div className="atlas" data-atlas>
-      <p className="atlas-caption" aria-hidden="true"><b>{c.products.length}</b>tools mapped</p>
+      <p className="atlas-caption" aria-hidden="true"><b>{tileCount}</b>tools mapped</p>
       <div className="atlas-stage">
         <div className="atlas-plane" />
         {rows.map((cat, r) => (

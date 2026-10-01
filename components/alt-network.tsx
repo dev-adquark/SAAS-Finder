@@ -2,6 +2,9 @@ import type { Catalog, Product } from "@/lib/content/types";
 import { alternativesFor, findCategory, guidesForProduct } from "@/lib/catalog";
 import { routes } from "@/lib/seo/routes";
 import { catStyle, monogram } from "@/components/identity";
+import { SvgLogoLabel } from "@/components/svg-logo-label";
+import { LOGOS } from "@/lib/content/logos";
+import { logoSrc } from "@/lib/logos/logo-dev";
 
 /**
  * Alternatives network: product → curated alternatives → category → best-for guides.
@@ -24,6 +27,19 @@ export function AltNetwork({ c, product, compact = false }: { c: Catalog; produc
       <text x={x} y={yy + 5} textAnchor="middle">{label.length > 24 ? `${label.slice(0, 23)}…` : label}</text>
     </a>
   );
+  // Alternative nodes show the company logo (Logo.dev, else the static icon) before the name; the
+  // original "initials · name" text is the fallback.
+  const altNode = (a: Product, i: number) => {
+    const yy = y(i, alts.length);
+    const sources = [a.logo ? logoSrc(a.logo.base, 20) : null, LOGOS[a.slug]?.src ?? null].filter((s): s is string => !!s);
+    return (
+      <a key={a.slug} href={routes.product(a.slug)} className="net-node net-alt">
+        <title>{a.name}</title>
+        <rect x={col[1] - 95} y={yy - 22} width={190} height="44" rx="14" />
+        <SvgLogoLabel sources={sources} x={col[1]} y={yy} width={190} name={a.name} fallback={`${monogram(a.name)} · ${a.name}`} />
+      </a>
+    );
+  };
   return (
     <svg className="altnet" style={catStyle(product.categorySlug)} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${product.name}: ${alts.length} curated alternatives, ${category?.name} category and ${guides.length} best-for guides`}>
       <defs>
@@ -36,7 +52,7 @@ export function AltNetwork({ c, product, compact = false }: { c: Catalog; produc
         <rect x={col[0] - 80} y={mid - 30} width="160" height="60" rx="18" style={{ fill: `url(#g-${product.slug})`, stroke: "transparent" }} />
         <text x={col[0]} y={mid + 6} textAnchor="middle">{product.name}</text>
       </a>
-      {alts.map((a, i) => node(col[1], y(i, alts.length), 190, `${monogram(a.name)} · ${a.name}`, routes.product(a.slug), "alt", a.slug))}
+      {alts.map(altNode)}
       {category && node(col[2], mid, 160, category.name, routes.category(category.slug), "cat", "cat")}
       {guides.map((g, i) => node(col[3], y(i, guides.length), 200, `Best for ${g.audience.toLowerCase()}`, routes.best(g.slug), "guide", g.slug))}
       <g className="net-legend" aria-hidden="true">
