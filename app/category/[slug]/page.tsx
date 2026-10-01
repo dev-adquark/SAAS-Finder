@@ -83,7 +83,7 @@ export default async function CategoryHub({ params }: Params) {
               <div className="ring">
                 {products.map((p, i) => (
                   <span className="orb" key={p.slug} style={{ ["--a" as string]: `${(360 / products.length) * i}deg` } as CSSProperties}>
-                    <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
+                    <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} />
                   </span>
                 ))}
               </div>
@@ -111,7 +111,7 @@ export default async function CategoryHub({ params }: Params) {
                   <span className="tag">For {u.audience}</span>
                   <h3>{u.title}</h3>
                   <span className="picks">
-                    {u.products.slice(0, 4).map((x) => { const p = findProduct(c, x.slug); return p ? <Monogram key={x.slug} name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" /> : null; })}
+                    {u.products.slice(0, 4).map((x) => { const p = findProduct(c, x.slug); return p ? <Monogram key={x.slug} name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} size="sm" /> : null; })}
                     <span className="tiny muted" style={{ marginLeft: 10 }}>{u.products.length} picks</span>
                   </span>
                 </Link>
@@ -157,9 +157,9 @@ export default async function CategoryHub({ params }: Params) {
                 const b = findProduct(c, pair.productB)!;
                 return (
                   <Link key={pair.slug} href={routes.compare(a.slug, b.slug)} className="card vscard">
-                    <span className="side"><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" />{a.name}</span>
+                    <span className="side"><Monogram name={a.name} slug={a.slug} logo={a.logo} categorySlug={a.categorySlug} size="sm" />{a.name}</span>
                     <span className="vs" aria-hidden="true">VS</span>
-                    <span className="side"><Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} size="sm" />{b.name}</span>
+                    <span className="side"><Monogram name={b.name} slug={b.slug} logo={b.logo} categorySlug={b.categorySlug} size="sm" />{b.name}</span>
                     <span className="sr-only"> versus </span>
                   </Link>
                 );

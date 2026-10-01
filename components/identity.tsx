@@ -1,9 +1,13 @@
 import { LOGOS } from "@/lib/content/logos";
 import type { CSSProperties } from "react";
+import type { LogoRef } from "@/lib/content/types";
+import { logoSrc } from "@/lib/logos/logo-dev";
+import { LogoImage } from "@/components/logo-image";
 
-// Visual identity. A product shows the vendor's own icon (as declared on its official site, see
-// lib/content/logos) purely to identify it; where no sufficiently sharp icon is on file it gets a
-// generated tile: category gradient, a geometric motif chosen from the slug, and initials.
+// Visual identity. A product shows its company logo purely to identify it: from Logo.dev for the
+// product's official domain (lib/logos/logo-dev), else the vendor's own icon on file
+// (lib/content/logos), else a generated tile: category gradient, a geometric motif chosen from the
+// slug, and initials. A Logo.dev image that fails to load falls back down the same chain.
 
 export const catStyle = (categorySlug: string): CSSProperties => ({
   ["--cat" as string]: `var(--cat-${categorySlug}, var(--primary))`,
@@ -37,25 +41,24 @@ function Motif({ seed }: { seed: number }) {
 
 const MONO_PX = { "": 48, sm: 34, lg: 76, xl: 128 } as const;
 
-export function Monogram({ name, categorySlug, size = "", slug }: { name: string; categorySlug: string; size?: "" | "sm" | "lg" | "xl"; slug?: string }) {
-  // The vendor's own icon when one is on file and sharp enough for this size; otherwise the monogram.
-  const logo = slug ? LOGOS[slug] : undefined;
+export function Monogram({ name, categorySlug, size = "", slug, logo }: { name: string; categorySlug: string; size?: "" | "sm" | "lg" | "xl"; slug?: string; logo?: LogoRef | null }) {
   const px = MONO_PX[size];
-  if (logo && logo.px >= px * 0.9) {
-    return (
-      <span className={`mono logo ${size}`} style={catStyle(categorySlug)}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- tiny static icons; next/image adds no value and cannot optimise .ico */}
-        <img src={logo.src} alt={`${name} logo`} width={px} height={px} loading="lazy" decoding="async" />
-      </span>
-    );
-  }
-  const seed = hash(slug ?? name);
-  return (
-    <span className={`mono ${size}`} style={catStyle(categorySlug)} aria-hidden="true">
+  const style = catStyle(categorySlug);
+  // The vendor's own icon when one is on file and sharp enough for this size; otherwise the monogram.
+  const local = slug ? LOGOS[slug] : undefined;
+  const fallback = local && local.px >= px * 0.9 ? (
+    <span className={`mono logo ${size}`} style={style}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- tiny static icons; next/image adds no value and cannot optimise .ico */}
+      <img src={local.src} alt={`${name} logo`} width={px} height={px} loading="lazy" decoding="async" />
+    </span>
+  ) : (
+    <span className={`mono ${size}`} style={style} aria-hidden="true">
       <svg className="mono-motif" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <Motif seed={seed} />
+        <Motif seed={hash(slug ?? name)} />
       </svg>
       <span className="mono-letters">{monogram(name)}</span>
     </span>
   );
+  if (!logo) return fallback;
+  return <LogoImage src={logoSrc(logo.base, px)} alt={`${name} logo`} px={px} className={`mono logo ${size}`} style={style} fallback={fallback} />;
 }

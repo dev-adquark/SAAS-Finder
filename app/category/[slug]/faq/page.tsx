@@ -51,7 +51,7 @@ export default async function CategoryFaqPage({ params }: Params) {
             <div className="grid two-col">
               {products.map((p) => (
                 <Link key={p.slug} className="card pcard" href={`${routes.product(p.slug)}#faq`} style={catStyle(p.categorySlug)}>
-                  <div className="pcard-head"><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} /><div><h3>{p.name} FAQs</h3><div className="sub">{p.faqs.length} questions</div></div></div>
+                  <div className="pcard-head"><Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} /><div><h3>{p.name} FAQs</h3><div className="sub">{p.faqs.length} questions</div></div></div>
                   <ul className="list small" style={{ margin: 0 }}>{p.faqs.slice(0, 2).map((f) => <li key={f.question}>{f.question}</li>)}</ul>
                 </Link>
               ))}

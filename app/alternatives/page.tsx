@@ -31,12 +31,12 @@ export default async function AlternativesIndex() {
           {list.map(({ p, alts }) => (
             <Link className="card pcard accent-top" key={p.slug} href={routes.alternatives(p.slug)} style={catStyle(p.categorySlug)}>
               <div className="pcard-head">
-                <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
+                <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} />
                 <div><h2 style={{ fontSize: "1.1rem", margin: 0 }}>{p.name} alternatives</h2><div className="sub">{names.get(p.categorySlug)}</div></div>
               </div>
               <p className="tiny muted">{p.alternativesIntro}</p>
               <div className="pcard-foot" style={{ justifyContent: "flex-start" }}>
-                <span style={{ display: "flex" }}>{alts.map((a) => <Monogram key={a.product.slug} name={a.product.name} slug={a.product.slug} categorySlug={a.product.categorySlug} size="sm" />)}</span>
+                <span style={{ display: "flex" }}>{alts.map((a) => <Monogram key={a.product.slug} name={a.product.name} slug={a.product.slug} logo={a.product.logo} categorySlug={a.product.categorySlug} size="sm" />)}</span>
                 <span className="small">{alts.map((a) => a.product.name).join(", ")}</span>
               </div>
             </Link>

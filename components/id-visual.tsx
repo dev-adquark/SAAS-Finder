@@ -1,5 +1,8 @@
 import { monogram } from "@/components/identity";
+import { IdVisualLogo } from "@/components/id-visual-logo";
 import { LOGOS } from "@/lib/content/logos";
+import type { LogoRef } from "@/lib/content/types";
+import { logoSrc } from "@/lib/logos/logo-dev";
 
 function hash(s: string) {
   let h = 2166136261;
@@ -9,15 +12,15 @@ function hash(s: string) {
 
 /**
  * Product identity (decorative SVG; the product name is the page heading): category-coloured
- * geometric composition around the vendor's own icon when a sharp one is on file (lib/content/logos),
- * otherwise the product's initials. Deterministic per slug.
+ * geometric composition around the company logo (Logo.dev for the official domain, else the vendor
+ * icon on file in lib/content/logos), otherwise the product's initials. Deterministic per slug.
  */
-export function IdVisual({ name, slug }: { name: string; slug: string }) {
+export function IdVisual({ name, slug, logo }: { name: string; slug: string; logo?: LogoRef | null }) {
   const h = hash(slug);
   const rot = (h % 40) - 20;
   const variant = h % 3;
-  const logo = LOGOS[slug];
-  const showLogo = !!logo && logo.px >= 110; // the centre tile renders at ~120px
+  const local = LOGOS[slug];
+  const showLocal = !!local && local.px >= 110; // the centre tile renders at ~120px
   return (
     <div className="id-visual" aria-hidden="true">
       <svg viewBox="0 0 360 360">
@@ -30,9 +33,7 @@ export function IdVisual({ name, slug }: { name: string; slug: string }) {
         {variant === 0 && <rect className="iv-b float-b" x="196" y="64" width="112" height="112" rx="14" transform={`rotate(${rot} 252 120)`} />}
         {variant === 1 && <polygon className="iv-b float-b" points="250,54 316,176 184,176" />}
         {variant === 2 && <circle className="iv-b float-b" cx="262" cy="110" r="58" />}
-        <rect className={showLogo ? "iv-logo-tile float-a" : "iv-a float-a"} x="70" y="100" width="190" height="190" rx="26" />
-        <path className="iv-c" d="M40 300 L320 60" strokeDasharray="3 6" />
-        {showLogo ? <image className="float-a" href={logo.src} x="110" y="140" width="110" height="110" preserveAspectRatio="xMidYMid meet" /> : <text className="iv-t" x="165" y="232" textAnchor="middle">{monogram(name)}</text>}
+        <IdVisualLogo remote={logo ? logoSrc(logo.base, 120) : null} local={showLocal ? local.src : null} letters={monogram(name)} between={<path className="iv-c" d="M40 300 L320 60" strokeDasharray="3 6" />} />
       </svg>
     </div>
   );

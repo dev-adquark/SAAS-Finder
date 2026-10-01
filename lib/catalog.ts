@@ -7,6 +7,7 @@ import { seedCatalog } from "@/lib/content/seed-catalog";
 import type { Catalog, Category, ComparisonPair, Criterion, PricePoint, Product, UseCase } from "@/lib/content/types";
 import { isHttpUrl } from "@/lib/validation";
 import { comparePairSlug } from "@/lib/seo/routes";
+import { withLogos } from "@/lib/logos/logo-dev";
 
 export const hasDatabase = () => Boolean(process.env.DATABASE_URL);
 
@@ -181,7 +182,8 @@ const TRANSIENT = new Set(["P1001", "P1002", "P1017", "P2024"]);
 async function readDatabaseCatalog(attempts = 3): Promise<Catalog> {
   for (let i = 1; ; i++) {
     try {
-      return sanitizeCatalog(await databaseCatalog());
+      const c = sanitizeCatalog(await databaseCatalog());
+      return { ...c, products: await withLogos(c.products) };
     } catch (error) {
       const code = (error as { code?: unknown })?.code;
       if (i >= attempts || typeof code !== "string" || !TRANSIENT.has(code)) throw error;
@@ -202,7 +204,10 @@ let buildSnapshot: Promise<Catalog> | null = null;
  * thrown rather than swallowed so ISR keeps serving the last good page instead of caching an empty one.
  */
 export const loadCatalog = cache(async (): Promise<Catalog> => {
-  if (!hasDatabase()) return sanitizeCatalog(seedCatalog());
+  if (!hasDatabase()) {
+    const c = sanitizeCatalog(seedCatalog());
+    return { ...c, products: await withLogos(c.products) };
+  }
   try {
     if (isBuild()) {
       buildSnapshot ??= readDatabaseCatalog().catch((e) => {

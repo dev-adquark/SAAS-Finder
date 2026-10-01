@@ -105,7 +105,7 @@ export default async function ProductReview({ params }: Params) {
               </div>
             </div>
             <div className="enter-2" style={{ display: "grid", gap: 18, justifyItems: "center" }}>
-            <IdVisual name={p.name} slug={p.slug} />
+            <IdVisual name={p.name} slug={p.slug} logo={p.logo} />
             <aside className="hero-card glass" aria-label={`${p.name} at a glance`} style={{ width: "100%" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <strong>At a glance</strong>
@@ -270,7 +270,7 @@ export default async function ProductReview({ params }: Params) {
             {pairs.length > 0 && (
               <TabExplorer
                 label={`${p.name} comparisons`}
-                items={pairs.map((pair) => { const o = other(pair); return { id: `vs-${pair.slug}`, label: o.name, sub: findCategory(catalog, o.categorySlug)?.name, icon: <Monogram name={o.name} slug={o.slug} categorySlug={o.categorySlug} size="sm" /> }; })}
+                items={pairs.map((pair) => { const o = other(pair); return { id: `vs-${pair.slug}`, label: o.name, sub: findCategory(catalog, o.categorySlug)?.name, icon: <Monogram name={o.name} slug={o.slug} logo={o.logo} categorySlug={o.categorySlug} size="sm" /> }; })}
                 panels={pairs.map((pair) => {
                   const o = other(pair);
                   const isA = pair.productA === p.slug;
@@ -279,9 +279,9 @@ export default async function ProductReview({ params }: Params) {
                   return (
                     <article key={pair.slug} className="card vscard-panel" style={catStyle(o.categorySlug)}>
                       <div className="vscard-heads">
-                        <span className="side"><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} /><strong>{p.name}</strong></span>
+                        <span className="side"><Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} /><strong>{p.name}</strong></span>
                         <span className="vs" aria-hidden="true">VS</span>
-                        <span className="side"><Monogram name={o.name} slug={o.slug} categorySlug={o.categorySlug} /><strong>{o.name}</strong></span>
+                        <span className="side"><Monogram name={o.name} slug={o.slug} logo={o.logo} categorySlug={o.categorySlug} /><strong>{o.name}</strong></span>
                       </div>
                       <p className="sum">{pair.summary}</p>
                       <div className="two">
@@ -312,7 +312,7 @@ export default async function ProductReview({ params }: Params) {
                 {alts.map(({ product: a, ref }) => (
                   <article className="card hoverable pcard" key={a.slug} style={catStyle(a.categorySlug)}>
                     <div className="pcard-head">
-                      <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} />
+                      <Monogram name={a.name} slug={a.slug} logo={a.logo} categorySlug={a.categorySlug} />
                       <div><h3><Link className="stretch" href={routes.product(a.slug)}>{a.name}</Link></h3><div className="sub">{a.subcategory}</div></div>
                     </div>
                     <p>{ref.rationale}</p>
@@ -374,7 +374,7 @@ export default async function ProductReview({ params }: Params) {
         <aside className="sidebar" aria-label="Review sidebar">
           <div className="panel">
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />
+              <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} size="sm" />
               <strong>{p.name}</strong>
             </div>
             <p className="muted small" style={{ margin: "10px 0 12px" }}>{lastCheckedText(p)}</p>
@@ -392,7 +392,7 @@ export default async function ProductReview({ params }: Params) {
 
       <div className="sticky-cta" aria-label={`Visit ${p.name}`}>
         <span style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-          <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />
+          <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} size="sm" />
           <span style={{ display: "grid", minWidth: 0 }}>
             <strong title={p.name} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</strong>
             <span className="tiny muted">{p.affiliate ? "Affiliate link" : "Official site"}</span>

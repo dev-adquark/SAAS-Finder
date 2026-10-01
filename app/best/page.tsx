@@ -39,7 +39,7 @@ export default async function BestIndex() {
                     <h3>{u.title}</h3>
                     <p className="small muted" style={{ margin: 0 }}>{u.criteria.map((x) => x.name).join(" · ")}</p>
                     <span className="picks">
-                      {u.products.slice(0, 4).map((x) => { const p = findProduct(c, x.slug); return p ? <Monogram key={x.slug} name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" /> : null; })}
+                      {u.products.slice(0, 4).map((x) => { const p = findProduct(c, x.slug); return p ? <Monogram key={x.slug} name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} size="sm" /> : null; })}
                       <span className="tiny muted" style={{ marginLeft: 10 }}>{u.products.map((x) => findProduct(c, x.slug)?.name).join(", ")}</span>
                     </span>
                   </Link>

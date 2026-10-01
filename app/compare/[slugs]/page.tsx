@@ -112,7 +112,7 @@ export default async function ComparePage({ params }: Params) {
                 {i === 1 && <div className="duel-mid" aria-hidden="true"><Rings /><span className="vs">VS</span></div>}
                 <div className={`duel-side ${side}`} style={catStyle(p.categorySlug)}>
                   <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="lg" />
+                    <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} size="lg" />
                     <div><h2>{p.name}</h2><span className="tiny muted">{p.subcategory}</span></div>
                   </div>
                   <div className="chip-row"><ScoreBadge product={p} /><span className={`status ${pricingState(p).tone}`}>{pricingState(p).label}</span></div>
@@ -128,7 +128,7 @@ export default async function ComparePage({ params }: Params) {
 
       <SectionNav
         label={`${a.name} vs ${b.name} sections`}
-        lead={<><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" />{a.name} <span className="muted">vs</span> <Monogram name={b.name} slug={b.slug} categorySlug={b.categorySlug} size="sm" />{b.name}</>}
+        lead={<><Monogram name={a.name} slug={a.slug} logo={a.logo} categorySlug={a.categorySlug} size="sm" />{a.name} <span className="muted">vs</span> <Monogram name={b.name} slug={b.slug} logo={b.logo} categorySlug={b.categorySlug} size="sm" />{b.name}</>}
         sections={[{ id: "key-differences", label: "Differences" }, { id: "comparison-table", label: "Side by side" }, { id: "pricing-matrix", label: "Pricing" }, { id: "verdict", label: "Which to choose" }]}
       />
 
@@ -147,7 +147,7 @@ export default async function ComparePage({ params }: Params) {
               <thead>
                 <tr>
                   <th scope="col">Criterion</th>
-                  {[a, b].map((p) => <th scope="col" key={p.slug}><span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" />{p.name}</span></th>)}
+                  {[a, b].map((p) => <th scope="col" key={p.slug}><span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}><Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} size="sm" />{p.name}</span></th>)}
                 </tr>
               </thead>
               <tbody>
@@ -181,7 +181,7 @@ export default async function ComparePage({ params }: Params) {
               const st = pricingState(p);
               return (
                 <div className="pm-col" key={p.slug} style={catStyle(p.categorySlug)}>
-                  <div className="pm-head"><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} size="sm" /><strong>{p.name}</strong><span className={`status ${st.tone}`}>{st.label}</span></div>
+                  <div className="pm-head"><Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} size="sm" /><strong>{p.name}</strong><span className={`status ${st.tone}`}>{st.label}</span></div>
                   <div className="pm-row"><span className="tiny muted">Billed monthly</span><strong>{m ? m.text : "—"}</strong>{m && <span className="tiny muted">{m.plan}{m.unit ? ` · ${m.unit}` : ""}</span>}</div>
                   <div className="pm-row"><span className="tiny muted">Billed annually</span><strong>{y ? y.text : "—"}</strong>{y && <span className="tiny muted">{y.plan}{y.unit ? ` · ${y.unit}` : ""}</span>}</div>
                   <div className="pm-row"><span className="tiny muted">Free plan</span><FactCell p={p} k="freePlan" /></div>
@@ -197,7 +197,7 @@ export default async function ComparePage({ params }: Params) {
         <div className="two section-gap reveal-stagger" id="verdict">
           {[a, b].map((p) => (
             <div className="panel" key={p.slug} style={catStyle(p.categorySlug)}>
-              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}><Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} /><h2 style={{ margin: 0 }}>{p.name} at a glance</h2></div>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}><Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} /><h2 style={{ margin: 0 }}>{p.name} at a glance</h2></div>
               <div className="proscons">
                 <div className="pc pros"><h3><IconCheck size={16} /> Pros</h3><ul>{p.review.pros.slice(0, 3).map((x) => <li key={x}><IconCheck size={14} />{x}</li>)}</ul></div>
                 <div className="pc cons"><h3><IconX size={16} /> Cons</h3><ul>{p.review.cons.slice(0, 3).map((x) => <li key={x}><IconX size={14} />{x}</li>)}</ul></div>

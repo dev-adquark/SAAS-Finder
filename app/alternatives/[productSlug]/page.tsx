@@ -80,7 +80,7 @@ export default async function AlternativesPage({ params }: Params) {
             </div>
             <aside className="hero-card glass enter-2" aria-labelledby="reviewed-title">
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
+                <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} />
                 <div><strong id="reviewed-title">{p.name}</strong><div className="tiny muted">{p.subcategory}</div></div>
               </div>
               <p className="small" style={{ margin: 0 }}>{p.review.editorialSummary}</p>
@@ -121,7 +121,7 @@ export default async function AlternativesPage({ params }: Params) {
                     <div className="spectrum-zone" key={label}>
                       <h3>{label}</h3>
                       {inZone.length ? (
-                        <div className="chip-row">{inZone.map(({ product: a }) => <a key={a.slug} href={`#alt-${a.slug}`} style={catStyle(a.categorySlug)}><Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" />{a.name}</a>)}</div>
+                        <div className="chip-row">{inZone.map(({ product: a }) => <a key={a.slug} href={`#alt-${a.slug}`} style={catStyle(a.categorySlug)}><Monogram name={a.name} slug={a.slug} logo={a.logo} categorySlug={a.categorySlug} size="sm" />{a.name}</a>)}</div>
                       ) : <p className="tiny muted">None in this set</p>}
                     </div>
                   );
@@ -134,7 +134,7 @@ export default async function AlternativesPage({ params }: Params) {
           <p className="muted small">Pick an alternative to see why it made the list, how it differs from {p.name}, and a side-by-side snapshot.</p>
           <TabExplorer
             label={`${p.name} alternatives`}
-            items={alts.map(({ product: a }) => ({ id: `alt-${a.slug}`, label: a.name, sub: a.subcategory ?? undefined, icon: <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="sm" /> }))}
+            items={alts.map(({ product: a }) => ({ id: `alt-${a.slug}`, label: a.name, sub: a.subcategory ?? undefined, icon: <Monogram name={a.name} slug={a.slug} logo={a.logo} categorySlug={a.categorySlug} size="sm" /> }))}
             panels={alts.map(({ product: a, ref }, i) => {
               const pair = pairFor(c, p.slug, a.slug);
               const ps = pricingState(a);
@@ -143,7 +143,7 @@ export default async function AlternativesPage({ params }: Params) {
                 <article key={a.slug} className="panel alt-item card" style={catStyle(a.categorySlug)}>
                   <div className="pcard-head" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
                     <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                      <Monogram name={a.name} slug={a.slug} categorySlug={a.categorySlug} size="lg" />
+                      <Monogram name={a.name} slug={a.slug} logo={a.logo} categorySlug={a.categorySlug} size="lg" />
                       <div>
                         <span className="tag">#{i + 1} · {a.subcategory}</span>
                         <h3 className="alt-name"><Link href={routes.product(a.slug)}>{a.name}</Link></h3>

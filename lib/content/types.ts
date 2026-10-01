@@ -104,7 +104,11 @@ export type Product = {
   alternatives: AlternativeRef[];
   /** Third-party G2 data from the automatic sync (attributed; never the editorial score). */
   g2?: G2Ref | null;
+  /** Logo.dev image for the official domain, when Logo.dev has one (lib/logos/logo-dev). */
+  logo?: LogoRef | null;
 };
+
+export type LogoRef = { base: string; domain: string };
 
 export type G2Ref = { rating: number; reviewCount: number; url: string; dataAsOf: string | null };
 

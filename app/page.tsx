@@ -127,7 +127,7 @@ export default async function Home() {
                   node: (
                     <article key={p.slug} className="discover-tile" style={catStyle(p.categorySlug)}>
                       <div className="discover-tile-head">
-                        <Monogram name={p.name} slug={p.slug} categorySlug={p.categorySlug} />
+                        <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} />
                         <div>
                           <h3><Link href={routes.product(p.slug)}>{p.name}</Link></h3>
                           <span className="tiny muted">{p.subcategory}</span>
