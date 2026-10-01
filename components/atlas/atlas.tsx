@@ -1,6 +1,9 @@
 import type { CSSProperties } from "react";
-import type { Catalog } from "@/lib/content/types";
+import type { Catalog, Product } from "@/lib/content/types";
 import { productsInCategory } from "@/lib/catalog";
+import { LOGOS } from "@/lib/content/logos";
+import { logoSrc } from "@/lib/logos/logo-dev";
+import { LogoImage } from "@/components/logo-image";
 import { routes } from "@/lib/seo/routes";
 import { catStyle, monogram } from "@/components/identity";
 import { AtlasMotion } from "@/components/atlas/atlas-motion";
@@ -11,16 +14,61 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
+/** Tiles per category ribbon: a curated selection keeps the map readable as the catalog grows. */
+const PER_ROW = 3;
+
+/**
+ * The most prominent products of a category, from the site's own editorial data: how often a product
+ * is compared head to head, picked in a best-for guide or listed as another product's alternative
+ * (editorial score breaks ties). Two products sharing a company logo (same official domain) never
+ * both appear, so no logo repeats on the map.
+ */
+export function atlasSelection(c: Catalog, categorySlug: string, limit = PER_ROW): Product[] {
+  const refs = (slug: string) =>
+    c.pairs.filter((p) => p.productA === slug || p.productB === slug).length * 2 +
+    c.useCases.filter((u) => u.products.some((x) => x.slug === slug)).length +
+    c.products.filter((o) => o.alternatives.some((a) => a.slug === slug)).length;
+  const ranked = productsInCategory(c, categorySlug)
+    .map((p) => ({ p, score: refs(p.slug), rating: p.review.rating ?? 0 }))
+    .sort((a, b) => b.score - a.score || b.rating - a.rating || a.p.name.localeCompare(b.p.name));
+  const seen = new Set<string>();
+  const out: Product[] = [];
+  for (const { p } of ranked) {
+    const brand = p.logo?.domain ?? p.slug;
+    if (seen.has(brand)) continue;
+    seen.add(brand);
+    out.push(p);
+    if (out.length === limit) break;
+  }
+  return out;
+}
+
+/** Tile face: the company logo on a small white badge (upright), else the initials as before. */
+function TileFace({ p }: { p: Product }) {
+  const initials = <span>{monogram(p.name)}</span>;
+  const local = LOGOS[p.slug];
+  const staticBadge = local ? (
+    <span className="atlas-logo">
+      {/* eslint-disable-next-line @next/next/no-img-element -- tiny static icon */}
+      <img src={local.src} alt="" width={40} height={40} loading="lazy" decoding="async" />
+    </span>
+  ) : initials;
+  if (!p.logo) return staticBadge;
+  return <LogoImage src={logoSrc(p.logo.base, 40)} alt="" px={40} className="atlas-logo" fallback={staticBadge} />;
+}
+
 /**
  * "The SaaS Atlas" hero installation (CSS 3D). Each category is a ribbon on a tilted plane; each
- * product is a tile on its category's ribbon (a real link to its review). Lines connect curated
- * comparison pairs; pins mark products with evidence-verified pricing. Tile heights are decorative.
+ * ribbon carries a curated selection of its most prominent products (see atlasSelection) as tiles
+ * showing the company logo (a real link to its review). Lines connect curated comparison pairs
+ * between shown tiles; pins mark products with evidence-verified pricing. Tile heights are decorative.
  */
 export function Atlas({ c }: { c: Catalog }) {
   const rows = c.categories;
+  const shown = new Map(rows.map((cat) => [cat.slug, atlasSelection(c, cat.slug)]));
   const pos = new Map<string, { x: number; y: number }>();
   rows.forEach((cat, r) => {
-    const items = productsInCategory(c, cat.slug);
+    const items = shown.get(cat.slug)!;
     const y = 12 + (r * 76) / Math.max(rows.length - 1, 1);
     items.forEach((p, i) => pos.set(p.slug, { x: 22 + (i + 0.5) * (70 / Math.max(items.length, 1)), y }));
   });
@@ -59,13 +107,13 @@ export function Atlas({ c }: { c: Catalog }) {
         </svg>
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="Tools on the atlas">
           {rows.flatMap((cat) =>
-            productsInCategory(c, cat.slug).map((p) => {
+            shown.get(cat.slug)!.map((p) => {
               const at = pos.get(p.slug)!;
               const z = 12 + (hash(p.slug) % 18);
               return (
                 <li key={p.slug} className="atlas-tile" style={{ ...catStyle(p.categorySlug), left: `${at.x}%`, top: `${at.y}%`, ["--z" as string]: `${z}px`, ["--i" as string]: t++ } as CSSProperties}>
                   <span className="shadow" aria-hidden="true" />
-                  <a href={routes.product(p.slug)} aria-label={`${p.name} review`}><span>{monogram(p.name)}</span></a>
+                  <a href={routes.product(p.slug)} aria-label={`${p.name} review`}><TileFace p={p} /></a>
                   {p.pricing.length > 0 && <span className="pin" aria-hidden="true">✓</span>}
                 </li>
               );
