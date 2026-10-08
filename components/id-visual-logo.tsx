@@ -14,7 +14,7 @@ export function IdVisualLogo({ remote, local, letters, between }: { remote: stri
 
   useEffect(() => {
     const src = sources[i];
-    if (!src) return void setHref(null);
+    if (!src) return;
     let cancelled = false;
     let retried = false;
     const probe = (url: string) => {
@@ -25,7 +25,8 @@ export function IdVisualLogo({ remote, local, letters, between }: { remote: stri
         if (src === remote && !retried) {
           retried = true;
           setTimeout(() => !cancelled && probe(`${src}&retry=1`), 1200);
-        } else setI((n) => n + 1);
+        } else if (i + 1 < sources.length) setI((n) => n + 1);
+        else setHref(null);
       };
       img.src = url;
     };
