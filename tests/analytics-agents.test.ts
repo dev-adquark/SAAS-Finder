@@ -11,7 +11,7 @@ test("real browsers are counted", () => {
 });
 
 test("crawlers, unfurlers, scripts and our QA crawl are not counted as clicks", () => {
-  for (const ua of ["Googlebot/2.1 (+http://www.google.com/bot.html)", "Mozilla/5.0 (compatible; bingbot/2.0)", "facebookexternalhit/1.1", "Slackbot-LinkExpanding 1.0", "WhatsApp/2.23", "curl/8.4.0", "python-requests/2.31", "node-fetch/1.0", "HeadlessChrome/120", "saasfinder-crawl-qa", "Mozilla/5.0 (compatible; UptimeRobot/2.0)"]) {
+  for (const ua of ["Googlebot/2.1 (+http://www.google.com/bot.html)", "Mozilla/5.0 (compatible; bingbot/2.0)", "facebookexternalhit/1.1", "Slackbot-LinkExpanding 1.0", "WhatsApp/2.23", "curl/8.4.0", "python-requests/2.31", "node-fetch/1.0", "HeadlessChrome/120", "findmytech-crawl-qa", "saasfinder-crawl-qa", "Mozilla/5.0 (compatible; UptimeRobot/2.0)"]) {
     assert.equal(isAutomatedAgent(ua), true, ua);
   }
   assert.equal(isAutomatedAgent(null), true, "redirect requests without a user agent are not clicks");

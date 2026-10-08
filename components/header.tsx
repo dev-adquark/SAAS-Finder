@@ -18,9 +18,9 @@ export function Header() {
   return (
     <HeaderShell>
       <div className="container nav">
-        <Link className="brand" href={routes.home()} aria-label="SaaSFinder home">
+        <Link className="brand" href={routes.home()} aria-label="FindMy.tech home">
           <BrandMark />
-          <span>SaaS <b>Finder</b></span>
+          <span>FindMy<b>.tech</b></span>
         </Link>
         <NavLinks items={NAV} />
         <div className="nav-right">

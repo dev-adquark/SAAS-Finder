@@ -106,7 +106,7 @@ export function CommandPalette() {
   let index = -1;
   return (
     <div className="palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="palette" role="dialog" aria-modal="true" aria-label="Search SaaSFinder" onKeyDown={onKeyDown}>
+      <div className="palette" role="dialog" aria-modal="true" aria-label="Search FindMy.tech" onKeyDown={onKeyDown}>
         <div className="palette-input">
           <IconSearch size={18} />
           <input

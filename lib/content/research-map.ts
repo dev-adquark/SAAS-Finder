@@ -1,7 +1,7 @@
 import type { FactRef, PricePoint, SourceRef } from "@/lib/content/types";
 import type { ResearchRecord } from "@/lib/content/seed/research-types";
 
-export const RESEARCH_VERIFIER = "SaaSFinder research — official page, evidence-matched";
+export const RESEARCH_VERIFIER = "FindMy.tech research — official page, evidence-matched";
 
 const iso = (d: string) => new Date(`${d}T00:00:00.000Z`).toISOString();
 

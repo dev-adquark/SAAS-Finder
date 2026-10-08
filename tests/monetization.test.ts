@@ -8,7 +8,7 @@ test("outbound uses only stored, verified https affiliate URLs", () => {
   assert.deepEqual(resolveOutbound({ affiliate: { url: "https://partner.example/ref?id=1", label: "x", provider: null }, officialUrl: "https://vendor.example" }), { url: "https://partner.example/ref?id=1", kind: "affiliate" });
   const insecure = resolveOutbound({ affiliate: { url: "http://partner.example/ref", label: "x", provider: null }, officialUrl: "https://vendor.example/" });
   assert.equal(insecure?.kind, "official");
-  assert.ok(insecure?.url.startsWith("https://vendor.example/?utm_source=saasfinder"));
+  assert.ok(insecure?.url.startsWith("https://vendor.example/?utm_source=findmy.tech"));
   assert.equal(resolveOutbound({ affiliate: { url: "javascript:alert(1)", label: "x", provider: null }, officialUrl: "https://vendor.example" })?.kind, "official");
   assert.equal(resolveOutbound({ affiliate: null, officialUrl: "javascript:alert(1)" }), null);
 });

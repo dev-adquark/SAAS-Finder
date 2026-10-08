@@ -29,7 +29,7 @@ export function AdminSidebar({ signOut }: { signOut: React.ReactNode }) {
       </div>
       {open && <button type="button" className="admin-scrim" aria-label="Close menu" onClick={() => setOpen(false)} />}
       <aside id="admin-sidebar" className={`admin-sidebar${open ? " open" : ""}`} aria-label="Admin">
-        <Link href="/admin" className="admin-brand">SaaS Finder <span>Admin</span></Link>
+        <Link href="/admin" className="admin-brand">FindMy.tech <span>Admin</span></Link>
         <nav>
           {ADMIN_NAV.map((g) => (
             <div className="admin-group" key={g.label}>

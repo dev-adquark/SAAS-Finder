@@ -18,7 +18,7 @@ export function Footer() {
         <p className="closing">Better software decisions start with <em>better information.</em></p>
         <div className="footer-grid">
           <div>
-            <Link className="brand" href={routes.home()}><BrandMark /><span>SaaS <b>Finder</b></span></Link>
+            <Link className="brand" href={routes.home()}><BrandMark /><span>FindMy<b>.tech</b></span></Link>
             <p style={{ marginTop: 14, maxWidth: 340 }}>
               An independent atlas of SaaS: structured reviews, curated alternatives and side-by-side comparisons, researched from official sources. Some outbound links may be affiliate links; sponsored placements are always labelled &ldquo;Sponsored&rdquo;. Neither affects editorial selection.
             </p>

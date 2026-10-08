@@ -8,7 +8,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SITE_URL: https://ci.saas-finder.invalid
+      NEXT_PUBLIC_SITE_URL: https://ci.findmy-tech.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,14 +30,14 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: saasfinder_ci
+          POSTGRES_DB: findmytech_ci
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       # Disposable CI database only.
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saasfinder_ci
-      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saasfinder_ci
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/findmytech_ci
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/findmytech_ci
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       ADMIN_API_KEY: ci-admin-key-0123456789abcdef
       CRON_SECRET: ci-cron-secret

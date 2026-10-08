@@ -1,4 +1,4 @@
-# SaaSFinder
+# FindMy.tech
 
 SEO-first SaaS reviews, alternatives, comparisons and best-for guides. Next.js 16 (App Router, ISR) + Prisma + PostgreSQL.
 

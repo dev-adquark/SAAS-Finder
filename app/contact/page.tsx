@@ -8,7 +8,7 @@ const validEmail = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : n
 
 export const metadata = buildMetadata({
   title: "Contact",
-  description: "Contact SaaSFinder about corrections, pricing updates, affiliate partnerships or sponsored placements.",
+  description: "Contact FindMy.tech about corrections, pricing updates, affiliate partnerships or sponsored placements.",
   path: routes.contact(),
   noindex: !validEmail,
 });
@@ -19,7 +19,7 @@ export default function Contact() {
       <div className="container prose">
         <Breadcrumbs items={[{ name: "Contact", path: routes.contact() }]} />
         <span className="eyebrow">Contact</span>
-        <h1>Contact SaaSFinder</h1>
+        <h1>Contact FindMy.tech</h1>
         <div className="panel">
           <p>We welcome corrections, pricing updates from vendors, and affiliate or sponsorship enquiries. Sponsorship enquiries are handled separately from editorial work and cannot change reviews, scores or rankings.</p>
           {validEmail ? (

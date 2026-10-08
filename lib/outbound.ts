@@ -14,7 +14,7 @@ export function resolveOutbound(product: Pick<Product, "affiliate" | "officialUr
   if (!isHttpUrl(product.officialUrl)) return null;
   const url = new URL(product.officialUrl);
   // UTM tags are only added to non-affiliate links so partner tracking parameters are never altered.
-  url.searchParams.set("utm_source", "saasfinder");
+  url.searchParams.set("utm_source", "findmy.tech");
   url.searchParams.set("utm_medium", "referral");
   return { url: url.toString(), kind: "official" };
 }

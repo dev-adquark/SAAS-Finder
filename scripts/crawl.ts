@@ -23,7 +23,7 @@ const toPath = (u: string) => {
 };
 
 async function get(path: string, redirect: RequestRedirect = "manual") {
-  const res = await fetch(BASE + path, { redirect, headers: { "user-agent": "saasfinder-crawl-qa" } });
+  const res = await fetch(BASE + path, { redirect, headers: { "user-agent": "findmytech-crawl-qa" } });
   return { res, body: res.headers.get("content-type")?.includes("text") || res.headers.get("content-type")?.includes("json") || res.headers.get("content-type")?.includes("xml") ? await res.text() : "" };
 }
 

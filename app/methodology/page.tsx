@@ -8,7 +8,7 @@ import { DEFAULT_REFRESH_AFTER_DAYS } from "@/lib/freshness-rules";
 
 export const metadata = buildMetadata({
   title: "Methodology: how we select, review and update software",
-  description: "How SaaSFinder selects products, writes reviews, verifies pricing, keeps content fresh and separates affiliate and sponsor relationships from editorial decisions.",
+  description: "How FindMy.tech selects products, writes reviews, verifies pricing, keeps content fresh and separates affiliate and sponsor relationships from editorial decisions.",
   path: routes.methodology(),
 });
 
@@ -16,12 +16,12 @@ export default function Methodology() {
   const path = routes.methodology();
   return (
     <section className="section">
-      <JsonLd data={webPageJsonLd("WebPage", "SaaSFinder methodology", path, "How SaaSFinder selects, reviews and updates software content.")} />
+      <JsonLd data={webPageJsonLd("WebPage", "FindMy.tech methodology", path, "How FindMy.tech selects, reviews and updates software content.")} />
       <div className="container prose">
         <Breadcrumbs items={[{ name: "Methodology", path }]} />
         <span className="eyebrow">Editorial policy</span>
         <h1 style={{ marginTop: 12 }}>Methodology</h1>
-        <p className="lead">How every review, comparison and buying guide on SaaSFinder is researched, verified and kept current.</p>
+        <p className="lead">How every review, comparison and buying guide on FindMy.tech is researched, verified and kept current.</p>
         <div className="zone-light section-gap" style={{ borderRadius: 24, padding: 24 }}>
           <div className="steps">
             <div className="step"><span className="num">1</span><h3>Research</h3><p>Structured profile from public vendor information: features, audiences, limitations.</p></div>
@@ -45,7 +45,7 @@ export default function Methodology() {
           <p>Each product has a freshness target — {DEFAULT_REFRESH_AFTER_DAYS} days by default, shorter for fast-changing products. When a product is due, it enters an editorial refresh queue. The editor either confirms nothing changed (updating the &ldquo;Last checked&rdquo; date) or records a new pricing snapshot and a change-log entry. Pages show both the pricing &ldquo;Last checked&rdquo; date and the content update date.</p>
           <p>Once a week an automated check re-fetches each product&apos;s official pages. When the exact quote behind a verified fact, source or price is still on the page, its check date moves forward; for pricing, only when every verified price is re-confirmed. Anything that no longer matches — a changed price, a missing plan, a new official link — is flagged for an editor, and until then the previous verified value stays in place with its last verification date. Pages that block or fail the check never change what we publish.</p>
           <h2>Affiliate relationships</h2>
-          <p>Some outbound links may be affiliate links, which can earn SaaSFinder a commission. Affiliate links are labelled, marked <code>rel=&quot;sponsored&quot;</code>, and only used once a real partner relationship is verified. Whether a product has an affiliate programme has no bearing on whether it is included, how it is scored or where it is ranked. See our <Link href={routes.disclosure()}>disclosure</Link>.</p>
+          <p>Some outbound links may be affiliate links, which can earn FindMy.tech a commission. Affiliate links are labelled, marked <code>rel=&quot;sponsored&quot;</code>, and only used once a real partner relationship is verified. Whether a product has an affiliate programme has no bearing on whether it is included, how it is scored or where it is ranked. See our <Link href={routes.disclosure()}>disclosure</Link>.</p>
           <h2>Sponsor relationships</h2>
           <p>Sponsored placements are paid, always labelled &ldquo;Sponsored&rdquo;, shown in dedicated slots, and technically separate from editorial content: the code that selects alternatives, comparisons, best-for picks and featured products never reads sponsor data. A sponsor cannot buy a position in a list, a score or a recommendation.</p>
           <h2>Corrections</h2>
