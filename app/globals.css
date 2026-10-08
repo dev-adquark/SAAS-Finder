@@ -1028,7 +1028,11 @@ details.acc .acc-body { padding: 0 8px 20px; color: var(--text-2); max-width: 76
   .id-title { gap: 14px; }
   .mono.xl { --size: 84px; }
   .atlas-caption b { font-size: 1.7rem; }
-  .atlas-legend { position: static; margin-top: 8px; }
+  /* The legend's categories no longer fit the stage's own fixed-ratio box without overlapping
+     the caption and ribbons, so it moves below the box; the box's own aspect-ratio height can't
+     grow to make room for it, so .atlas reserves that room itself via margin-bottom. */
+  .atlas { margin-bottom: 110px; }
+  .atlas-legend { bottom: auto; top: 100%; margin-top: 12px; }
   .footer .closing { margin-bottom: 36px; }
 }
 
