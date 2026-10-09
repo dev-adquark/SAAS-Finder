@@ -4,6 +4,7 @@ import { classifyLink, discoverLinks, findPlanPrice, jsonLdOffers, normalizeUrl,
 import { dedupeKey, evaluateDiscovered, evaluatePage, type Claims } from "../lib/sync/diff";
 import { crawlInput, PAGE_FUNCTION } from "../lib/sync/crawl-input";
 import { autoApplicable, cycleKey, cycleStart, nextScheduledRun, targetUrls } from "../lib/sync/run";
+import { budgetOk, checkRequestInput, checkToken, DEFAULT_BUDGET } from "../lib/sync/preflight";
 import { autoFill, changedFields, g2Actor, g2Input, matchListing, mergeField, normalizeDomain, normalizeName, parseG2Item, type CatalogEntry } from "../lib/sync/g2";
 import { apifyActor } from "../lib/sync/apify";
 import { officialDomains } from "../lib/research/evidence";
@@ -360,4 +361,40 @@ test("discovered links: login / sign-up pages (and links that redirect to them) 
   for (const [u, t] of [["https://acme.com/pricing", "Pricing | Acme"], ["https://acme.com/blog/logging-in-best-practices", "Logging best practices"], ["https://acme.com/trust", "Trust at Acme"]] as const) {
     assert.equal(isAuthPage(u, t), false, `${u} ${t}`);
   }
+});
+
+test("preflight: checkToken rejects missing, whitespace and placeholder credentials", () => {
+  assert.equal(checkToken("APIFY_API_TOKEN", undefined).ok, false);
+  assert.equal(checkToken("APIFY_API_TOKEN", "").ok, false);
+  assert.equal(checkToken("APIFY_API_TOKEN", "   ").ok, false);
+  assert.equal(checkToken("APIFY_API_TOKEN", "has a space").ok, false);
+  assert.equal(checkToken("APIFY_API_TOKEN", "changeme").ok, false);
+  assert.equal(checkToken("APIFY_API_TOKEN", "your-token").ok, false);
+  const bad = checkToken("APIFY_API_TOKEN", "");
+  assert.ok(!bad.ok && bad.reason.includes("APIFY_API_TOKEN"), "reason names the exact env var");
+  assert.equal(checkToken("APIFY_API_TOKEN", "apify_api_realLookingToken123").ok, true);
+});
+
+test("preflight: checkRequestInput rejects empty, malformed and oversized payloads", () => {
+  assert.equal(checkRequestInput(null).ok, false);
+  assert.equal(checkRequestInput("not an object").ok, false);
+  assert.equal(checkRequestInput({}).ok, false, "no startUrls or searchQueries at all");
+  assert.equal(checkRequestInput({ startUrls: [] }).ok, false, "empty array still has nothing to fetch");
+  assert.equal(checkRequestInput({ startUrls: [{ url: "https://acme.com/" }] }).ok, true);
+  assert.equal(checkRequestInput({ searchQueries: ["Acme"] }).ok, true);
+  const huge = { startUrls: Array.from({ length: 50_000 }, (_, i) => ({ url: `https://acme.com/${i}` })) };
+  const r = checkRequestInput(huge);
+  assert.equal(r.ok, false);
+  assert.ok(!r.ok && /byte safety cap/.test(r.reason));
+});
+
+test("preflight: budgetOk enforces a hard cap on actor calls per run attempt", () => {
+  assert.equal(budgetOk(0).ok, true);
+  assert.equal(budgetOk(DEFAULT_BUDGET.perRun).ok, false, "at the cap");
+  assert.equal(budgetOk(DEFAULT_BUDGET.perRun - 1).ok, true, "one under the cap still passes");
+  assert.equal(budgetOk(DEFAULT_BUDGET.perRun + 1).ok, false, "over the cap");
+  const caps = { perRun: 2 };
+  assert.equal(budgetOk(1, caps).ok, true);
+  const exhausted = budgetOk(2, caps);
+  assert.ok(!exhausted.ok && exhausted.reason.includes("2/2"), "reason states the exact used/cap counts");
 });

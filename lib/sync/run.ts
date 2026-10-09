@@ -10,6 +10,11 @@
 // editorial content, scores or published prices. Logo.dev: each product's official hostname is
 // verified and stored; a failed check keeps the existing logo, and a logo is removed only after two
 // consecutive "no logo" results. A failed, blocked or partial source changes nothing.
+//
+// Every external call (an Apify actor start, or the Logo.dev batch) goes through a preflight gate
+// (lib/sync/preflight.ts) immediately before it is sent: configuration, request shape, database
+// readiness, run state and a call budget are all checked first, and a failing check skips the call
+// entirely — logging the exact reason — rather than sending it and failing after the fact.
 import { createHmac } from "node:crypto";
 import type { Prisma, SyncPageStatus, SyncRun, SyncTrigger } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -21,6 +26,7 @@ import { crawlInput } from "@/lib/sync/crawl-input";
 import { acceptChange } from "@/lib/sync/review";
 import { productSlugProblem } from "@/lib/seo/routes";
 import { logoDevKey, logoDomain, verifyLogo } from "@/lib/logos/logo-dev";
+import { preflightActorCall, preflightLogoPhase } from "@/lib/sync/preflight";
 import {
   autoFill, changedFields, G2, g2Actor, g2Input, g2PageUrl, listingHash, matchListing, mergeField, parseG2Item,
   LISTING_FIELDS, type CatalogEntry, type G2Listing as G2ListingRecord, type G2Target, type ListingFields,
@@ -231,6 +237,11 @@ async function launch(run: SyncRun, input: unknown): Promise<SyncRun | null> {
   const g2 = isG2Phase(run.phase);
   const actor = g2 ? g2Actor() : apifyActor();
   try {
+    // Preflight: config, request shape, database, run state and budget, in that order — the first
+    // failure throws here, before startActorRun is ever called, and is reported through the same
+    // path as a real launch failure below (no call is made, no retry, nothing left half-started).
+    const pre = await preflightActorCall({ run, tokenEnv: "APIFY_API_TOKEN", token: process.env.APIFY_API_TOKEN, input });
+    if (!pre.ok) throw new Error(pre.reason);
     const a = await startActorRun(input, g2
       ? { timeoutSecs: SYNC.g2TimeoutSecs, memoryMbytes: SYNC.g2MemoryMb, webhook: webhook(), actor }
       : { timeoutSecs: SYNC.actorTimeoutSecs, memoryMbytes: SYNC.actorMemoryMb, webhook: webhook(), actor });
@@ -274,9 +285,19 @@ async function startG2(run: SyncRun, phase = 3, only?: string[]): Promise<SyncRu
 
 // ---------------- Logo.dev (phase 5) ----------------
 
-/** Queues every product in scope for logo verification; skipped (finalize) when no key is set. */
+/**
+ * Queues every product in scope for logo verification; skipped (finalize) when no key is set, or
+ * when preflight fails (database unreachable, schema out of date, or the run is no longer active) —
+ * the exact reason is logged and no Logo.dev request is ever sent for this phase.
+ */
 async function startLogos(run: SyncRun): Promise<SyncRun> {
-  if (!logoDevKey()) return finalize(run);
+  const key = logoDevKey();
+  if (!key) return finalize(run);
+  const pre = await preflightLogoPhase(run, "LOGO_DEV_PUBLISHABLE_KEY", key);
+  if (!pre.ok) {
+    await recordError(run.id, LOGO_PHASE, `Skipped the Logo.dev check: ${pre.reason}`);
+    return finalize(run);
+  }
   const products = await db.product.findMany({ where: run.productId ? { id: run.productId } : { status: "PUBLISHED" }, select: { id: true, officialUrl: true }, orderBy: { slug: "asc" } });
   if (!products.length) return finalize(run);
   await db.syncPage.createMany({ data: products.map((p) => ({ runId: run.id, productId: p.id, phase: LOGO_PHASE, url: `https://logo.dev/${logoDomain(p.officialUrl) ?? "no-domain"}` })), skipDuplicates: true });

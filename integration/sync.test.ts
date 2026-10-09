@@ -88,6 +88,7 @@ if (!url) {
     const { productSyncStates } = await import("../lib/sync/dashboard");
     const cron = await import("../app/api/cron/apify-sync/route");
     const hook = await import("../app/api/apify/webhook/route");
+    const preflight = await import("../lib/sync/preflight");
     const finishAll = async () => {
       for (let i = 0; i < 200; i++) {
         for (const r of mock.runs.values()) r.status = "SUCCEEDED";
@@ -564,6 +565,35 @@ if (!url) {
       delete process.env.LOGO_DEV_PUBLISHABLE_KEY;
       delete process.env.LOGO_DEV_IMG_BASE;
       await db.product.updateMany({ data: { logoDomain: null, logoCheckedAt: null, logoMisses: 0 } });
+    });
+
+    await t.test("preflight: an exhausted actor-call budget skips the call entirely — no request reaches Apify, and the run still finishes", async () => {
+      mock.responder = acme();
+      mock.g2 = () => [];
+      await allowRerun();
+      const before = { inputs: mock.inputs.length, g2Inputs: mock.g2Inputs.length };
+      const r = await run.startSync({ trigger: "MANUAL_PRODUCT", productId: product.id });
+      assert.equal(mock.inputs.length, before.inputs + 1, "phase 1 makes exactly one real call");
+      // Simulate the budget already spent for this run attempt: later phase transitions (discovery,
+      // G2) must now be skipped without ever reaching the mock server.
+      await db.syncRun.update({ where: { id: r.run!.id }, data: { stats: { actorRuns: Array.from({ length: preflight.DEFAULT_BUDGET.perRun }, (_, i) => ({ phase: 1, actor: "fake", runId: `fake-${i}`, status: "SUCCEEDED" })) } } });
+      await finishAll();
+      const done = await db.syncRun.findUniqueOrThrow({ where: { id: r.run!.id } });
+      assert.ok(done.status === "COMPLETED" || done.status === "PARTIAL" || done.status === "FAILED", `run still finished (${done.status}), not stuck`);
+      assert.equal(mock.inputs.length, before.inputs + 1, "no further official/discovery call was made once the budget was exhausted");
+      assert.equal(mock.g2Inputs.length, before.g2Inputs, "the G2 call was skipped too, not just discovery");
+      const errs = ((done.stats ?? {}) as { errors?: { message: string }[] }).errors ?? [];
+      assert.ok(errs.some((e) => /Actor call budget exhausted/.test(e.message)), "the exact skip reason is logged on the run");
+    });
+
+    await t.test("preflight: database checks never leak to the caller as an unhandled rejection", async () => {
+      const r1 = await preflight.checkDatabase();
+      assert.equal(r1.ok, true, "a healthy database passes");
+      const r2 = await preflight.checkRunWritable("not-a-real-id");
+      assert.ok(!r2.ok && /no longer exists/.test(r2.reason));
+      const done = await db.syncRun.findFirstOrThrow({ where: { status: { in: ["COMPLETED", "PARTIAL", "FAILED"] } } });
+      const r3 = await preflight.checkRunWritable(done.id);
+      assert.ok(!r3.ok && new RegExp(`is ${done.status}, not active`).test(r3.reason));
     });
 
     await db.g2Listing.deleteMany({});
