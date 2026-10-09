@@ -5,6 +5,7 @@ import { dedupeKey, evaluateDiscovered, evaluatePage, type Claims } from "../lib
 import { crawlInput, PAGE_FUNCTION } from "../lib/sync/crawl-input";
 import { autoApplicable, cycleKey, cycleStart, nextScheduledRun, targetUrls } from "../lib/sync/run";
 import { budgetOk, checkRequestInput, checkToken, DEFAULT_BUDGET } from "../lib/sync/preflight";
+import { claimOutboundCall, runAsTrigger } from "../lib/sync/trigger-guard";
 import { autoFill, changedFields, g2Actor, g2Input, matchListing, mergeField, normalizeDomain, normalizeName, parseG2Item, type CatalogEntry } from "../lib/sync/g2";
 import { apifyActor } from "../lib/sync/apify";
 import { officialDomains } from "../lib/research/evidence";
@@ -397,4 +398,35 @@ test("preflight: budgetOk enforces a hard cap on actor calls per run attempt", (
   assert.equal(budgetOk(1, caps).ok, true);
   const exhausted = budgetOk(2, caps);
   assert.ok(!exhausted.ok && exhausted.reason.includes("2/2"), "reason states the exact used/cap counts");
+});
+
+test("trigger guard: a second claim for the same key within one trigger is refused, never retried", async () => {
+  const seen: boolean[] = [];
+  await runAsTrigger("test-trigger", async () => {
+    seen.push(claimOutboundCall("apify-actor:run1:1").ok);
+    seen.push(claimOutboundCall("apify-actor:run1:1").ok); // same key again: a bug, or a retry after failure
+    seen.push(claimOutboundCall("apify-actor:run1:1").ok); // a third attempt: still refused
+  });
+  assert.deepEqual(seen, [true, false, false]);
+});
+
+test("trigger guard: distinct keys within the same trigger are each allowed once (different required data, not duplicates)", async () => {
+  await runAsTrigger("test-trigger", async () => {
+    assert.equal(claimOutboundCall("apify-actor:run1:1").ok, true, "official crawl");
+    assert.equal(claimOutboundCall("apify-actor:run1:3").ok, true, "G2, a different phase/call");
+    assert.equal(claimOutboundCall("apify-actor:run1:1").ok, false, "the first one again: refused");
+  });
+});
+
+test("trigger guard: outside any trigger context, claims always succeed (manual/admin syncs are unaffected)", () => {
+  assert.equal(claimOutboundCall("apify-actor:run1:1").ok, true);
+  assert.equal(claimOutboundCall("apify-actor:run1:1").ok, true, "no context means no per-trigger cap at all");
+});
+
+test("trigger guard: concurrent triggers each get their own independent claim (no cross-contamination)", async () => {
+  const results = await Promise.all([
+    runAsTrigger("trigger-a", async () => [claimOutboundCall("k").ok, claimOutboundCall("k").ok]),
+    runAsTrigger("trigger-b", async () => [claimOutboundCall("k").ok, claimOutboundCall("k").ok]),
+  ]);
+  assert.deepEqual(results, [[true, false], [true, false]], "each trigger makes its own one call; neither blocks the other");
 });

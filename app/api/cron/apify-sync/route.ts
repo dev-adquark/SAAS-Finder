@@ -3,6 +3,7 @@ import { requireCronSecret } from "@/lib/cron-auth";
 import { boundedInt } from "@/lib/validation";
 import { startSync, SyncError, syncConfigured } from "@/lib/sync/run";
 import { advanceInBackground } from "@/lib/sync/schedule";
+import { runAsTrigger } from "@/lib/sync/trigger-guard";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, mode: "advance" }, { status: 202 });
   }
   try {
-    const r = await startSync({ trigger: "SCHEDULED" });
+    const r = await runAsTrigger("apify-sync:start", () => startSync({ trigger: "SCHEDULED" }));
     advanceInBackground();
     return NextResponse.json({ ok: true, started: r.started, runId: r.run?.id ?? null, status: r.run?.status ?? null, reason: r.reason ?? null });
   } catch (e) {

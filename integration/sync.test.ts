@@ -22,6 +22,10 @@ if (!url) {
     runs: new Map<string, { status: string; items: unknown[] }>(),
     inputs: [] as { startUrls: { url: string }[] }[],
     g2Inputs: [] as G2Input[],
+    // Raw request counts: incremented on every POST regardless of success/failure, so a test can
+    // assert "the mock server was hit exactly N times" even when the call is made to fail.
+    startAttempts: 0,
+    g2StartAttempts: 0,
     responder: (() => null) as Responder,
     g2: (() => []) as G2Responder,
     garbage: [] as unknown[],
@@ -49,6 +53,7 @@ if (!url) {
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       if (req.method === "POST" && /^\/acts\/[^/]*g2[^/]*\/runs$/.test(u.pathname)) {
+        mock.g2StartAttempts++;
         if (mock.g2StartFails) return send(500, { error: { message: "g2 platform error" } });
         const input = JSON.parse(body) as G2Input;
         mock.g2Inputs.push(input);
@@ -57,6 +62,7 @@ if (!url) {
         return send(201, { data: { id, status: "RUNNING", defaultDatasetId: `ds-${id}` } });
       }
       if (req.method === "POST" && /^\/acts\/[^/]+\/runs$/.test(u.pathname)) {
+        mock.startAttempts++;
         if (mock.startFails) return send(500, { error: { message: "platform error" } });
         const input = JSON.parse(body) as { startUrls: { url: string }[] };
         mock.inputs.push(input);
@@ -190,6 +196,8 @@ if (!url) {
       const before = await verifiedState();
       mock.startFails = true;
       mock.g2StartFails = true;
+      mock.startAttempts = 0;
+      mock.g2StartAttempts = 0;
       const cycle = new Date("2031-03-05T04:00:00Z");
       for (let i = 1; i <= 3; i++) {
         const r = await run.startSync({ trigger: "SCHEDULED", now: cycle });
@@ -200,6 +208,11 @@ if (!url) {
         assert.ok(!(r.run?.error ?? "").includes("integrationtoken"), "token never stored");
         const errs = ((r.run?.stats ?? {}) as { errors?: { source: string }[] }).errors ?? [];
         assert.deepEqual(errs.map((e) => e.source).sort(), ["G2", "Official websites"], "both source errors logged");
+        // Exactly one HTTP attempt per source, per sync attempt: a failure is never retried at the
+        // call level — it logs and stops, and only a brand-new sync attempt (a later cron tick) tries
+        // again, which is a distinct, deliberate retry policy, not a same-call retry.
+        assert.equal(mock.startAttempts, i, `crawl: exactly ${i} total attempt(s) after ${i} sync attempt(s), no retry`);
+        assert.equal(mock.g2StartAttempts, i, `G2: exactly ${i} total attempt(s) after ${i} sync attempt(s), no retry`);
       }
       const gaveUp = await run.startSync({ trigger: "SCHEDULED", now: cycle });
       assert.equal(gaveUp.started, false);
@@ -216,8 +229,10 @@ if (!url) {
       mock.g2 = () => [];
       const before = await verifiedState();
       const now = new Date();
+      const startAttemptsBefore = mock.startAttempts;
       const [r, dup] = await Promise.all([run.startSync({ trigger: "SCHEDULED", now }), new Promise((res) => setTimeout(res, 5)).then(() => run.startSync({ trigger: "SCHEDULED", now }))]);
       assert.equal([r, dup].filter((x) => x.started).length, 1, "a duplicate cron invocation never starts a second sync");
+      assert.equal(mock.startAttempts, startAttemptsBefore + 1, "two concurrent triggers reach the Apify API exactly once between them, not twice");
       const started = r.started ? r : dup;
       const urls = mock.inputs.at(-1)!.startUrls.map((s) => s.url);
       assert.ok(urls.length > 10 && urls.every((u) => u.startsWith("https://")), "only official https URLs are crawled");

@@ -27,6 +27,7 @@ import { acceptChange } from "@/lib/sync/review";
 import { productSlugProblem } from "@/lib/seo/routes";
 import { logoDevKey, logoDomain, verifyLogo } from "@/lib/logos/logo-dev";
 import { preflightActorCall, preflightLogoPhase } from "@/lib/sync/preflight";
+import { claimOutboundCall } from "@/lib/sync/trigger-guard";
 import {
   autoFill, changedFields, G2, g2Actor, g2Input, g2PageUrl, listingHash, matchListing, mergeField, parseG2Item,
   LISTING_FIELDS, type CatalogEntry, type G2Listing as G2ListingRecord, type G2Target, type ListingFields,
@@ -242,6 +243,12 @@ async function launch(run: SyncRun, input: unknown): Promise<SyncRun | null> {
     // path as a real launch failure below (no call is made, no retry, nothing left half-started).
     const pre = await preflightActorCall({ run, tokenEnv: "APIFY_API_TOKEN", token: process.env.APIFY_API_TOKEN, input });
     if (!pre.ok) throw new Error(pre.reason);
+    // Single-call guard: within one scheduled-trigger invocation, this exact call (this run, this
+    // phase) may be claimed once. A second attempt — including a retry after this one fails below —
+    // is refused here, before startActorRun, never sent twice. A no-op outside a trigger context, so
+    // manual/admin-initiated syncs are unaffected.
+    const claim = claimOutboundCall(`apify-actor:${run.id}:${run.phase}`);
+    if (!claim.ok) throw new Error(claim.reason);
     const a = await startActorRun(input, g2
       ? { timeoutSecs: SYNC.g2TimeoutSecs, memoryMbytes: SYNC.g2MemoryMb, webhook: webhook(), actor }
       : { timeoutSecs: SYNC.actorTimeoutSecs, memoryMbytes: SYNC.actorMemoryMb, webhook: webhook(), actor });
