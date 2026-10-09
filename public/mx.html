@@ -1,350 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Buying Guide: how to compare products and pricing</title>
 <meta name="description" content="A practical, plain-English guide to comparing products and pricing before you buy.">
-<meta name="robots" content="noindex,follow">
-<!-- "origin" sends scheme+host on every hop: never the full path (which would
-     leak sid/step into other origins' logs) and never blank. Blank would make
-     every hop read as Direct; the extension takes the beacon's ref straight
-     from document.referrer, so this is what SimilarWeb records. -->
-<meta name="referrer" content="origin">
-<title>Smart Buying Guide</title>
-
-<!-- ==========================================================================
-     REFERRER LAUNDERING -- must stay the first script on the page.
-
-     Pop-under traffic arrives straight off publisher sites that should not
-     appear in this domain's referral profile. background.js builds the beacon's
-     ref by injecting `function(){ return document.referrer }` into the tab via
-     chrome.scripting.executeScript, which runs AFTER the navigation commits and
-     resolves asynchronously. So the referrer it records is whatever
-     document.referrer says at that moment -- and a same-origin
-     location.replace() rewrites it to this origin.
-
-     Running here, during head parse, is the whole point: it fires within a few
-     ms of commit, so the document is usually replaced before the injection
-     resolves. When we win the race the publisher is never recorded at all;
-     when we lose, that one landing pageview carries it and every later hop does
-     not. Moving this to the bottom script would lose the race every time.
-
-     Note the override trick does NOT work: executeScript defaults to the
-     isolated world, so redefining document.referrer in the main world is
-     invisible to it. Replacing the document is the only lever we have.
-
-     utm_* is carried across so GA still attributes the session to the campaign.
-     No loop risk: the replaced url carries sid, so this returns immediately on
-     the second pass. replace() writes no history entry.
-     ========================================================================== -->
-<script>
-(function () {
-  try {
-    var q = new URLSearchParams(location.search);
-    if (q.get('sid')) return;                 // already laundered
-    var sid;
-    try { sid = crypto.randomUUID(); }
-    catch (e) { sid = 'sid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10); }
-    var e2 = new URLSearchParams();
-    e2.set('step', '0');
-    e2.set('sid', sid);
-    e2.set('r', Math.random().toString(36).slice(2, 10));
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']
-      .forEach(function (k) { var v = q.get(k); if (v) e2.set(k, v); });
-    location.replace(location.pathname + '?' + e2.toString());
-  } catch (e) {}
-})();
-</script>
-
+<link rel="canonical" href="https://findmy.tech/mx.html">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Smart Buying Guide: how to compare products and pricing">
+<meta property="og:description" content="A practical, plain-English guide to comparing products and pricing before you buy.">
+<meta property="og:url" content="https://findmy.tech/mx.html">
+<meta property="og:site_name" content="FindMy.tech">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Smart Buying Guide: how to compare products and pricing">
+<meta name="twitter:description" content="A practical, plain-English guide to comparing products and pricing before you buy.">
+<link rel="icon" href="/favicon.ico">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Smart Buying Guide: how to compare products and pricing","description":"A practical, plain-English guide to comparing products and pricing before you buy.","url":"https://findmy.tech/mx.html","publisher":{"@type":"Organization","name":"FindMy.tech"}}</script>
 <style>
-  :root{--bg:#fff;--fg:#16181d;--muted:#5b6472;--line:#e6e8ec;--accent:#3b5bdb;--soft:#f7f8fa}
-  @media (prefers-color-scheme:dark){:root{--bg:#0f1115;--fg:#e8eaed;--muted:#9aa0a6;--line:#242833;--accent:#8da2fb;--soft:#161922}}
-  *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--fg);
-    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  header{border-bottom:1px solid var(--line);padding:14px 20px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-  .brand{font-weight:700;letter-spacing:-.2px;text-decoration:none;color:var(--fg)}
-  nav a{color:var(--muted);text-decoration:none;font-size:.9rem;margin-right:14px}
-  nav a:hover{color:var(--accent)}
-  main{max-width:720px;margin:0 auto;padding:34px 20px 56px}
-  .kicker{color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
-  h1{font-size:1.6rem;line-height:1.3;margin:0 0 14px}
-  h2{font-size:1.12rem;margin:26px 0 8px}
-  p{margin:0 0 14px}
-  ul{margin:0 0 14px;padding-left:20px}
-  li{margin:0 0 7px}
-  .note{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:20px 0;font-size:.94rem}
-  .pager{display:flex;justify-content:space-between;align-items:center;gap:14px;
-    border-top:1px solid var(--line);margin-top:30px;padding-top:18px;flex-wrap:wrap}
-  .next{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;
-    padding:10px 18px;border-radius:8px;font-weight:600;font-size:.95rem}
-  .prog{color:var(--muted);font-size:.85rem}
-  footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:20px;text-align:center}
-  footer a{color:var(--muted);margin:0 8px}
+  :root {
+    --paper: #f6f2ea; --ivory: #fbf8f2; --white: #fffdf8; --stone: #e6dfd2;
+    --ink: #16161a; --line: rgba(22,22,26,0.12); --line-strong: rgba(22,22,26,0.22);
+    --muted: #6c675e; --faint: #8d877c; --blue: #2f5bff; --amber: #9a5b00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .site-header {
+    position: sticky; top: 0; z-index: 10; background: rgba(251,248,242,0.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  }
+  .site-header .inner {
+    max-width: 880px; margin: 0 auto; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand { font-family: Georgia, "Times New Roman", serif; font-size: 1.15rem; font-weight: 600; color: var(--ink); }
+  .brand b { font-weight: 400; color: var(--muted); }
+  .site-nav { display: flex; gap: 18px; font-size: 0.85rem; }
+  .site-nav a { color: var(--muted); }
+  main { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+  .eyebrow {
+    display: inline-block; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--amber); font-weight: 600; margin-bottom: 8px;
+  }
+  h1 { font-family: Georgia, "Times New Roman", serif; font-size: 2.3rem; margin: 0 0 10px; line-height: 1.15; }
+  .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 32px; max-width: 60ch; }
+  nav.toc {
+    background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 22px; margin-bottom: 36px;
+  }
+  nav.toc h2 { font-size: 1rem; margin: 0 0 10px; }
+  nav.toc ol { margin: 0; padding-left: 20px; }
+  nav.toc li { margin: 4px 0; }
+  article.section {
+    background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+    padding: 26px 28px; margin-bottom: 20px; scroll-margin-top: 80px;
+  }
+  article.section h2 { font-family: Georgia, "Times New Roman", serif; font-size: 1.5rem; margin: 6px 0 14px; }
+  article.section h3 { font-size: 1rem; margin: 20px 0 8px; }
+  article.section p { margin: 0 0 12px; }
+  article.section ul { margin: 0 0 12px; padding-left: 20px; }
+  article.section li { margin: 4px 0; }
+  .notice {
+    background: var(--ivory); border-left: 3px solid var(--amber); border-radius: 6px;
+    padding: 12px 16px; font-size: 0.95rem; color: var(--muted); margin: 16px 0;
+  }
+  .section-footer {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+    border-top: 1px solid var(--line); margin-top: 20px; padding-top: 14px;
+  }
+  .tiny { font-size: 0.78rem; color: var(--faint); }
+  .btn {
+    display: inline-block; background: var(--ink); color: var(--white) !important;
+    border-radius: 8px; padding: 9px 16px; font-size: 0.88rem; font-weight: 500;
+    text-decoration: none !important;
+  }
+  .btn:hover { opacity: 0.88; }
+  footer.page-footer {
+    max-width: 880px; margin: 24px auto 0; padding: 20px 24px 0; border-top: 1px solid var(--line);
+    font-size: 0.8rem; color: var(--faint);
+  }
 </style>
-
-<header>
-  <a class="brand" href="/">Savvy</a>
-  <nav>
-    <a href="/">Home</a>
-    <a href="/about">About</a>
-    <a href="/contact">Contact</a>
-  </nav>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="/" aria-label="FindMy.tech home">FindMy<b>.tech</b></a>
+    <nav class="site-nav">
+      <a href="/products">Products</a>
+      <a href="/categories">Categories</a>
+      <a href="/disclosure">Disclosure</a>
+    </nav>
+  </div>
 </header>
 
 <main>
-  <div class="kicker" id="kicker">Buying Guide</div>
-  <h1 id="heading">Smart Buying Guide</h1>
-  <div id="body"></div>
-  <div class="pager">
-    <span class="prog" id="prog"></span>
-    <a class="next" id="next" href="#">Next section →</a>
-  </div>
+  <p class="tiny"><a href="/">Home</a> / Smart Buying Guide</p>
+  <span class="eyebrow">Buying Guide</span>
+  <h1>Smart Buying Guide</h1>
+  <p class="lead">A practical, plain-English guide to comparing products and pricing before you buy.</p>
+
+  <nav class="toc" aria-label="Guide sections">
+    <h2>In this guide</h2>
+    <ol>
+      <li><a href="#getting-started">How to compare before you buy</a></li>
+      <li><a href="#pricing">Reading a price properly</a></li>
+      <li><a href="#specifications">Which specs actually matter</a></li>
+      <li><a href="#reviews">Getting value from reviews</a></li>
+      <li><a href="#timing">When to buy, and when to wait</a></li>
+      <li><a href="#guarantees">Warranty, returns and support</a></li>
+      <li><a href="#common-traps">Mistakes that are easy to avoid</a></li>
+      <li><a href="#wrapping-up">A short checklist</a></li>
+    </ol>
+  </nav>
+
+  <article class="section" id="getting-started">
+    <span class="eyebrow">Getting started</span>
+    <h2>How to compare before you buy</h2>
+    <p>Most buying mistakes come from comparing the wrong things. A lower headline price often hides a shorter warranty, a smaller capacity, or a subscription that starts after the first year. Before comparing options, write down what you actually need the product to do.</p>
+    <h3>Start with requirements, not products</h3>
+    <ul>
+      <li>List the two or three things the product must do well.</li>
+      <li>Note the limits you cannot move: budget, size, compatibility.</li>
+      <li>Everything else is a preference, not a requirement.</li>
+    </ul>
+    <p>This single step removes most of the noise, because it turns an open-ended search into a short checklist you can apply to any option.</p>
+    <div class="section-footer"><span class="tiny">Section 1 of 8</span><a class="btn" href="#pricing">Next section →</a></div>
+  </article>
+
+  <article class="section" id="pricing">
+    <span class="eyebrow">Pricing</span>
+    <h2>Reading a price properly</h2>
+    <p>The advertised price is rarely the amount you pay. Shipping, taxes, mandatory accessories and renewal rates all change the real figure, and they are usually disclosed somewhere less prominent.</p>
+    <h3>Work out the total cost</h3>
+    <ul>
+      <li>Add delivery, setup and any required extras.</li>
+      <li>Check what the price becomes at renewal, not just the introductory rate.</li>
+      <li>For anything with consumables, estimate a year of running costs.</li>
+    </ul>
+    <div class="notice">A useful habit: compare the cost over the period you expect to own the thing, rather than the price on the day you buy it.</div>
+    <div class="section-footer"><span class="tiny">Section 2 of 8</span><a class="btn" href="#specifications">Next section →</a></div>
+  </article>
+
+  <article class="section" id="specifications">
+    <span class="eyebrow">Specifications</span>
+    <h2>Which specs actually matter</h2>
+    <p>Specification sheets are written to make products sound impressive, not to help you choose. A handful of numbers usually determine whether something suits you; the rest are there to fill the table.</p>
+    <h3>Separate the meaningful from the decorative</h3>
+    <ul>
+      <li>Identify which spec maps to the job you listed earlier.</li>
+      <li>Treat any number without units or test conditions as marketing.</li>
+      <li>Where two products differ by a few percent, treat them as equivalent.</li>
+    </ul>
+    <p>If you cannot explain why a number matters for your use, it probably does not.</p>
+    <div class="section-footer"><span class="tiny">Section 3 of 8</span><a class="btn" href="#reviews">Next section →</a></div>
+  </article>
+
+  <article class="section" id="reviews">
+    <span class="eyebrow">Reviews</span>
+    <h2>Getting value from reviews</h2>
+    <p>Reviews are most useful for finding failure modes, not for ranking. A review that only lists features tells you little; one that describes what went wrong after six months tells you a great deal.</p>
+    <h3>Read for patterns</h3>
+    <ul>
+      <li>Look for the same complaint repeated by unrelated people.</li>
+      <li>Weight long-term reviews above first-impression ones.</li>
+      <li>Ignore both extremes; the useful detail sits in the middle ratings.</li>
+    </ul>
+    <p>One specific, repeated complaint is worth more than a hundred generic five-star ratings.</p>
+    <div class="section-footer"><span class="tiny">Section 4 of 8</span><a class="btn" href="#timing">Next section →</a></div>
+  </article>
+
+  <article class="section" id="timing">
+    <span class="eyebrow">Timing</span>
+    <h2>When to buy, and when to wait</h2>
+    <p>Prices move in predictable cycles. New models arrive on a schedule, and the previous generation drops in price shortly before and after that date — often while remaining perfectly adequate.</p>
+    <h3>A simple approach</h3>
+    <ul>
+      <li>Check whether a refresh is due within a couple of months.</li>
+      <li>Track the price for a week before buying; discounts are often measured against inflated reference prices.</li>
+      <li>If the improvement in the new model does not affect your requirement list, buy the old one.</li>
+    </ul>
+    <div class="section-footer"><span class="tiny">Section 5 of 8</span><a class="btn" href="#guarantees">Next section →</a></div>
+  </article>
+
+  <article class="section" id="guarantees">
+    <span class="eyebrow">Guarantees</span>
+    <h2>Warranty, returns and support</h2>
+    <p>The return policy matters more than most specifications, because it is what protects you when the comparison turns out to be wrong. It is also the thing most people skim.</p>
+    <h3>Check before, not after</h3>
+    <ul>
+      <li>How long is the return window, and who pays return shipping?</li>
+      <li>Is the warranty handled by the seller or the manufacturer?</li>
+      <li>Is there a real support channel, or only a contact form?</li>
+    </ul>
+    <div class="notice">A shorter warranty from a company that answers the phone is often worth more than a longer one that requires a claim process.</div>
+    <div class="section-footer"><span class="tiny">Section 6 of 8</span><a class="btn" href="#common-traps">Next section →</a></div>
+  </article>
+
+  <article class="section" id="common-traps">
+    <span class="eyebrow">Common traps</span>
+    <h2>Mistakes that are easy to avoid</h2>
+    <p>A few patterns account for most regretted purchases, and all of them are easy to spot once you know to look.</p>
+    <h3>Watch for these</h3>
+    <ul>
+      <li>Buying capacity you will never use because the step up seemed cheap.</li>
+      <li>Choosing on brand familiarity rather than the requirement list.</li>
+      <li>Treating a countdown timer or stock warning as real information.</li>
+      <li>Comparing a discounted price against a reference price that never applied.</li>
+    </ul>
+    <p>Urgency is the most reliable warning sign. A genuinely good option is still a good option tomorrow.</p>
+    <div class="section-footer"><span class="tiny">Section 7 of 8</span><a class="btn" href="#wrapping-up">Next section →</a></div>
+  </article>
+
+  <article class="section" id="wrapping-up">
+    <span class="eyebrow">Wrapping up</span>
+    <h2>A short checklist</h2>
+    <p>Comparison gets easier when it is reduced to a repeatable process rather than an open search.</p>
+    <h3>Before you commit</h3>
+    <ul>
+      <li>Does it meet every item on your requirement list?</li>
+      <li>Do you know the total cost, including renewal and running costs?</li>
+      <li>Have you read the failure modes, not just the ratings?</li>
+      <li>Do you understand the return window?</li>
+    </ul>
+    <p>If all four are yes, further research usually changes very little.</p>
+    <div class="section-footer"><span class="tiny">Section 8 of 8</span><a class="btn" href="/">Back to home →</a></div>
+  </article>
+
+  <p class="tiny" style="margin-top:28px;">Independent research. We may earn a commission from some links. <a href="/disclosure">Our disclosure</a></p>
 </main>
 
-<footer>
-  <a href="/">Home</a> · <a href="/about">About</a> · <a href="/contact">Contact</a>
-  <div style="margin-top:8px">Independent research. We may earn a commission from some links.</div>
+<footer class="page-footer">
+  <p>&copy; FindMy.tech</p>
 </footer>
-
-<script>
-/* ============================================================================
-   Paginated guide with a self-advancing chain.
-
-   Each section is a real top-level navigation to a NEW url (step + r cache-
-   buster), so nothing dedups and the whole run shares one `sid` — it reads as a
-   single deep session rather than N separate one-page visits.
-
-   This version carries genuine content, nav and a working "Next" link because a
-   bare shim gets rejected by ad-network review as a broken lander. Content is
-   ordinary consumer-research advice: nothing fabricated, no invented reviews,
-   no claims about specific products.
-
-   ENGAGEMENT: an earlier version of this note claimed engagement could not be
-   manufactured, on the assumption that isTrusted:false would be a tell. Reading
-   the extension source disproves that: `isTrusted` appears nowhere in
-   background.js or frame.js (only in popup.js/panel.js, which are React and
-   Highcharts UI). frame.js keys its humanibility packet on "mousemove" and
-   never inspects the event's provenance. So dispatched mousemove events DO
-   populate the packet, and a pop-under — which is unfocused and would otherwise
-   report md:0 — can generate its own engagement signal. scrollBy() is better
-   still: it produces a genuinely trusted scroll event.
-   ========================================================================== */
-
-var CFG = {
-  // GA4 measurement id for this host ('' disables analytics).
-  //
-  // DISABLED: this was hardcoded to rightprice.site's property, but the same lander is deployed
-  // verbatim on ratemysite.io, rated.ly and hackneynews.com — so every one of those domains was
-  // reporting its pop-under sessions into rightprice's GA. Set per-host before re-enabling;
-  // an empty string is the documented "off" value and is handled below.
-  // GA_ID: 'G-Z13R913PEJ',
-  GA_ID: '',
-
-  // Seconds per section, by step. Measured survival on the first run: of 736
-  // landings only 110 (15%) reached section 2, but from there retention was
-  // ~90% per hop. So the whole loss is the FIRST dwell — a pop-under's median
-  // lifetime is well under 38s, and a flat 38 stakes the entire chain on the
-  // longest possible first bet. Short first hop, then lengthen: visitors who
-  // would have died at 30s now bank two or three pageviews instead of one.
-  // Last entry applies to every later step.
-  DWELL_LADDER: [10, 20, 38],
-  DWELL_JITTER: 0.25,      // +/- fraction, so hops aren't a metronome
-  MAX_STEPS: 24,           // 0 = unlimited; bounded reads as a session, not a stuck tab
-
-  // Synthesise pointer activity during each dwell. A pop-under is never
-  // focused, so a panel client on the visitor's device would otherwise record
-  // md:0 / zero engagement — the same discount the farm fights. frame.js does
-  // not check isTrusted (see note above), so dispatched moves count.
-  HUMANIBILITY: true,
-  ACTIVITY_MS: 1100,       // ~1 pointer event per this interval, jittered
-
-  // Referrer laundering is IMPLEMENTED IN THE HEAD SCRIPT (it must run before
-  // anything else to beat the extension's referrer read). This flag is kept
-  // only as documentation of the behaviour.
-  // Pop-under inventory arrives from publisher sites we
-  // have no wish to see in this domain's referral profile. background.js builds
-  // the beacon's ref by injecting `function(){return document.referrer}` into
-  // the tab -- so document.referrer IS the recorded referrer, and a same-origin
-  // location.replace() rewrites it to us. On the entry hop only (no sid yet) we
-  // replace immediately, with no dwell; every beacon after that reads
-  // rightprice.site rather than the publisher, and never blank.
-  //
-  // Residue: the landing navigation itself beacons before any script of ours
-  // can run, so exactly one pageview per session still carries the publisher.
-  // That is ~1/MAX_STEPS of the session's referral weight, not all of it.
-  // replace() writes no history entry, so this does not read as a redirect chain.
-  LAUNDER_ENTRY: true,
-
-  // Halt if the window is focused.
-  //   POP-UNDER -> true is reasonable: pop-unders are unfocused, so this only
-  //                trips when a real person actually looks at the tab.
-  //   FARM      -> MUST be false; farm-hybrid calls page.bringToFront(), so the
-  //                page is focused and the chain would halt on hop 0.
-  PAUSE_IF_FOCUSED: false
-};
-
-var SECTIONS = [
-  { k:'Getting started', h:'How to compare before you buy',
-    b:'<p>Most buying mistakes come from comparing the wrong things. A lower headline price often hides a shorter warranty, a smaller capacity, or a subscription that starts after the first year. Before comparing options, write down what you actually need the product to do.</p>'
-     +'<h2>Start with requirements, not products</h2>'
-     +'<ul><li>List the two or three things the product must do well.</li><li>Note the limits you cannot move: budget, size, compatibility.</li><li>Everything else is a preference, not a requirement.</li></ul>'
-     +'<p>This single step removes most of the noise, because it turns an open-ended search into a short checklist you can apply to any option.</p>' },
-
-  { k:'Pricing', h:'Reading a price properly',
-    b:'<p>The advertised price is rarely the amount you pay. Shipping, taxes, mandatory accessories and renewal rates all change the real figure, and they are usually disclosed somewhere less prominent.</p>'
-     +'<h2>Work out the total cost</h2>'
-     +'<ul><li>Add delivery, setup and any required extras.</li><li>Check what the price becomes at renewal, not just the introductory rate.</li><li>For anything with consumables, estimate a year of running costs.</li></ul>'
-     +'<div class="note">A useful habit: compare the cost over the period you expect to own the thing, rather than the price on the day you buy it.</div>' },
-
-  { k:'Specifications', h:'Which specs actually matter',
-    b:'<p>Specification sheets are written to make products sound impressive, not to help you choose. A handful of numbers usually determine whether something suits you; the rest are there to fill the table.</p>'
-     +'<h2>Separate the meaningful from the decorative</h2>'
-     +'<ul><li>Identify which spec maps to the job you listed earlier.</li><li>Treat any number without units or test conditions as marketing.</li><li>Where two products differ by a few percent, treat them as equivalent.</li></ul>'
-     +'<p>If you cannot explain why a number matters for your use, it probably does not.</p>' },
-
-  { k:'Reviews', h:'Getting value from reviews',
-    b:'<p>Reviews are most useful for finding failure modes, not for ranking. A review that only lists features tells you little; one that describes what went wrong after six months tells you a great deal.</p>'
-     +'<h2>Read for patterns</h2>'
-     +'<ul><li>Look for the same complaint repeated by unrelated people.</li><li>Weight long-term reviews above first-impression ones.</li><li>Ignore both extremes; the useful detail sits in the middle ratings.</li></ul>'
-     +'<p>One specific, repeated complaint is worth more than a hundred generic five-star ratings.</p>' },
-
-  { k:'Timing', h:'When to buy, and when to wait',
-    b:'<p>Prices move in predictable cycles. New models arrive on a schedule, and the previous generation drops in price shortly before and after that date — often while remaining perfectly adequate.</p>'
-     +'<h2>A simple approach</h2>'
-     +'<ul><li>Check whether a refresh is due within a couple of months.</li><li>Track the price for a week before buying; discounts are often measured against inflated reference prices.</li><li>If the improvement in the new model does not affect your requirement list, buy the old one.</li></ul>' },
-
-  { k:'Guarantees', h:'Warranty, returns and support',
-    b:'<p>The return policy matters more than most specifications, because it is what protects you when the comparison turns out to be wrong. It is also the thing most people skim.</p>'
-     +'<h2>Check before, not after</h2>'
-     +'<ul><li>How long is the return window, and who pays return shipping?</li><li>Is the warranty handled by the seller or the manufacturer?</li><li>Is there a real support channel, or only a contact form?</li></ul>'
-     +'<div class="note">A shorter warranty from a company that answers the phone is often worth more than a longer one that requires a claim process.</div>' },
-
-  { k:'Common traps', h:'Mistakes that are easy to avoid',
-    b:'<p>A few patterns account for most regretted purchases, and all of them are easy to spot once you know to look.</p>'
-     +'<h2>Watch for these</h2>'
-     +'<ul><li>Buying capacity you will never use because the step up seemed cheap.</li><li>Choosing on brand familiarity rather than the requirement list.</li><li>Treating a countdown timer or stock warning as real information.</li><li>Comparing a discounted price against a reference price that never applied.</li></ul>'
-     +'<p>Urgency is the most reliable warning sign. A genuinely good option is still a good option tomorrow.</p>' },
-
-  { k:'Wrapping up', h:'A short checklist',
-    b:'<p>Comparison gets easier when it is reduced to a repeatable process rather than an open search.</p>'
-     +'<h2>Before you commit</h2>'
-     +'<ul><li>Does it meet every item on your requirement list?</li><li>Do you know the total cost, including renewal and running costs?</li><li>Have you read the failure modes, not just the ratings?</li><li>Do you understand the return window?</li></ul>'
-     +'<p>If all four are yes, further research usually changes very little.</p>' }
-];
-
-(function () {
-  var q = new URLSearchParams(location.search);
-
-  function newSid() {
-    try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
-    return 'sid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
-  }
-  var sid  = q.get('sid') || newSid();
-  var step = parseInt(q.get('step') || '0', 10) || 0;
-
-  var sec  = SECTIONS[step % SECTIONS.length];
-
-  // --- render ---------------------------------------------------------------
-  document.title = sec.h + ' — Savvy';
-  document.getElementById('kicker').textContent  = sec.k;
-  document.getElementById('heading').textContent = sec.h;
-  document.getElementById('body').innerHTML      = sec.b;
-  document.getElementById('prog').textContent =
-    'Section ' + ((step % SECTIONS.length) + 1) + ' of ' + SECTIONS.length;
-
-  // Next url: step advances and `r` busts the cache, so every hop is a distinct
-  // url. Same-origin, so the referrer chains naturally from the previous section.
-  function nextUrl() {
-    var n = new URLSearchParams();
-    n.set('step', String(step + 1));
-    n.set('sid', sid);
-    n.set('r', Math.random().toString(36).slice(2, 10));
-    return location.pathname + '?' + n.toString();
-  }
-  var url = nextUrl();
-  document.getElementById('next').setAttribute('href', url);
-
-  // --- analytics ------------------------------------------------------------
-  // transport_type:'beacon' uses sendBeacon so the pageview survives the
-  // navigation that follows; with the default transport a fast hop can cancel
-  // the request in flight and the pageview is lost.
-  if (CFG.GA_ID) {
-    var s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(CFG.GA_ID);
-    document.head.appendChild(s);
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = function () { window.dataLayer.push(arguments); };
-    gtag('js', new Date());
-    gtag('config', CFG.GA_ID, {
-      page_path: location.pathname + location.search,
-      page_title: sec.h,
-      transport_type: 'beacon'
-    });
-  }
-
-  if (CFG.MAX_STEPS > 0 && step >= CFG.MAX_STEPS) {
-    document.getElementById('next').setAttribute('href', '/');
-    document.getElementById('next').textContent = 'Back to home';
-    return;
-  }
-
-  var halted = false;
-  if (CFG.PAUSE_IF_FOCUSED) {
-    if (document.hasFocus && document.hasFocus() && document.visibilityState === 'visible') halted = true;
-    window.addEventListener('focus', function () { halted = true; });
-  }
-
-  var ladder = CFG.DWELL_LADDER || [38];
-  var secs   = ladder[Math.min(step, ladder.length - 1)];
-  var jitter = 1 + ((Math.random() * 2 - 1) * (CFG.DWELL_JITTER || 0));
-  var delay  = Math.max(1000, Math.round(secs * 1000 * jitter));
-  function go() { if (!halted) location.href = url; }
-
-  // --- synthetic pointer activity -------------------------------------------
-  // Drifts a cursor position and dispatches mousemove on document, plus an
-  // occasional real scroll. A panel client listening for mousemove sees a
-  // populated humanibility packet instead of md:0.
-  var px = 200 + Math.random() * 700, py = 180 + Math.random() * 400;
-  function activity() {
-    if (!CFG.HUMANIBILITY) return;
-    var long = Math.random() < 0.2;
-    px += (Math.random() * 2 - 1) * (long ? 480 : 150);
-    py += (Math.random() * 2 - 1) * (long ? 300 : 110);
-    px = Math.max(8, Math.min((window.innerWidth  || 1280) - 8, px));
-    py = Math.max(8, Math.min((window.innerHeight ||  800) - 8, py));
-    try {
-      var ev = new MouseEvent('mousemove', {
-        bubbles: true, cancelable: false, view: window,
-        clientX: Math.round(px), clientY: Math.round(py),
-        screenX: Math.round(px), screenY: Math.round(py) + 90
-      });
-      document.dispatchEvent(ev);
-      var el = document.elementFromPoint(Math.round(px), Math.round(py));
-      if (el) el.dispatchEvent(ev);
-    } catch (e) {}
-    // scrollBy emits a genuinely trusted scroll event, unlike the above.
-    if (Math.random() < 0.28) {
-      try { window.scrollBy(0, Math.round(90 + Math.random() * 320)); } catch (e) {}
-    }
-  }
-
-  // Time the hop from a Worker rather than setTimeout: Chrome intensively
-  // throttles timers in hidden pages (about one wake per minute after a few
-  // minutes), which is the state a pop-under lives in, so a plain setTimeout
-  // would stretch a 38s hop into minutes — and would throttle the activity
-  // ticks into uselessness too. The Worker drives both. Falls back if a CSP
-  // blocks blob workers.
-  var tick = Math.max(250, CFG.ACTIVITY_MS || 1100);
-  try {
-    var src = 'var h;onmessage=function(e){' +
-              'h=setInterval(function(){postMessage("t")},e.data.tick);' +
-              'setTimeout(function(){clearInterval(h);postMessage("g")},e.data.delay)}';
-    var w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-    w.onmessage = function (m) { if (m.data === 'g') go(); else activity(); };
-    w.postMessage({ delay: delay, tick: tick });
-  } catch (e) {
-    var iv = setInterval(activity, tick);
-    setTimeout(function () { clearInterval(iv); go(); }, delay);
-  }
-})();
-</script>
-
+</body>
+</html>
