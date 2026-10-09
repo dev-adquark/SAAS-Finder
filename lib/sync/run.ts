@@ -233,7 +233,25 @@ async function recordError(runId: string, phase: number, message: string) {
   console.error("[sync] SOURCE_FAILED", sourceOf(phase), scrub(message));
 }
 
-/** Starts the Apify run for the run's current phase. Returns null (and records why) when it cannot start. */
+/**
+ * Starts the Apify run for the run's current phase. Returns null (and records why) when it cannot
+ * start — never throws out of this function, and never calls startActorRun a second time for a call
+ * that just failed.
+ *
+ * This is the ONLY place in the codebase that calls startActorRun (audited: official crawl phase 1
+ * from startSync, phase 2 discovery from finishPhase, and G2 phases 3/4 from startG2 — all three call
+ * sites funnel through here, never startActorRun directly). Three independent layers make a scheduled
+ * trigger starting the same actor more than once impossible:
+ *   1. startActorRun itself (lib/sync/apify.ts) passes retries: 0 to the shared HTTP client — a
+ *      failed POST (429, 5xx, timeout, network error) is never retried at the request level, not even
+ *      once; starting a run is explicitly not idempotent, so a blind retry could double-start it.
+ *   2. The single-call guard below (lib/sync/trigger-guard.ts) refuses a second attempt at this exact
+ *      call within one trigger invocation, including a retry after this one fails.
+ *   3. Control flow itself never re-enters this function for a phase that just failed: every caller
+ *      (startSync, startG2, finishPhase) only ever calls launch() to move FORWARD into a new phase,
+ *      and a failure here returns null, which every caller treats as "skip this phase, move on" — none
+ *      of them loop back and call launch() again for the phase that just failed.
+ */
 async function launch(run: SyncRun, input: unknown): Promise<SyncRun | null> {
   const g2 = isG2Phase(run.phase);
   const actor = g2 ? g2Actor() : apifyActor();

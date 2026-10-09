@@ -430,3 +430,48 @@ test("trigger guard: concurrent triggers each get their own independent claim (n
   ]);
   assert.deepEqual(results, [[true, false], [true, false]], "each trigger makes its own one call; neither blocks the other");
 });
+
+test("startActorRun: never retries — a 429, a 500, and a network error each make exactly one fetch call and reject immediately", async () => {
+  const prev = { token: process.env.APIFY_API_TOKEN, fetch: globalThis.fetch };
+  process.env.APIFY_API_TOKEN = "apify_api_SECRETSECRET123456";
+  let calls = 0;
+  const respond = (fn: () => Response | never) => {
+    globalThis.fetch = (async () => {
+      calls++;
+      return fn();
+    }) as typeof fetch;
+  };
+  try {
+    const { startActorRun, ApifyError } = await import("../lib/sync/apify");
+    const opts = { timeoutSecs: 60, memoryMbytes: 512 };
+
+    calls = 0;
+    respond(() => new Response(JSON.stringify({ error: { message: "rate limited" } }), { status: 429, headers: { "retry-after": "0" } }));
+    await assert.rejects(startActorRun({}, opts), ApifyError);
+    assert.equal(calls, 1, "a 429 — retryable for every other Apify call — is not retried here");
+
+    calls = 0;
+    respond(() => new Response(JSON.stringify({ error: { message: "platform error" } }), { status: 500 }));
+    await assert.rejects(startActorRun({}, opts), ApifyError);
+    assert.equal(calls, 1, "a 500 is not retried either");
+
+    calls = 0;
+    respond(() => {
+      throw new Error("network error");
+    });
+    await assert.rejects(startActorRun({}, opts));
+    assert.equal(calls, 1, "a network-level failure is not retried");
+
+    // A failure never poisons the next, separate call: a fresh startActorRun (the next trigger's own
+    // one attempt) succeeds normally on its own first try.
+    calls = 0;
+    respond(() => new Response(JSON.stringify({ data: { id: "run1", status: "RUNNING", defaultDatasetId: "ds1" } }), { status: 200 }));
+    const r = await startActorRun({}, opts);
+    assert.equal(r.id, "run1");
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = prev.fetch;
+    if (prev.token === undefined) delete process.env.APIFY_API_TOKEN;
+    else process.env.APIFY_API_TOKEN = prev.token;
+  }
+});
