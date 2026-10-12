@@ -412,6 +412,9 @@ a:hover .mono-motif, .card:hover .mono-motif { transform: scale(1.12) rotate(6de
 }
 
 /* ---------- Category editorial blocks ---------- */
+/* Shown only to visitors whose browser doesn't run JS at all (see DiscoverExplorerShell). */
+.discover-fallback { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 18px 0; }
+.discover-fallback a { font-weight: 500; }
 .discover-panel-intro { margin-bottom: 18px; }
 .discover-panel-intro p { margin: 0 0 8px; color: var(--text-2); max-width: 640px; }
 .discover-panel-intro .explore { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 0.9rem; }

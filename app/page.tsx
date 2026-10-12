@@ -5,15 +5,12 @@ import type { Catalog, Product } from "@/lib/content/types";
 import { JsonLd } from "@/components/json-ld";
 import { Atlas } from "@/components/atlas/atlas";
 import { RadialNetwork } from "@/components/radial-network";
-import { IconShield, IconScale, IconSpark, IconCheck, CategoryIcon } from "@/components/icons";
-import { Monogram, catStyle } from "@/components/identity";
+import { IconShield, IconScale, IconSpark } from "@/components/icons";
+import { catStyle } from "@/components/identity";
 import { CountUp } from "@/components/count-up";
 import { Magnetic } from "@/components/magnetic";
-import { TabExplorer } from "@/components/tab-explorer";
-import { SubcategoryGrid } from "@/components/subcategory-grid";
-import { AffiliateCta } from "@/components/cta";
+import { DiscoverExplorerShell } from "@/components/discover-explorer-shell";
 import { AffiliateDisclosure } from "@/components/disclosure";
-import { ScoreBadge } from "@/components/score";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { itemListJsonLd } from "@/lib/seo/jsonld";
 import { absolute, SITE_NAME } from "@/lib/site";
@@ -115,54 +112,22 @@ export default async function Home() {
             <div><Marker no="01" label="Discover" /><h2>Explore by category</h2><p>Every tool below is editorially reviewed, dated and sourced — nothing here is sponsored or pay-to-rank.</p></div>
             <Link className="btn ghost" href={routes.products()}>Show all {c.products.length} reviews <span className="arrow-right">→</span></Link>
           </div>
-          <TabExplorer
-            label="Browse products by category"
-            items={c.categories.map((cat) => ({ id: `discover-${cat.slug}`, label: cat.name, sub: `${productsInCategory(c, cat.slug).length} tools`, icon: <CategoryIcon slug={cat.slug} size={18} /> }))}
-            panels={c.categories.map((cat) => {
-              const items = productsInCategory(c, cat.slug).map((p) => {
+          <DiscoverExplorerShell
+            categories={c.categories.map((cat) => ({
+              slug: cat.slug,
+              name: cat.name,
+              description: cat.description,
+              products: productsInCategory(c, cat.slug).map((p) => {
                 const ps = pricingState(p);
-                const sources = p.sources.filter((s) => s.status === "VERIFIED").length;
                 return {
-                  subcategory: p.subcategory ?? cat.name,
-                  node: (
-                    <article key={p.slug} className="discover-tile" style={catStyle(p.categorySlug)}>
-                      <div className="discover-tile-head">
-                        <Monogram name={p.name} slug={p.slug} logo={p.logo} categorySlug={p.categorySlug} />
-                        <div>
-                          <h3><Link href={routes.product(p.slug)}>{p.name}</Link></h3>
-                          <span className="tiny muted">{p.subcategory}</span>
-                        </div>
-                      </div>
-                      <span className="chip-row">
-                        <ScoreBadge product={p} />
-                        <span className={`status ${ps.tone}`}>{ps.label}</span>
-                        {sources > 0 && <span className="status neutral">{sources} sources</span>}
-                      </span>
-                      {p.features.length > 0 && (
-                        <ul className="discover-features">
-                          {p.features.slice(0, 3).map((f) => (
-                            <li key={f}><IconCheck size={14} /> {f}</li>
-                          ))}
-                        </ul>
-                      )}
-                      <div className="discover-tile-actions">
-                        <AffiliateCta product={p} ctaType="button" placement={`discover-${cat.slug}`} pageType="home" pageSlug="/" label={`Visit ${p.name}`} />
-                        <Link className="discover-review-link" href={routes.product(p.slug)}>Read review <span className="arrow-right" aria-hidden="true">→</span></Link>
-                      </div>
-                    </article>
-                  ),
+                  slug: p.slug, name: p.name, subcategory: p.subcategory ?? cat.name, categorySlug: p.categorySlug,
+                  logo: p.logo ?? null, affiliate: p.affiliate, rating: p.review.rating,
+                  pricingLabel: ps.label, pricingTone: ps.tone,
+                  sourcesCount: p.sources.filter((s) => s.status === "VERIFIED").length,
+                  features: p.features,
                 };
-              });
-              return (
-                <div key={cat.slug} className="discover-panel">
-                  <div className="discover-panel-intro">
-                    <p>{cat.description}</p>
-                    <Link className="explore" href={routes.category(cat.slug)}>Explore all {items.length} {cat.name} tools <span className="arrow-right" aria-hidden="true">→</span></Link>
-                  </div>
-                  <SubcategoryGrid items={items} label={`Filter ${cat.name} by type`} icon={<CategoryIcon slug={cat.slug} size={15} />} />
-                </div>
-              );
-            })}
+              }),
+            }))}
           />
           <AffiliateDisclosure />
         </div>
