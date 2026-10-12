@@ -14,7 +14,7 @@ const c = sanitizeCatalog(seedCatalog());
 
 /** Every public page path the catalog can render. */
 function knownPaths(): Set<string> {
-  const s = new Set<string>(["/", "/products", "/categories", "/comparisons", "/alternatives", "/best", "/methodology", "/disclosure", "/privacy", "/contact"]);
+  const s = new Set<string>(["/", "/products", "/categories", "/comparisons", "/alternatives", "/best", "/methodology", "/disclosure", "/privacy", "/terms", "/contact"]);
   c.categories.forEach((x) => {
     s.add(routes.category(x.slug));
     if (x.faqs.length >= 3) s.add(routes.categoryFaq(x.slug));

@@ -36,6 +36,7 @@ export function buildSitemapEntries(c: Catalog, h: Helpers, includeContact: bool
   add(routes.methodology(), undefined, 0.4, "monthly");
   add(routes.disclosure(), undefined, 0.4, "monthly");
   add(routes.privacy(), undefined, 0.2, "monthly");
+  add(routes.terms(), undefined, 0.2, "monthly");
   if (includeContact) add(routes.contact(), undefined, 0.2, "monthly");
 
   for (const cat of c.categories) {

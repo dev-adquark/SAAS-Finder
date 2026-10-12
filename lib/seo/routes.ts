@@ -44,6 +44,7 @@ export const RESERVED_ROOT_SLUGS = new Set([
   "sitemap-xml",
   "sponsor",
   "static",
+  "terms",
   "vercel",
 ]);
 
@@ -85,6 +86,7 @@ export const routes = {
   methodology: () => "/methodology",
   disclosure: () => "/disclosure",
   privacy: () => "/privacy",
+  terms: () => "/terms",
   contact: () => "/contact",
   category: (slug: string) => `/category/${slug}`,
   categoryFaq: (slug: string) => `/category/${slug}/faq`,

@@ -56,6 +56,7 @@ export function Footer() {
             <h2>Legal</h2>
             <ul>
               <li><Link href={routes.privacy()}>Privacy</Link></li>
+              <li><Link href={routes.terms()}>Terms</Link></li>
               <li><Link href={routes.disclosure()}>Affiliate &amp; sponsorship</Link></li>
             </ul>
           </nav>

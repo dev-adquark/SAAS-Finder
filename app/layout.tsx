@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer";
 import { PageViewTracker } from "@/components/page-view";
 import { ClickTracker } from "@/components/click-tracker";
 import { RevealObserver } from "@/components/reveal-observer";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 
 // One sans family for display and body. next/font preloads it and generates a metric-matched
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PageViewTracker />
         <ClickTracker />
         <RevealObserver />
+        <GoogleAnalytics />
       </body>
     </html>
   );
