@@ -223,7 +223,7 @@ if (!url) {
       assert.equal(await db.g2Listing.count(), 0);
     });
 
-    await t.test("scheduled sync (official + G2) over unchanged pages re-confirms claims, changes nothing, is idempotent per 14-day (biweekly) cycle, and a duplicate cron starts nothing", async () => {
+    await t.test("scheduled sync (official + G2) over unchanged pages re-confirms claims, changes nothing, is idempotent per 31-day cycle, and a duplicate cron starts nothing", async () => {
       evidence = await evidenceByUrl();
       mock.responder = (u) => (u.startsWith("https://acme-sync.example") ? acme()(u) : unchanged(evidence)(u));
       mock.g2 = () => [];
@@ -264,7 +264,7 @@ if (!url) {
       assert.equal(again.started, false);
       assert.match(again.reason ?? "", /Already synced/);
       const nextCycle = new Date(run.cycleStart(now).getTime() + run.SYNC.cycleDays * 86_400_000);
-      assert.equal(run.cycleKey(nextCycle) === done.cycleKey, false, "the next 14-day cycle is a new key");
+      assert.equal(run.cycleKey(nextCycle) === done.cycleKey, false, "the next 31-day cycle is a new key");
     });
 
     let priceChange = "";
