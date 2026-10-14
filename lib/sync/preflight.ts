@@ -11,10 +11,9 @@
 //   3. budget     — a hard ceiling on actor calls within one run attempt (in-memory, no DB round
 //                    trip), so a bug that loops phase transitions can never spend an unbounded number
 //                    of calls. One run attempt is the right scope: a SyncRun row is reused (not
-//                    duplicated) across retries of the same 31-day cycle (cycleKey is unique), and
-//                    each reuse resets stats, so cross-attempt spend is already bounded by
-//                    SYNC.maxAttempts in lib/sync/run.ts — the two caps compose (attempts × perRun)
-//                    instead of overlapping.
+//                    duplicated) if a cycle is ever retried (cycleKey is unique per 14-day/biweekly
+//                    cycle), and each reuse resets stats — though with SYNC.maxAttempts = 1 (no
+//                    retries), a cycle never actually gets a second attempt in practice.
 //   4. database   — the schema is reachable and queryable (catches an unapplied migration or an
 //                    unreachable database before spending a call whose result could never be saved).
 //   5. run state  — the run this call belongs to is still active (guards a race with a concurrent

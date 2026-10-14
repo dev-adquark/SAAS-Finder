@@ -39,7 +39,7 @@ export default async function AdminSync({ searchParams }: SP) {
       <Flash ok={sp.ok} error={sp.error} />
       <AutoRefresh active={!!active} />
       <p className="muted">
-        Fully automatic, every 31 days: the official-website crawl, the G2 source and Logo.dev logo verification run; results are validated, matched to products by G2 link or
+        Fully automatic, every 14 days (biweekly): the official-website crawl, the G2 source and Logo.dev logo verification run; results are validated, matched to products by G2 link or
         official domain, compared, written to the database and the site is revalidated. Logos are verified for each product&apos;s official domain; a failed check keeps the
         existing logo, and a logo is only removed after two consecutive runs find none. Official pages are authoritative for published prices and facts; confirmed changes apply automatically, and
         removals apply only after a second successful run confirms them. G2 data is stored as source data (never an editorial score or a published price) and fills only
@@ -111,7 +111,7 @@ export default async function AdminSync({ searchParams }: SP) {
               <thead><tr><th>When</th><th>Source</th><th>Error</th></tr></thead>
               <tbody>{d.errors.map((e, i) => <tr key={i}><td className="small">{when(new Date(e.at))}</td><td className="small">{e.source}</td><td className="small">{e.message}</td></tr>)}</tbody>
             </table>
-            <p className="tiny muted">Failed sources are retried automatically: API calls up to 3× with backoff, and a failed scheduled sync on the next daily tick (up to 3 attempts per 31-day cycle). Existing data was not changed.</p>
+            <p className="tiny muted">Read-only status checks retry up to 3× with backoff; starting the crawl/G2 run itself never retries, and a failed scheduled sync is not retried either — it waits for the next 14-day (biweekly) cycle. Existing data was not changed.</p>
           </>
         )}
       </section>

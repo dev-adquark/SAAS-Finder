@@ -8,8 +8,9 @@ import { runAsTrigger } from "@/lib/sync/trigger-guard";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-// Daily tick (vercel.json). Starts the current 31-day cycle's sync once (official crawl + G2 + Logo.dev), retries
-// a failed cycle up to 3 times on later ticks, and advances any run in progress. mode=advance only
+// Daily tick (vercel.json) — a cheap check, not a retry trigger. Starts the current 14-day (biweekly)
+// cycle's sync once (official crawl + G2 + Logo.dev); a failed cycle is never retried (SYNC.maxAttempts
+// = 1) — it waits for the next cycle. Also advances any run already in progress. mode=advance only
 // continues processing. Idempotent: the cycle key and the run lock prevent duplicate syncs, including
 // across deployments.
 export async function GET(req: Request) {

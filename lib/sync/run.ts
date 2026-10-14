@@ -1,4 +1,4 @@
-// Automatic data sync, every 31 days: start → official-site crawl (phases 1–2) → G2 listings
+// Automatic data sync, every 14 days (biweekly): start → official-site crawl (phases 1–2) → G2 listings
 // (phases 3–4) → Logo.dev logo verification (phase 5) → resumable processing → auto-apply →
 // finalize → revalidate.
 //
@@ -36,7 +36,9 @@ import { dedupeKey, evaluateDiscovered, evaluatePage, type Claims, type Outcome,
 import { normalizeUrl, validateItem } from "@/lib/sync/extract";
 
 export const SYNC = {
-  maxAttempts: 3,
+  // No retries: one scheduled attempt per cycle. If it fails, the cycle is done — the next attempt
+  // is the next cycle's, not a same-cycle retry.
+  maxAttempts: 1,
   actorTimeoutSecs: 1800,
   actorMemoryMb: 2048,
   batchSize: 8,
@@ -48,7 +50,7 @@ export const SYNC = {
   maxDiscoveriesPerProduct: 6,
   /** Apify crawl considered stuck after this long; its partial results are processed. */
   stuckAfterMs: 45 * 60_000,
-  cycleDays: 31,
+  cycleDays: 14,
   logoBatch: 6,
   g2TimeoutSecs: 3600,
   g2MemoryMb: 1024,
@@ -71,7 +73,7 @@ const DAY = 86_400_000;
 /** Elapsed milliseconds clamped to a valid INT4 (clock skew or a very old run must not break writes). */
 export const elapsed = (from: Date, to = Date.now()) => Math.max(0, Math.min(to - from.getTime(), 2_147_483_647));
 
-/** Scheduled syncs run in fixed 31-day cycles counted from this anchor (UTC). */
+/** Scheduled syncs run in fixed 14-day (biweekly) cycles counted from this anchor (UTC). */
 const CYCLE_ANCHOR = Date.UTC(2026, 0, 1);
 
 export function cycleStart(d: Date): Date {
@@ -79,13 +81,14 @@ export function cycleStart(d: Date): Date {
   return new Date(CYCLE_ANCHOR + n * SYNC.cycleDays * DAY);
 }
 
-/** Idempotency key of the 31-day cycle containing `d`, e.g. "cycle-2026-09-06". */
+/** Idempotency key of the 14-day (biweekly) cycle containing `d`, e.g. "cycle-2026-09-06". */
 export const cycleKey = (d: Date) => `cycle-${cycleStart(d).toISOString().slice(0, 10)}`;
 
 /**
- * Next automatic sync attempt. The cron ticks daily at 04:00 UTC (vercel.json) and starts one sync per
- * 31-day cycle: while the current cycle has not synced successfully the next tick tries (up to 3
- * attempts), otherwise the first tick of the next cycle.
+ * Next automatic sync attempt. The cron ticks daily at 04:00 UTC (vercel.json) — a cheap check, not a
+ * retry trigger — and starts one sync per 14-day (biweekly) cycle: with SYNC.maxAttempts = 1, the
+ * first tick of a new cycle is the only attempt that cycle ever gets, whether it succeeds or fails;
+ * every tick after that just confirms there's nothing to do until the next cycle's first tick.
  */
 export function nextScheduledRun(now = new Date(), doneThisCycle = true): Date {
   const tick = (d: Date) => {

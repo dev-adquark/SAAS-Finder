@@ -192,38 +192,38 @@ if (!url) {
     };
     const allowRerun = () => db.syncRun.updateMany({ data: { startedAt: new Date(Date.now() - 7 * 3_600_000) } });
 
-    await t.test("failed Apify start fails the run without touching data; scheduled retries stop after 3 attempts", async () => {
+    await t.test("failed Apify start fails the run without touching data; no retries — one attempt per cycle, period", async () => {
       const before = await verifiedState();
       mock.startFails = true;
       mock.g2StartFails = true;
       mock.startAttempts = 0;
       mock.g2StartAttempts = 0;
       const cycle = new Date("2031-03-05T04:00:00Z");
-      for (let i = 1; i <= 3; i++) {
-        const r = await run.startSync({ trigger: "SCHEDULED", now: cycle });
-        assert.equal(r.run?.status, "FAILED");
-        assert.equal(r.run?.attempts, i);
-        assert.match(r.run?.error ?? "", /Could not start the Apify crawl/);
-        assert.match(r.run?.error ?? "", /Could not start the Apify G2 run/);
-        assert.ok(!(r.run?.error ?? "").includes("integrationtoken"), "token never stored");
-        const errs = ((r.run?.stats ?? {}) as { errors?: { source: string }[] }).errors ?? [];
-        assert.deepEqual(errs.map((e) => e.source).sort(), ["G2", "Official websites"], "both source errors logged");
-        // Exactly one HTTP attempt per source, per sync attempt: a failure is never retried at the
-        // call level — it logs and stops, and only a brand-new sync attempt (a later cron tick) tries
-        // again, which is a distinct, deliberate retry policy, not a same-call retry.
-        assert.equal(mock.startAttempts, i, `crawl: exactly ${i} total attempt(s) after ${i} sync attempt(s), no retry`);
-        assert.equal(mock.g2StartAttempts, i, `G2: exactly ${i} total attempt(s) after ${i} sync attempt(s), no retry`);
-      }
+      const r = await run.startSync({ trigger: "SCHEDULED", now: cycle });
+      assert.equal(r.run?.status, "FAILED");
+      assert.equal(r.run?.attempts, 1);
+      assert.match(r.run?.error ?? "", /Could not start the Apify crawl/);
+      assert.match(r.run?.error ?? "", /Could not start the Apify G2 run/);
+      assert.ok(!(r.run?.error ?? "").includes("integrationtoken"), "token never stored");
+      const errs = ((r.run?.stats ?? {}) as { errors?: { source: string }[] }).errors ?? [];
+      assert.deepEqual(errs.map((e) => e.source).sort(), ["G2", "Official websites"], "both source errors logged");
+      // Exactly one HTTP attempt per source: a failure is never retried at the call level (it logs and
+      // stops), and with SYNC.maxAttempts = 1 the cycle itself never gets a second attempt either —
+      // the very next trigger (even the same cron tick retried) sees the cycle as already given up.
+      assert.equal(mock.startAttempts, 1, "crawl: exactly one attempt, ever, for this cycle");
+      assert.equal(mock.g2StartAttempts, 1, "G2: exactly one attempt, ever, for this cycle");
       const gaveUp = await run.startSync({ trigger: "SCHEDULED", now: cycle });
       assert.equal(gaveUp.started, false);
       assert.match(gaveUp.reason ?? "", /Gave up/);
+      assert.equal(mock.startAttempts, 1, "the 'gave up' check makes no new HTTP attempt");
+      assert.equal(mock.g2StartAttempts, 1);
       mock.startFails = false;
       mock.g2StartFails = false;
       assert.deepEqual(await verifiedState(), before);
       assert.equal(await db.g2Listing.count(), 0);
     });
 
-    await t.test("scheduled sync (official + G2) over unchanged pages re-confirms claims, changes nothing, is idempotent per 31-day cycle, and a duplicate cron starts nothing", async () => {
+    await t.test("scheduled sync (official + G2) over unchanged pages re-confirms claims, changes nothing, is idempotent per 14-day (biweekly) cycle, and a duplicate cron starts nothing", async () => {
       evidence = await evidenceByUrl();
       mock.responder = (u) => (u.startsWith("https://acme-sync.example") ? acme()(u) : unchanged(evidence)(u));
       mock.g2 = () => [];
@@ -263,8 +263,8 @@ if (!url) {
       const again = await run.startSync({ trigger: "SCHEDULED", now: new Date(now.getTime() + 3_600_000) });
       assert.equal(again.started, false);
       assert.match(again.reason ?? "", /Already synced/);
-      const nextCycle = new Date(run.cycleStart(now).getTime() + 31 * 86_400_000);
-      assert.equal(run.cycleKey(nextCycle) === done.cycleKey, false, "the next 31-day cycle is a new key");
+      const nextCycle = new Date(run.cycleStart(now).getTime() + run.SYNC.cycleDays * 86_400_000);
+      assert.equal(run.cycleKey(nextCycle) === done.cycleKey, false, "the next 14-day cycle is a new key");
     });
 
     let priceChange = "";

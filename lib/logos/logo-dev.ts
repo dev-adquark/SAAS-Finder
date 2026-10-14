@@ -2,7 +2,7 @@
 //
 // - Lookup key: the hostname of the product's official URL (editorially set and verified), without
 //   "www.". Never a guessed or derived domain: no parent-domain fallback, no name search.
-// - The automatic sync (lib/sync/run.ts, every 31 days) verifies each product's hostname with
+// - The automatic sync (lib/sync/run.ts, every 14 days/biweekly) verifies each product's hostname with
 //   verifyLogo() and stores the result on the product (logoDomain / logoCheckedAt). Pages render
 //   from that stored, verified state. Products the sync has not checked yet (new, or official URL
 //   changed since) are checked at catalog load instead (withLogos, cached 7 days). Only hostnames
